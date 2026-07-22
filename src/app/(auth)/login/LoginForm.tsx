@@ -16,8 +16,7 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function submit() {
     setError(null);
 
     startTransition(async () => {
@@ -45,7 +44,14 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6" noValidate>
+    <form
+      noValidate
+      className="flex w-full flex-col gap-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        submit();
+      }}
+    >
       <InputField
         id="phone"
         name="phone"
@@ -57,6 +63,7 @@ export function LoginForm() {
         maxLength={11}
         value={phone}
         error={error}
+        errorAlign="center"
         onChange={(e) => {
           setPhone(e.target.value.replace(/\D/g, "").slice(0, 11));
           if (error) setError(null);

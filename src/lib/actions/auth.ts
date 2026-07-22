@@ -11,6 +11,8 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
  */
 
 const PHONE_RE = /^\d{11}$/;
+// Names are Arabic only (the field asks for it, and the admin reads no Latin).
+const NAME_RE = /^[؀-ۿ\s]+$/;
 
 type CustomerRow = { id: string; auth_user_id: string | null };
 
@@ -56,6 +58,76 @@ export async function startLogin(rawPhone: string): Promise<StartLoginResult> {
     return { ok: false, error: "حصلت مشكلة في الدخول، حاول تاني." };
   }
   return { ok: true, next: "home", phone };
+}
+
+export type RegisterResult = { ok: false; error: string } | { ok: true };
+
+/**
+ * Second step for a brand-new customer: they typed a name on "نورتنا لأول مرة".
+ * Creates the customer record, their auth account, signs them in, and drops them
+ * into the app. Reuses the same session mechanism as login (FR-1 exception path).
+ */
+export async function registerCustomer(
+  rawPhone: string,
+  rawName: string,
+): Promise<RegisterResult> {
+  const phone = rawPhone.replace(/\D/g, "");
+  const name = rawName.trim().replace(/\s+/g, " ");
+
+  if (!PHONE_RE.test(phone)) {
+    return { ok: false, error: "الرقم مش مظبوط، ارجع واكتبه تاني." };
+  }
+  if (name.length < 2 || !NAME_RE.test(name)) {
+    return { ok: false, error: "أتأكد من ادخال الاسم صحيح باللغة العربية" };
+  }
+
+  const admin = createAdminClient();
+
+  // Shouldn't happen (login already routed), but never let the admin's number
+  // become a customer.
+  const { data: farm } = await admin
+    .from("farm")
+    .select("id")
+    .eq("owner_phone", phone)
+    .maybeSingle();
+  if (farm) {
+    return { ok: false, error: "الرقم ده بتاع صاحب المزرعة، ارجع وسجّل الدخول." };
+  }
+
+  // Reuse an existing row if the admin already added this walk-in; else insert.
+  const { data: existing } = await admin
+    .from("customer")
+    .select("id, auth_user_id")
+    .eq("phone", phone)
+    .maybeSingle();
+
+  let customer = existing;
+  if (!customer) {
+    const { data: theFarm } = await admin
+      .from("farm")
+      .select("id")
+      .limit(1)
+      .maybeSingle();
+    if (!theFarm) {
+      return { ok: false, error: "حصلت مشكلة في التسجيل، حاول تاني." };
+    }
+    const { data: created, error } = await admin
+      .from("customer")
+      .insert({ farm_id: theFarm.id, name, phone })
+      .select("id, auth_user_id")
+      .single();
+    if (error || !created) {
+      return { ok: false, error: "حصلت مشكلة في التسجيل، حاول تاني." };
+    }
+    customer = created;
+  }
+
+  try {
+    await signInCustomer(phone, customer);
+  } catch {
+    return { ok: false, error: "حصلت مشكلة في التسجيل، حاول تاني." };
+  }
+  return { ok: true };
 }
 
 /**

@@ -8,7 +8,7 @@ import { LoginForm } from "./LoginForm";
  */
 export default function LoginPage() {
   return (
-    <div className="flex w-full max-w-[345px] flex-col items-center gap-10">
+    <div className="my-auto flex w-full flex-col items-center gap-10">
       <Image
         src="/images/logo-primary.png"
         alt="مزرعة بيتنا"

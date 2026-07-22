@@ -1,7 +1,9 @@
 /**
  * Shared layout for the auth screens (login · register · pin).
- * Centers a single narrow column and respects the notch safe areas. The Toaster
- * is not mounted here — auth feedback is inline under the field, not a toast.
+ * Provides the page background, safe-area padding, and one narrow centered
+ * column. Vertical placement is left to each page: login centers its content
+ * with `my-auto`, register sits from the top. The Toaster is not mounted here —
+ * auth feedback is inline under the field, not a toast.
  */
 export default function AuthLayout({
   children,
@@ -10,13 +12,15 @@ export default function AuthLayout({
 }) {
   return (
     <main
-      className="flex min-h-dvh w-full items-center justify-center bg-background px-6"
+      className="flex min-h-dvh flex-col bg-background px-6"
       style={{
-        paddingTop: "max(2.5rem, env(safe-area-inset-top))",
-        paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
+        paddingTop: "max(1.5rem, env(safe-area-inset-top))",
+        paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
       }}
     >
-      {children}
+      <div className="mx-auto flex w-full max-w-[345px] flex-1 flex-col">
+        {children}
+      </div>
     </main>
   );
 }

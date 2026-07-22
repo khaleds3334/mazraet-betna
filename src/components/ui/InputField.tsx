@@ -22,12 +22,15 @@ type InputFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   id: string;
   label: string;
   error?: string | null;
+  /** Where the error line sits — right by default (RTL), centered on login. */
+  errorAlign?: "right" | "center";
 };
 
 export function InputField({
   id,
   label,
   error,
+  errorAlign = "right",
   className,
   ...props
 }: InputFieldProps) {
@@ -59,7 +62,13 @@ export function InputField({
       </div>
 
       {error && (
-        <p id={errorId} className="mt-4 text-center text-sm text-error">
+        <p
+          id={errorId}
+          className={cn(
+            "mt-4 text-sm text-error",
+            errorAlign === "center" ? "text-center" : "text-right",
+          )}
+        >
           {error}
         </p>
       )}
