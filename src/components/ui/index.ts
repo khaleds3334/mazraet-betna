@@ -4,6 +4,7 @@ export { BackButton } from "./BackButton";
 export { Button } from "./Button";
 export { Icon } from "./Icon";
 export { InputField } from "./InputField";
+export { PinInput } from "./PinInput";
 export { Toast } from "./Toast";
 export { Toaster } from "./Toaster";
 export { InlineError } from "./InlineError";

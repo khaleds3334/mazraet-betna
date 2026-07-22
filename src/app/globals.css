@@ -19,6 +19,8 @@
 
   /* Headings (Almarai Bold, tight 1.2 leading). p-scale uses Tailwind
      defaults, which already match Figma: 16 / 14 / 18 / 12 px. */
+  --text-h3: 28px; /* e.g. the admin PIN digits */
+  --text-h3--line-height: 1.2;
   --text-h4: 24px;
   --text-h4--line-height: 1.2;
   --text-h5: 20px;

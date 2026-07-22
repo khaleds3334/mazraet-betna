@@ -1,20 +1,21 @@
 "use server";
 
-import { createHmac } from "node:crypto";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
+import {
+  signInCustomer,
+  signInAdmin,
+  type CustomerAuthRow,
+} from "@/lib/auth/session";
 
 /**
  * Auth actions. Login is phone-only for customers, phone + PIN for the admin
- * (D-01). There is no OTP: identity for a customer isn't sensitive, so instead
- * of a verification code we derive a stable server-only password from the phone
- * and sign the user in from the server. See decision D-14.
+ * (D-01). The shared sign-in plumbing (no-OTP session, D-14) lives in
+ * /lib/auth/session.ts; this file is the three actions the screens call.
  */
 
 const PHONE_RE = /^\d{11}$/;
 // Names are Arabic only (the field asks for it, and the admin reads no Latin).
 const NAME_RE = /^[؀-ۿ\s]+$/;
-
-type CustomerRow = { id: string; auth_user_id: string | null };
 
 export type StartLoginResult =
   | { ok: false; error: string }
@@ -101,7 +102,7 @@ export async function registerCustomer(
     .eq("phone", phone)
     .maybeSingle();
 
-  let customer = existing;
+  let customer: CustomerAuthRow | null = existing;
   if (!customer) {
     const { data: theFarm } = await admin
       .from("farm")
@@ -130,42 +131,50 @@ export async function registerCustomer(
   return { ok: true };
 }
 
+export type VerifyPinResult = { ok: false; error: string } | { ok: true };
+
 /**
- * Deterministic, server-only credentials for a customer's auth account.
- * The password is an HMAC of the phone keyed by the Supabase secret — it never
- * leaves the server, and is reproducible so the same phone always signs in.
+ * Admin login step two: the owner typed their 6-digit PIN (A-04→A-06). The PIN
+ * is checked against the bcrypt hash inside the database (verify_admin_pin, a
+ * service-role-only function) — never compared in app code. On success the admin
+ * is signed in and lands on the dashboard.
  */
-function customerCredentials(phone: string) {
-  const email = `${phone}@customer.mazraetbetna.local`;
-  const password = createHmac("sha256", process.env.SUPABASE_SECRET_KEY!)
-    .update(phone)
-    .digest("hex");
-  return { email, password };
-}
+export async function verifyPin(
+  rawPhone: string,
+  rawPin: string,
+): Promise<VerifyPinResult> {
+  const phone = rawPhone.replace(/\D/g, "");
+  const pin = rawPin.replace(/\D/g, "");
 
-/** Ensure the customer has a linked auth user, then create a session cookie. */
-async function signInCustomer(phone: string, customer: CustomerRow) {
-  const admin = createAdminClient();
-  const { email, password } = customerCredentials(phone);
-
-  // First login of an admin-added walk-in: create the auth user and link it.
-  if (!customer.auth_user_id) {
-    const { data: created } = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { role: "customer", phone },
-    });
-    if (created?.user) {
-      await admin
-        .from("customer")
-        .update({ auth_user_id: created.user.id })
-        .eq("id", customer.id);
-    }
+  if (!PHONE_RE.test(phone)) {
+    return { ok: false, error: "الرقم مش مظبوط، ارجع وسجّل الدخول." };
+  }
+  if (pin.length !== 6) {
+    return { ok: false, error: "اكتب الرقم السري كامل (٦ أرقام)." };
   }
 
-  // Sign in through the cookie-bound server client so the session persists.
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  const admin = createAdminClient();
+
+  const { data: farm } = await admin
+    .from("farm")
+    .select("id, owner_id")
+    .eq("owner_phone", phone)
+    .maybeSingle();
+  if (!farm) {
+    return { ok: false, error: "الرقم ده مش بتاع صاحب المزرعة." };
+  }
+
+  const { data: valid, error } = await admin.rpc("verify_admin_pin", {
+    _farm_id: farm.id,
+    _pin: pin,
+  });
+  if (error) return { ok: false, error: "حصلت مشكلة، حاول تاني." };
+  if (!valid) return { ok: false, error: "تم إدخال رقم سري غير صحيح" };
+
+  try {
+    await signInAdmin(phone, farm);
+  } catch {
+    return { ok: false, error: "حصلت مشكلة في الدخول، حاول تاني." };
+  }
+  return { ok: true };
 }

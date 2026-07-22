@@ -24,7 +24,13 @@ export function BackButton({
         className,
       )}
     >
-      <Icon name="arrowRight" size={32} className="text-foreground" aria-hidden />
+      <Icon
+        name="arrowRight"
+        size={32}
+        strokeWidth={2}
+        className="text-foreground"
+        aria-hidden
+      />
     </Link>
   );
 }

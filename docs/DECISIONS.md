@@ -163,6 +163,25 @@ and still needs the PIN (`admin_credentials`) — the PIN is the real admin secr
 **Why:** The only ways to get an `auth.uid()` session are password or OTP; D-01
 rules out OTP, so a server-held deterministic password is the clean fit. Secret
 never leaves the server, and customer identity isn't sensitive (D-01).
+**Role storage:** the `role` (`customer`/`admin`) is written to **`app_metadata`**
+(service-role-only), never `user_metadata` (user-editable) — so route/role gating
+can trust it. The row link (`customer.auth_user_id` / `farm.owner_id`) is set from
+the actual signed-in user id, so RLS matches even if the auth user pre-existed.
+**Date:** 2026-07-22
+
+### T-17 — Admin PIN verified in the database, not in app code
+The PIN bcrypt compare runs inside Postgres via `verify_admin_pin(farm_id, pin)`
+(SECURITY DEFINER, migration 004), **executable only by `service_role`** — the
+browser (anon/authenticated) has no execute grant, so PINs can't be brute-forced
+from the client. The server calls it through the service-role client. After a
+correct PIN, the admin gets a session via the same no-OTP mechanism as customers
+(D-14) — a phone-derived server-only password, keyed `admin:<phone>` and a
+separate synthetic email; the owner's auth user is created + linked to
+`farm.owner_id` on first login. The PIN stays the human gate; the derived
+password is only the session mechanism.
+**Why:** RLS is row-level; bcrypt lives in Postgres. A locked-down DB function is
+the clean way to check the hash without shipping a bcrypt lib or exposing the
+hash. Session plumbing shared with login lives in `/lib/auth/session.ts`.
 **Date:** 2026-07-22
 
 ### T-15 — No `invoice` and no `debt` table (both derived on read)

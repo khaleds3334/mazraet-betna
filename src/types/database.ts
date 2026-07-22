@@ -1,5 +1,3 @@
-// Generated from Supabase — do NOT hand-edit.
-// Regenerate with: supabase gen types typescript (or via the Supabase MCP).
 export type Json =
   | string
   | number
@@ -571,7 +569,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      verify_admin_pin: {
+        Args: { _farm_id: string; _pin: string }
+        Returns: boolean
+      }
     }
     Enums: {
       expense_category: "feed" | "utilities" | "medicine" | "other"
