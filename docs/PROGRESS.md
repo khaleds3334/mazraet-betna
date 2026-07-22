@@ -51,8 +51,8 @@
 **باقي من المرحلة ٢ (محتاج قراءة Figma):**
 - [x] توكنز التصميم من Figma → `globals.css` تحت `@theme` (ألوان + خطوط + ظلال — القرار T-16)
 - [x] `lib/icons.ts` + `Icon.tsx` — خريطة أيقونات مركزية (أسماء من التصميم + أساسيات)، كلها متحقّق منها مقابل المكتبة. بتكبر مع كل شاشة.
+- [x] عملاء Supabase — `client.ts` (متصفح) · `server.ts` (خادم + عميل خدمة يتخطّى RLS للـ PIN) · `middleware.ts` (تحديث الجلسة) + `middleware.ts` الرئيسي
 - [ ] نظام الـ Toast: `Toast.tsx` · `Toaster.tsx` · `InlineError.tsx` · `useToast.ts`
-- [ ] عملاء Supabase + middleware (مش محتاج تصميم)
 
 > **مكوّنات `components/ui`:** بنبنيها **شاشة بشاشة** وإحنا ماشيين (قرار خالد)، مش دفعة واحدة.
 
