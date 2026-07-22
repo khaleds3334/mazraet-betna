@@ -49,7 +49,7 @@
 - [x] `date-fns` متركّبة · `pnpm build` بيعدّي
 
 **باقي من المرحلة ٢ (محتاج قراءة Figma):**
-- [ ] توكنز التصميم من Figma → `globals.css` تحت `@theme`
+- [x] توكنز التصميم من Figma → `globals.css` تحت `@theme` (ألوان + خطوط + ظلال — القرار T-16)
 - [ ] `lib/icons.ts` + `Icon.tsx` (الأيقونات المستخدمة في التصميم)
 - [ ] نظام الـ Toast: `Toast.tsx` · `Toaster.tsx` · `InlineError.tsx` · `useToast.ts`
 - [ ] مكوّنات `components/ui` بكل حالاتها

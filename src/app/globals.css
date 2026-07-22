@@ -1,22 +1,80 @@
 @import "tailwindcss";
 
 /*
-  التوكنز الكاملة (ألوان العلامة، المقاسات) هتتحط هنا في المرحلة ٢
-  مأخوذة من Figma. دلوقتي بس الأساس: الخط والخلفية.
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  Design tokens — the single source of truth for color, type, shadow.  │
+  │  Pulled from the Figma variables (file rOzKvIGzCYR53LxDvF0J8O).        │
+  │  Never hard-code a color or size in a component — use these tokens.    │
+  │                                                                        │
+  │  Figma organizes colors by role (Surface / Text / Border / Icons) and │
+  │  reuses the same hex across roles. We flatten that into one semantic   │
+  │  palette; each token notes its Figma source so design↔code stays in    │
+  │  sync. The rendered result is identical to Figma — only the class      │
+  │  names differ (see decision T-16).                                     │
+  └─────────────────────────────────────────────────────────────────────┘
 */
-@theme inline {
-  --font-sans: var(--font-almarai);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-}
+@theme {
+  /* ── Font ─────────────────────────────────────────────────────────── */
+  --font-sans: var(--font-almarai), system-ui, sans-serif;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Headings (Almarai Bold, tight 1.2 leading). p-scale uses Tailwind
+     defaults, which already match Figma: 16 / 14 / 18 / 12 px. */
+  --text-h4: 24px;
+  --text-h4--line-height: 1.2;
+  --text-h5: 20px;
+  --text-h5--line-height: 1.2;
+  --text-h6: 18px;
+  --text-h6--line-height: 1.2;
+
+  /* ── Surfaces (backgrounds) ───────────────────────────────────────── */
+  --color-background: #fcfff6; /* Surface/page — app background */
+  --color-surface: #f7feeb; /* Surface/default 2 — cards, tiles */
+  --color-surface-warm: #fff9f2; /* Surface/page 2 — warm sections (feed/temp) */
+  --color-white: #ffffff; /* Neutral/white */
+
+  /* ── Text ─────────────────────────────────────────────────────────── */
+  --color-heading: #060a07; /* Text/headings */
+  --color-foreground: #3f6246; /* Text/body — default text & icons */
+  --color-muted: #6e7c73; /* Text/body 2 — secondary text */
+  --color-disabled: #8b968f; /* Text/disabled 2 */
+  --color-disabled-soft: #a8b0ab; /* Text/disabled */
+
+  /* ── Brand greens ─────────────────────────────────────────────────── */
+  --color-primary: #d9f99d; /* Surface/action — primary (lime) button */
+  --color-primary-foreground: #263b2a; /* Text/action 3 — text on primary */
+  --color-primary-hover: #aec77e; /* Surface/action-hover */
+  --color-brand: #3f6246; /* Surface/action 2 — dark-green button */
+  --color-brand-dark: #263b2a; /* Text/action 3 — darkest green */
+  --color-brand-muted: #65816b; /* Surface/action 5 — muted green */
+  --color-brand-olive: #82955e; /* Text/action-hover */
+
+  /* ── Borders ──────────────────────────────────────────────────────── */
+  --color-border: #ecf0ed; /* Border/default */
+
+  /* ── Status ───────────────────────────────────────────────────────── */
+  --color-success: #2c854d; /* Text/success 3 */
+  --color-success-surface: #dbf8e6; /* Surface/success */
+  --color-warning: #f7b545; /* Text/warning */
+  --color-warning-surface: #fdf0da; /* Surface/warning */
+  --color-error: #c65a5a; /* Surface/error 4 / Icons/error 2 */
+  --color-error-soft: #f87171; /* Icons/error / Surface/error 3 */
+  --color-error-surface: #fee3e3; /* Surface/error */
+  --color-info: #4d84c8; /* Text/information 2 */
+  --color-info-surface: #bfdbfd; /* Surface/information */
+
+  /* ── Accents (feed / temperature / weight chart) ──────────────────── */
+  --color-accent-orange: #fdba74; /* Surface/action 3 */
+  --color-accent-tan: #ca955d; /* Text/body 4 */
+  --color-accent-brown: #987046; /* Text/action 2 */
+
+  /* ── Shadows ──────────────────────────────────────────────────────── */
+  --shadow-card: 0 2px 6px 0 #3f624626; /* "drop shadow" */
+  --shadow-field: inset 0 2px 2px -1px #4a4a681a; /* "Field/Inset" */
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  line-height: 1.2;
 }
