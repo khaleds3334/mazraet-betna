@@ -24,7 +24,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#fcfff6", // Surface/page — matches the app background
+  themeColor: "#fbfdfc", // App canvas — matches the page background
 };
 
 export default function RootLayout({

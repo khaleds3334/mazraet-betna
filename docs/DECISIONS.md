@@ -148,6 +148,22 @@ Figma organizes colors by role (`Surface/*`, `Text/*`, `Border/*`, `Icons/*`) an
 **Why:** Avoids ugly doubled utilities (`text-text-body`), keeps the same hex from being duplicated under four names, and reads idiomatically. The rendered result is identical to Figma — only class names differ. Comments preserve design↔code traceability for a designer-led sync.
 **Figma map:** admin/dashboard screens under node `4:7`, customer screens under `4:6`. `get_variable_defs` must target a concrete screen frame, not the page/section node.
 **Date:** 2026-07-22
+**Addendum (2026-07-22):** The app **canvas background is `#fbfdfc`** (`--color-background`), which is a hair cooler than **Surface/page `#fcfff6`** (`--color-surface-page`). They are two distinct roles, not a mistake: the page background is `#fbfdfc` everywhere; `#fcfff6` fills input fields and similar surfaces. Confirmed by Khaled — do not collapse them back into one token.
+
+### D-14 — Phone-only auth without OTP, via a server-derived password
+Login has no verification code (honoring D-01). A customer's `auth.users`
+password is a deterministic **HMAC of the phone**, keyed by `SUPABASE_SECRET_KEY`
+(reused as the HMAC secret — no new env var). The server reproduces it to sign
+the user in, so the flow is phone-only for the user yet still yields a real
+`auth.uid()` session that RLS depends on (T-13). Synthetic email
+`{phone}@customer.mazraetbetna.local` is the auth identifier — avoids needing any
+SMS/email provider. Admin-added walk-ins (no `auth_user_id`) get their auth user
+created and linked on first login. The admin is detected by `farm.owner_phone`
+and still needs the PIN (`admin_credentials`) — the PIN is the real admin secret.
+**Why:** The only ways to get an `auth.uid()` session are password or OTP; D-01
+rules out OTP, so a server-held deterministic password is the clean fit. Secret
+never leaves the server, and customer identity isn't sensitive (D-01).
+**Date:** 2026-07-22
 
 ### T-15 — No `invoice` and no `debt` table (both derived on read)
 Confirming D-05 at the schema level: the invoice = `orders` + `order_line` (actual weights × snapshotted `unit_price`) + `payment`; the debt = invoice total − sum(payments). Neither is a stored table. The price/cleaning price are **snapshotted onto `orders` at weighing** (`unit_price`, `cleaning_price`) so changing settings later never rewrites an old invoice (FR-5).

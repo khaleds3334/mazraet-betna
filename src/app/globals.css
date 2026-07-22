@@ -27,7 +27,8 @@
   --text-h6--line-height: 1.2;
 
   /* ── Surfaces (backgrounds) ───────────────────────────────────────── */
-  --color-background: #fcfff6; /* Surface/page — app background */
+  --color-background: #fbfdfc; /* App canvas — the page background everywhere */
+  --color-surface-page: #fcfff6; /* Surface/page — input fields & similar fills */
   --color-surface: #f7feeb; /* Surface/default 2 — cards, tiles */
   --color-surface-warm: #fff9f2; /* Surface/page 2 — warm sections (feed/temp) */
   --color-white: #ffffff; /* Neutral/white */
