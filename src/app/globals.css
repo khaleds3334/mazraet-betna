@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/*
+  التوكنز الكاملة (ألوان العلامة، المقاسات) هتتحط هنا في المرحلة ٢
+  مأخوذة من Figma. دلوقتي بس الأساس: الخط والخلفية.
+*/
+@theme inline {
+  --font-sans: var(--font-almarai);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
