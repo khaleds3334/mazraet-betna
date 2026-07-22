@@ -44,6 +44,7 @@
 
   /* ── Brand greens ─────────────────────────────────────────────────── */
   --color-primary: #d9f99d; /* Surface/action — primary (lime) button */
+  --color-primary-soft: #e8fbc4; /* Surface/action 4 — active row / soft lime */
   --color-primary-foreground: #263b2a; /* Text/action 3 — text on primary */
   --color-primary-hover: #aec77e; /* Surface/action-hover */
   --color-brand: #3f6246; /* Surface/action 2 — dark-green button */
@@ -61,6 +62,7 @@
   --color-warning-surface: #fdf0da; /* Surface/warning */
   --color-error: #c65a5a; /* Surface/error 4 / Icons/error 2 */
   --color-error-soft: #f87171; /* Icons/error / Surface/error 3 */
+  --color-error-muted: #fbaaaa; /* Surface/error 2 — closed-sale countdown boxes */
   --color-error-surface: #fee3e3; /* Surface/error */
   --color-info: #4d84c8; /* Text/information 2 */
   --color-info-surface: #bfdbfd; /* Surface/information */
@@ -80,6 +82,31 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-sans);
   line-height: 1.2;
+}
+
+/*
+  Screen horizontal padding — the gutter on both sides of every screen.
+  Shrinks on narrower phones so fixed-ish rows (e.g. the countdown boxes) keep
+  fitting without overflow. One source of truth: use the `px-screen` utility,
+  never a raw px-6 on a screen container.
+    ≥ 390px → 24px   ·   375–389px → 20px   ·   < 375px → 16px
+*/
+:root {
+  --screen-pad: 24px;
+}
+@media (max-width: 389.98px) {
+  :root {
+    --screen-pad: 20px;
+  }
+}
+@media (max-width: 374.98px) {
+  :root {
+    --screen-pad: 16px;
+  }
+}
+
+@utility px-screen {
+  padding-inline: var(--screen-pad);
 }
 
 /* Toast entrance — slides down and fades in from the top. */

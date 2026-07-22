@@ -1,6 +1,7 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import {
   signInCustomer,
   signInAdmin,
@@ -177,4 +178,14 @@ export async function verifyPin(
     return { ok: false, error: "حصلت مشكلة في الدخول، حاول تاني." };
   }
   return { ok: true };
+}
+
+/**
+ * Sign the current user out and send them back to the login screen. Called from
+ * the customer sidebar as a form action (works without client JS).
+ */
+export async function signOut(): Promise<void> {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
 }

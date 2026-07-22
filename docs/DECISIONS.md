@@ -184,6 +184,30 @@ the clean way to check the hash without shipping a bcrypt lib or exposing the
 hash. Session plumbing shared with login lives in `/lib/auth/session.ts`.
 **Date:** 2026-07-22
 
+### T-18 — Customer app owns `/`, admin app lives under `/admin` (role-based routing)
+The route groups `(customer)` and `(admin)` can't both own `/` in Next.js. The
+customer app owns the root (`/`, `/order`, `/tracking`, …); the admin app lives
+under an `/admin` segment (`(admin)/admin/page.tsx` → `/admin`). After login the
+middleware sends each user to their own home based on the `role` in `app_metadata`
+(customer → `/`, admin → `/admin`) and blocks each from the other's area. The PIN
+screen lands the admin on `/admin`.
+**Why:** Resolves the URL collision cleanly, keeps a standard prefix for the admin
+app, and reuses the already-trusted `app_metadata.role` (D-14) for gating.
+**Date:** 2026-07-23
+
+### T-19 — Bottom-nav icons are project-owned SVGs, not Hugeicons
+The free Hugeicons pack is stroke-only, but the bottom nav needs a filled
+(active) vs outline (inactive) state per tab. Those exact shapes were drawn in
+Figma and exported as SVG into a small `NavIcon` component (`components/layout/NavIcon.tsx`)
+that renders one silhouette path + one detail path, filling the silhouette with
+`currentColor` when active. This is a deliberate exception to "icons come from
+`/lib/icons.ts`" — that rule bars importing Hugeicons directly in screens; bespoke
+design SVGs that the library can't provide live in their own typed component.
+**Why:** A filled active state is impossible with stroke-only icons, and faking a
+fill via CSS breaks monochrome knock-outs (e.g. the `+` on the add-square). The
+exported SVGs match the design exactly and still tint via `currentColor`.
+**Date:** 2026-07-23
+
 ### T-15 — No `invoice` and no `debt` table (both derived on read)
 Confirming D-05 at the schema level: the invoice = `orders` + `order_line` (actual weights × snapshotted `unit_price`) + `payment`; the debt = invoice total − sum(payments). Neither is a stored table. The price/cleaning price are **snapshotted onto `orders` at weighing** (`unit_price`, `cleaning_price`) so changing settings later never rewrites an old invoice (FR-5).
 **Why:** Single source of truth; reassigning an order to another customer (FR-16) moves its invoice and debt automatically because both derive from the order. Verified against seed data — all totals/remaining computed correctly on read.

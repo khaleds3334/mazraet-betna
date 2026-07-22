@@ -12,11 +12,11 @@ import {
   Home01Icon,
   ShoppingCart01Icon,
   UserGroup03Icon, // figma: user-group-03
-  Settings01Icon,
-  Notification03Icon,
-  Menu01Icon,
+  InstallingUpdates02Icon, // figma: installing-updates-02 — sidebar settings gear
+  Notification01Icon, // figma: the bell (body + clapper arc) used in the customer header
+  Menu03Icon, // figma: icon/menu-03 — staggered-length lines
   MoreVerticalIcon,
-  Logout01Icon,
+  Door01Icon, // figma: door-01 — sidebar sign-out
   // ── Actions ──
   Add01Icon,
   Delete02Icon,
@@ -29,25 +29,31 @@ import {
   ArrowRight01Icon,
   ArrowLeft01Icon,
   ArrowDown01Icon,
+  Link01Icon, // figma: link-01 — FAQ link in the sidebar
   // ── Feedback (toasts / status) ──
   CheckmarkCircle02Icon,
   AlertCircleIcon,
   Alert01Icon,
   InformationCircleIcon,
+  InformationSquareIcon, // figma: information-square — "حول التطبيق"
   Loading03Icon,
   TickDouble03Icon, // figma: tick-double-03
   // ── Domain: orders, money, cycle ──
   WeightScale01Icon, // figma: weight-scale-01 — the weighing screen
   PackageDelivered01Icon, // figma: package-delivered-01
-  Wallet03Icon, // figma: wallet-03
+  Wallet01Icon, // figma: wallet-01 — sidebar debt card
   WalletAdd01Icon, // figma: wallet-add-01
   MoneyBag02Icon, // figma: money-bag-02
   MoneySendFlow01Icon, // figma: money-send-flow-01
   Invoice03Icon,
+  BorderFullIcon, // figma: border-full — "طلباتي السابقة" in the sidebar
   Calendar01Icon, // figma: calendar-01
   Clock01Icon,
   Call02Icon,
+  TelephoneIcon, // figma: telephone — "تواصل معنا" in the sidebar
+  BubbleChatQuestionIcon, // figma: bubble-chat-question — the "تواصل معنا" pill
   UserIcon,
+  UserCircleIcon, // figma: user-sharing layer, but the glyph is a plain user-in-circle
   TemperatureIcon,
   ChartBarLineIcon,
   PieChartIcon,
@@ -58,11 +64,11 @@ export const icons = {
   home: Home01Icon,
   order: ShoppingCart01Icon,
   customers: UserGroup03Icon,
-  settings: Settings01Icon,
-  notification: Notification03Icon,
-  menu: Menu01Icon,
+  settings: InstallingUpdates02Icon,
+  notification: Notification01Icon,
+  menu: Menu03Icon,
   more: MoreVerticalIcon,
-  logout: Logout01Icon,
+  logout: Door01Icon,
 
   // Actions
   add: Add01Icon,
@@ -76,27 +82,33 @@ export const icons = {
   arrowRight: ArrowRight01Icon,
   arrowLeft: ArrowLeft01Icon,
   arrowDown: ArrowDown01Icon,
+  link: Link01Icon,
 
   // Feedback — toast types map here (success/error/warning/info) + loading
   success: CheckmarkCircle02Icon,
   error: AlertCircleIcon,
   warning: Alert01Icon,
   info: InformationCircleIcon,
+  infoSquare: InformationSquareIcon,
   loading: Loading03Icon,
   checkDouble: TickDouble03Icon,
 
   // Domain
   weight: WeightScale01Icon,
   delivered: PackageDelivered01Icon,
-  wallet: Wallet03Icon,
+  wallet: Wallet01Icon,
   walletAdd: WalletAdd01Icon,
   debt: MoneyBag02Icon,
   payment: MoneySendFlow01Icon,
   invoice: Invoice03Icon,
+  pastOrders: BorderFullIcon,
   calendar: Calendar01Icon,
   clock: Clock01Icon,
   phone: Call02Icon,
+  telephone: TelephoneIcon,
+  contact: BubbleChatQuestionIcon,
   user: UserIcon,
+  userCircle: UserCircleIcon,
   temperature: TemperatureIcon,
   chart: ChartBarLineIcon,
   pieChart: PieChartIcon,

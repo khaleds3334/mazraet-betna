@@ -28,7 +28,7 @@ export function PinForm({ phone }: { phone: string }) {
           setError(result.error);
           return;
         }
-        router.replace("/");
+        router.replace("/admin");
         router.refresh();
       } catch {
         setError("مفيش اتصال دلوقتي، اتأكد من النت وحاول تاني.");

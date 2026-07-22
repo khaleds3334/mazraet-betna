@@ -53,9 +53,26 @@ export async function updateSession(request: NextRequest) {
     return redirectTo(request, response, "/login");
   }
 
-  // Already signed in but sitting on an auth screen → go home.
+  // The role lives in app_metadata (service-role-only, D-14). Customers own the
+  // root; the admin app lives under /admin. Send each to their own home and keep
+  // them out of the other's area.
+  const role = user?.app_metadata?.role;
+  const homePath = role === "admin" ? "/admin" : "/";
+  const inAdminArea = pathname === "/admin" || pathname.startsWith("/admin/");
+
+  // Already signed in but sitting on an auth screen → go to the right home.
   if (user && publicPath) {
-    return redirectTo(request, response, "/");
+    return redirectTo(request, response, homePath);
+  }
+
+  // Wrong app for the role → bounce to the right one.
+  if (user && !publicPath) {
+    if (role === "admin" && !inAdminArea) {
+      return redirectTo(request, response, "/admin");
+    }
+    if (role !== "admin" && inAdminArea) {
+      return redirectTo(request, response, "/");
+    }
   }
 
   return response;
