@@ -108,6 +108,12 @@ The project scaffolds on **Next.js 16** and **Tailwind CSS v4** (React 19), not 
 **Why:** `create-next-app@latest` installs the current stable versions; v4 is the 2026 standard, faster, and cleaner for a portfolio piece. The final look is identical — only where tokens are authored changed.
 **Date:** 2026-07-22
 
+### T-12 — Supabase modern key naming (publishable/secret, not anon/service_role)
+Env vars use `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY`, not the legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY`.
+**Why:** Supabase's official 2026 docs recommend the new `sb_publishable_...` / `sb_secret_...` key format — independently rotatable, unlike the legacy JWT-based keys. Legacy keys still work until end of 2026, but new projects should use the new format from day one.
+**Project:** `mazraat-baytna` (already created on Supabase, region `eu-north-1`).
+**Date:** 2026-07-22
+
 ### T-05b — Almarai self-hosted as TTF from Google Fonts repo
 Almarai weights 300/400/700/800 downloaded as `.ttf` into `/public/fonts/Almarai`, wired via `next/font/local` in the root layout. Satisfies T-05 (no runtime CDN).
 **Date:** 2026-07-22
