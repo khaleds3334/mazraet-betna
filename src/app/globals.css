@@ -78,3 +78,15 @@ body {
   font-family: var(--font-sans);
   line-height: 1.2;
 }
+
+/* Toast entrance — slides down and fades in from the top. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
