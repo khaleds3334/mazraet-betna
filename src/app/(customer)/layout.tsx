@@ -18,13 +18,17 @@ export default async function CustomerLayout({
   const activeOrders = customer ? await countActiveOrders(customer.id) : 0;
 
   return (
+    // Fixed to the viewport (h-dvh + overflow-hidden): the page body never
+    // scrolls — only <main> scrolls internally — matching the admin shell, so the
+    // app behaves like an installed app (stable chrome, no accidental
+    // pull-to-refresh, no browser scroll quirks against the fixed nav).
     <div
-      className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-background"
+      className="mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <Toaster />
       {/* Bottom padding clears the fixed BottomNav (its height + safe area). */}
-      <main className="flex flex-1 flex-col pb-[calc(76px+env(safe-area-inset-bottom))]">
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-[calc(76px+env(safe-area-inset-bottom))]">
         {children}
       </main>
       <BottomNav activeOrders={activeOrders} />

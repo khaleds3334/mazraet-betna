@@ -48,10 +48,7 @@ export function BottomSheet({
           "fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[90dvh] w-full max-w-[430px] flex-col overflow-y-auto rounded-t-xl border-t-2 border-border bg-background transition-transform duration-300",
           open ? "translate-y-0" : "translate-y-full",
         )}
-        style={{
-          boxShadow: "0px 8px 16px 4px rgba(63,98,70,0.25)",
-          paddingBottom: "max(24px, env(safe-area-inset-bottom))",
-        }}
+        style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}
       >
         {children}
       </div>

@@ -12,13 +12,17 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
+    // Fixed to the viewport (h-dvh + overflow-hidden): the page body itself never
+    // scrolls — only <main> scrolls internally. This stops the browser from
+    // treating the document as scrollable and drawing the Android system-nav-bar
+    // scrim, which otherwise seams against our bottom nav on taller screens.
     <div
-      className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-background"
+      className="mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-background"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <Toaster />
       {/* Bottom padding clears the fixed AdminBottomNav (its height + safe area). */}
-      <main className="flex flex-1 flex-col pb-[calc(76px+env(safe-area-inset-bottom))]">
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-[calc(76px+env(safe-area-inset-bottom))]">
         {children}
       </main>
       <AdminBottomNav />

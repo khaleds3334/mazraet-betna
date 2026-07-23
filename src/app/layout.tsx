@@ -25,6 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   themeColor: "#fbfdfc", // App canvas — matches the page background
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
