@@ -14,13 +14,18 @@ export function NumberStepper({
   label,
   suffix,
   step = 1,
+  tone = "default",
 }: {
   value: number;
   onChange: (n: number) => void;
   label: string;
   suffix?: string;
   step?: number;
+  /** "danger" recolours the underline + digits red (A-14 mortality field). */
+  tone?: "default" | "danger";
 }) {
+  const text = tone === "danger" ? "text-error" : "text-foreground";
+  const underline = tone === "danger" ? "border-error" : "border-foreground";
   return (
     // Field first, button second in source: in this RTL app the first child
     // lands on the right (same convention as BottomNav) — matches the design,
@@ -30,7 +35,7 @@ export function NumberStepper({
         label={`زيادة ${label}`}
         onClick={() => onChange(value + step)}
       />
-      <div className="flex min-w-[64px] items-center justify-center gap-1 border-b-[3px] border-foreground py-2">
+      <div className={`flex min-w-[64px] items-center justify-center gap-1 border-b-[3px] py-2 ${underline}`}>
         <input
           inputMode="numeric"
           aria-label={label}
@@ -41,12 +46,10 @@ export function NumberStepper({
             const d = toLatinDigits(e.target.value);
             onChange(d === "" ? 0 : Number(d));
           }}
-          className="grow-0 bg-transparent text-center text-h5 font-bold text-foreground outline-none placeholder:text-disabled-soft"
+          className={`grow-0 bg-transparent text-center text-h5 font-bold outline-none placeholder:text-disabled-soft ${text}`}
         />
         {suffix && (
-          <span className="shrink-0 text-h5 font-bold text-foreground">
-            {suffix}
-          </span>
+          <span className={`shrink-0 text-h5 font-bold ${text}`}>{suffix}</span>
         )}
       </div>
     </div>

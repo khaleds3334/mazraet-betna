@@ -75,6 +75,17 @@ export function pluralizeChicken(count: number): string {
   return `${n} فرخة`; // 0 and 11+
 }
 
+/**
+ * Arabic day pluralization for the flock age (FR-7), same shape as
+ * {@link pluralizeChicken}: `١ يوم` · `٢ يومين` · `٣–١٠ ايام` · `١١+ يوم`.
+ */
+export function pluralizeDay(count: number): string {
+  const n = toArabicDigits(count);
+  if (count === 2) return `${n} يومين`;
+  if (count >= 3 && count <= 10) return `${n} ايام`;
+  return `${n} يوم`; // 0, 1, and 11+
+}
+
 /** A date in Arabic month names + Arabic-Indic digits, e.g. `٢٢ يوليو ٢٠٢٦`. */
 export function formatArabicDate(
   date: Date | string,

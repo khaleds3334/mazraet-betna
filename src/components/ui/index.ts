@@ -8,6 +8,7 @@ export { CloseButton } from "./CloseButton";
 export { ComingSoon } from "./ComingSoon";
 export { Icon } from "./Icon";
 export { InputField } from "./InputField";
+export { Modal } from "./Modal";
 export { NumberStepper } from "./NumberStepper";
 export { PickerField } from "./PickerField";
 export { PinInput } from "./PinInput";

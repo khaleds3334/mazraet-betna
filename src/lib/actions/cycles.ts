@@ -70,3 +70,69 @@ export async function createCycle(
   revalidatePath("/admin/cycles");
   return { ok: true };
 }
+
+export type ActionResult = { ok: false; error: string } | { ok: true };
+
+/**
+ * Record dead birds on the active cycle (FR-23, A-14). The live count and the
+ * mortality rate on the dashboard drop automatically because both derive from
+ * the mortality rows on read. Admin-only via RLS (mortality_all → is_admin).
+ */
+export async function recordMortality(count: number): Promise<ActionResult> {
+  const farm = await getCurrentFarm();
+  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  const n = Math.trunc(count);
+  if (!Number.isFinite(n) || n <= 0) {
+    return { ok: false, error: "اكتب عدد النافق صح." };
+  }
+
+  const supabase = await createClient();
+  const { data: cycle } = await supabase
+    .from("cycle")
+    .select("id")
+    .eq("farm_id", farm.farmId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!cycle) return { ok: false, error: "مفيش دورة شغالة دلوقتي." };
+
+  const { error } = await supabase
+    .from("mortality")
+    .insert({ farm_id: farm.farmId, cycle_id: cycle.id, count: n });
+
+  if (error) return { ok: false, error: "مقدرناش نسجّل النفوق، حاول تاني." };
+
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/**
+ * Open the selling phase on the active cycle (A-11 "بدء مرحلة البيع"). Flips
+ * `sale_open` on, which moves the admin home to the selling dashboard and lets
+ * customers order (FR-11). Direct — no confirmation step; the button is gated
+ * client-side until the flock reaches selling age. Admin only via RLS.
+ */
+export async function startSelling(): Promise<ActionResult> {
+  const farm = await getCurrentFarm();
+  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  const supabase = await createClient();
+  const { data: cycle } = await supabase
+    .from("cycle")
+    .select("id")
+    .eq("farm_id", farm.farmId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!cycle) return { ok: false, error: "مفيش دورة شغالة دلوقتي." };
+
+  const { error } = await supabase
+    .from("cycle")
+    .update({ sale_open: true })
+    .eq("id", cycle.id);
+
+  if (error) return { ok: false, error: "مقدرناش نفتح البيع، حاول تاني." };
+
+  revalidatePath("/admin");
+  revalidatePath("/"); // opening the sale changes the customer home too
+  return { ok: true };
+}

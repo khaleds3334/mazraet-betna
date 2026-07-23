@@ -105,6 +105,12 @@ begin
     (v_farm, v_cycle, 20, 900, current_date - 25),
     (v_farm, v_cycle, 15, 950, current_date - 8);
 
+  -- Feed withdrawn (consumed) so far — one row per opened bag (A-11 "سحب شكارة").
+  insert into feed_withdrawal (farm_id, cycle_id, bags, withdrawn_on) values
+    (v_farm, v_cycle, 1, current_date - 2),
+    (v_farm, v_cycle, 1, current_date - 1),
+    (v_farm, v_cycle, 1, current_date);
+
   insert into mortality (farm_id, cycle_id, count, died_on) values
     (v_farm, v_cycle, 8, current_date - 22),
     (v_farm, v_cycle, 5, current_date - 12);

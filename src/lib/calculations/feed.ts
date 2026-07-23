@@ -15,6 +15,24 @@ export function feedPurchasedKg(feed: FeedRow[]): number {
   return round3(feed.reduce((sum, f) => sum + f.bags * FEED_BAG_KG, 0));
 }
 
+/** Total feed bags bought so far (العلف — الإجمالي المشترى). */
+export function feedBagsPurchased(feed: { bags: number }[]): number {
+  return feed.reduce((sum, f) => sum + f.bags, 0);
+}
+
+/** Total feed bags withdrawn/consumed so far (العلف المسحوب, A-11). */
+export function feedBagsWithdrawn(withdrawals: { bags: number }[]): number {
+  return withdrawals.reduce((sum, w) => sum + w.bags, 0);
+}
+
+/** Bags still in the store: bought − withdrawn, never below zero (العلف المتوفر). */
+export function feedBagsAvailable(
+  feed: { bags: number }[],
+  withdrawals: { bags: number }[],
+): number {
+  return Math.max(0, feedBagsPurchased(feed) - feedBagsWithdrawn(withdrawals));
+}
+
 /** Total spent on feed (enters cycle expenses — FR-19). */
 export function feedCost(feed: FeedRow[]): number {
   return round2(feed.reduce((sum, f) => sum + f.bags * f.bag_price, 0));

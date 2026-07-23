@@ -2,8 +2,20 @@
  * Cycle reads the customer needs: whether the sale is open right now, and the
  * instant the countdown on the home screen points at (FR-25).
  */
+import { differenceInCalendarDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
-import { expectedSaleDate } from "@/lib/calculations/cycle";
+import {
+  chickAgeDays,
+  cycleAccounting,
+  expectedSaleDate,
+} from "@/lib/calculations/cycle";
+import {
+  expectedFeedBags,
+  feedBagsAvailable,
+  feedBagsWithdrawn,
+  feedCost,
+} from "@/lib/calculations/feed";
+import { CYCLE_TOTAL_DAYS, SALE_READY_MIN_DAY } from "@/lib/constants";
 
 export interface SaleState {
   saleOpen: boolean;
@@ -61,6 +73,126 @@ export async function hasActiveCycle(farmId: string): Promise<boolean> {
     .eq("is_active", true)
     .maybeSingle();
   return Boolean(data);
+}
+
+/** Which stage of its life the active cycle is in — drives the admin home. */
+export type CyclePhase = "raising" | "selling" | "ended";
+
+export interface CycleDashboard {
+  cycleId: string;
+  /** The cycle's given name, e.g. "دورة يناير", or null if unnamed. */
+  name: string | null;
+  startDate: string;
+  startTime: string | null;
+  chickCount: number;
+  ageDays: number;
+  phase: CyclePhase;
+  /** True once the birds have reached the selling age (age ≥ raising period). */
+  saleReady: boolean;
+  /** Total birds lost so far (FR-23). */
+  mortalityCount: number;
+  /** Cycle expenses so far: chicks + feed + manual expenses (FR-19). */
+  expensesTotal: number;
+  feed: {
+    /** Expected bags for the whole cycle — starter / grower (بادي / نامي). */
+    requiredBadi: number;
+    requiredNami: number;
+    /** Bags still in the store (bought − withdrawn). */
+    available: number;
+    /** Bags withdrawn/consumed so far. */
+    withdrawn: number;
+    /** Cells in the consumption grid — one per cycle day (~40). */
+    totalDays: number;
+    /** Day offsets (0-based, from the start date) a bag was withdrawn on. */
+    withdrawalDays: number[];
+  };
+}
+
+/**
+ * Everything the running-cycle dashboard (A-11 raising / A-20 selling) shows for
+ * the farm's active cycle, or null when there is none. Aggregates the cycle row
+ * with its mortality, expenses, and feed (purchases + withdrawals) in one place
+ * so the page stays a thin view. All the arithmetic lives in /lib/calculations.
+ */
+export async function getActiveCycleDashboard(
+  farmId: string,
+): Promise<CycleDashboard | null> {
+  const supabase = await createClient();
+
+  const { data: cycle } = await supabase
+    .from("cycle")
+    .select(
+      "id, name, chick_count, chick_price, start_date, start_time, sale_open, ended_at",
+    )
+    .eq("farm_id", farmId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!cycle) return null;
+
+  const [mortalityRes, expenseRes, feedRes, withdrawalRes] = await Promise.all([
+    supabase.from("mortality").select("count").eq("cycle_id", cycle.id),
+    supabase.from("expense").select("amount").eq("cycle_id", cycle.id),
+    supabase.from("feed").select("bags, bag_price").eq("cycle_id", cycle.id),
+    supabase
+      .from("feed_withdrawal")
+      .select("bags, withdrawn_on")
+      .eq("cycle_id", cycle.id),
+  ]);
+
+  const ageDays = chickAgeDays(cycle.start_date);
+  const feed = feedRes.data ?? [];
+  const withdrawals = withdrawalRes.data ?? [];
+
+  const mortalityCount = (mortalityRes.data ?? []).reduce(
+    (sum, m) => sum + m.count,
+    0,
+  );
+  const otherExpenses = (expenseRes.data ?? []).reduce(
+    (sum, e) => sum + Number(e.amount),
+    0,
+  );
+  const { expensesTotal } = cycleAccounting({
+    salesTotal: 0,
+    chickCount: cycle.chick_count,
+    chickPrice: Number(cycle.chick_price),
+    feedCost: feedCost(feed.map((f) => ({ bags: f.bags, bag_price: Number(f.bag_price) }))),
+    otherExpenses,
+  });
+
+  const { badi, nami } = expectedFeedBags(cycle.chick_count);
+
+  // Which cycle days a bag was opened on — one lit square per day on the grid.
+  const withdrawalDays = withdrawals
+    .map((w) => differenceInCalendarDays(new Date(w.withdrawn_on), new Date(cycle.start_date)))
+    .filter((d) => d >= 0);
+  const totalDays = Math.max(CYCLE_TOTAL_DAYS, ...withdrawalDays.map((d) => d + 1));
+
+  const phase: CyclePhase = cycle.ended_at
+    ? "ended"
+    : cycle.sale_open
+      ? "selling"
+      : "raising";
+
+  return {
+    cycleId: cycle.id,
+    name: cycle.name,
+    startDate: cycle.start_date,
+    startTime: cycle.start_time,
+    chickCount: cycle.chick_count,
+    ageDays,
+    phase,
+    saleReady: ageDays >= SALE_READY_MIN_DAY,
+    mortalityCount,
+    expensesTotal,
+    feed: {
+      requiredBadi: badi,
+      requiredNami: nami,
+      available: feedBagsAvailable(feed, withdrawals),
+      withdrawn: feedBagsWithdrawn(withdrawals),
+      totalDays,
+      withdrawalDays,
+    },
+  };
 }
 
 /**

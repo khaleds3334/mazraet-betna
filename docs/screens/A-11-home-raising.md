@@ -1,0 +1,40 @@
+# A-11 — Admin Home (Raising Phase)
+
+**Route:** `/admin` (the raising branch of the admin home)
+**Figma node:** 3228:3543 (`A-11_Home_Raising`)
+**FR:** FR-7 (age) · FR-19 (expenses) · FR-22 (feed) · FR-23 (mortality)
+**States:** Raising (this file). The same page also routes to A-10 (no cycle), A-20 (selling), A-21 (ended).
+
+## What it does
+The dashboard the admin sees while a cycle is still growing (before selling). Shows the cycle's identity and its live numbers — losses, expenses, age — plus the feed section (available / withdrawn / required + a consumption grid) and the record actions. The "start selling" button stays disabled until the flock reaches selling age.
+
+## Data
+**Reads:** `getActiveCycleDashboard(farmId)` — the active cycle joined with its mortality, expenses, feed purchases, and feed withdrawals, all aggregated. Returns `phase` (`raising`/`selling`/`ended`) so the home renders the right dashboard.
+**Writes:** تسجيل نافق opens the record-mortality popup (A-14) and writes via `recordMortality`. تسجيل مصاريف (A-15) and سحب شكارة (A-13) open placeholder sheets until built.
+
+## Calculations
+- Age = `chickAgeDays(start_date)` (whole days).
+- Expenses total = `cycleAccounting` → chicks + feed + manual expenses (FR-19).
+- Required bags = `expectedFeedBags` (بادي / نامي).
+- Available = purchased − withdrawn (`feedBagsAvailable`); withdrawn = `feedBagsWithdrawn`.
+- Grid = a day calendar (`CYCLE_TOTAL_DAYS` ≈ 40 squares, day 1 first); a square lights up on each day a bag was withdrawn (`withdrawn_on − start_date`).
+- Sale-ready = age ≥ raising period (enables "start selling").
+
+## Feed withdrawal model (new)
+`feed` records purchases only; a new `feed_withdrawal` table records consumption — one row per opened 50kg bag (سحب شكارة = one unit), each stamped `withdrawn_on`. Manual log, chosen by Khaled over an age-derived estimate (see D-17). The consumption grid is a **day calendar** of the whole cycle (~40 days): a square lights up on any day a bag was withdrawn. Migration `007`.
+
+## Components
+New (admin): `CycleHeader` · `CycleStatCard` (hero tile) · `FeedGrid` · `RecordMortalityButton` (A-14 popup) · `CycleActionButton` (placeholder sheet — expense/withdraw) · `StartSellingButton` · `RaisingDashboard` (composer) · `cycleActionStyles` (shared pill look).
+New (ui): `Modal` (centered popup). Reused: `StatItem` · `NumberStepper` (new `tone="danger"`) · `BottomSheet` · `Icon`.
+
+## Icons
+`cycle` (eggs) · `mortality` (skull) · `payment` (money-send) · `calendar` · `chick` (bird) · `calendarStart` · `expenseEdit` (note-edit) · `add` · `settings`.
+
+## Connected screens
+← from: login / PIN (admin lands on `/admin`), the bottom-nav "الرئيسية" tab.
+→ to: `/admin/settings` (gear), and later A-13/14/15 (the action sheets), A-20 (start selling).
+
+## Watch out
+- The screen only shows for a cycle in the **raising** phase (sale not open, not ended). A selling-phase cycle shows the A-20 placeholder.
+- Numbers are data-driven, not the design's mock values (المطلوب, المتوفر… all computed).
+- "بدء مرحلة البيع" is blurred + inert before day ~30 (Phase 7 rule).

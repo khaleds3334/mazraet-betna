@@ -58,7 +58,14 @@ import {
   TemperatureIcon,
   ChartBarLineIcon,
   PieChartIcon,
+  // ── Domain: cycle dashboard (A-11) ──
+  SkullIcon, // figma: skull — عدد النافق (mortality)
+  EggsIcon, // figma: eggs — cycle title glyph
+  NoteEditIcon, // figma: note-edit — تسجيل مصاريف
+  Calendar02Icon, // figma: calendar-02 — cycle start-date meta
 } from "@hugeicons/core-free-icons";
+// The chick glyph ("عدد الكتاكيت") isn't in the Hugeicons free pack — it's a
+// bespoke design SVG in components/admin/ChickIcon (T-19 rationale).
 
 export const icons = {
   // Navigation & shell
@@ -114,6 +121,12 @@ export const icons = {
   temperature: TemperatureIcon,
   chart: ChartBarLineIcon,
   pieChart: PieChartIcon,
+
+  // Cycle dashboard (A-11)
+  mortality: SkullIcon,
+  cycle: EggsIcon,
+  expenseEdit: NoteEditIcon,
+  calendarStart: Calendar02Icon,
 } as const;
 
 export type IconName = keyof typeof icons;

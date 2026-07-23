@@ -75,6 +75,11 @@
   /* ── Shadows ──────────────────────────────────────────────────────── */
   --shadow-card: 0 2px 6px 0 #3f624626; /* "drop shadow" */
   --shadow-field: inset 0 2px 2px -1px #4a4a681a; /* "Field/Inset" */
+  /* Raised hero stat tile on the cycle dashboard (A-11): a hard offset drop plus
+     a soft green ambient glow. */
+  --shadow-stat: 2px 2px 0 2px #0000001a, 0 0 16px 4px #3f62461a;
+  /* Centered modal card (A-14 record-mortality popup and similar). */
+  --shadow-modal: 0 8px 16px 4px #3f624640;
 }
 
 body {

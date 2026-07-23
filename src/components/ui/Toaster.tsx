@@ -13,6 +13,10 @@ import {
  * Mounts ONCE per route group layout — (customer) and (admin). Never per screen.
  * Renders the visible toasts at the top of the screen (the bottom is taken by
  * BottomNav and the keyboard), respecting the notch safe area.
+ *
+ * z-index sits ABOVE modals and bottom sheets (z-50): a toast fired from inside
+ * an open popup (e.g. a validation error) must show over its dimmed backdrop, not
+ * behind it.
  */
 export function Toaster() {
   const toasts = useSyncExternalStore(
@@ -26,7 +30,7 @@ export function Toaster() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 top-0 z-50 mx-auto flex max-w-sm flex-col gap-2 px-4"
+      className="pointer-events-none fixed inset-x-0 top-0 z-[60] mx-auto flex max-w-sm flex-col gap-2 px-4"
       style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
       role="region"
       aria-live="polite"

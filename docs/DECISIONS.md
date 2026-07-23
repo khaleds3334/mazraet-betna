@@ -256,6 +256,35 @@ filled state, so design SVGs get their own typed component).
 reached from the header gear, so the admin nav is 4 tabs, not 5.
 **Date:** 2026-07-23
 
+### D-17 — Feed withdrawal is a manual log (`feed_withdrawal` table)
+The cycle dashboard (A-11) tracks feed **consumption** separately from purchase.
+The `feed` table stays purchases-only; a new `feed_withdrawal` table records each
+opened bag — **one row = one 50kg شكارة** (`bags` defaults to 1). From it:
+العلف المتوفر = purchased − withdrawn · العلف المسحوب = withdrawn. The
+"تتبع استهلاك العلف" grid is a **day calendar** of the whole cycle — one square
+per day for ~40 days (`CYCLE_TOTAL_DAYS`, day 1 = first square), and a square
+lights up on any day a bag was withdrawn (`withdrawn_on − start_date`).
+Migration `007`, admin-only RLS (mirrors `feed`/`mortality`).
+**Why:** Khaled chose a manual "سحب شكارة" action over deriving consumption from
+age × a daily rate — the button exists precisely because the admin opens bags by
+hand, so the log is the source of truth. The withdraw form itself (A-13) is a
+later screen; A-11 only reads the log for now.
+**Date:** 2026-07-23
+
+### T-22 — Admin home routes by cycle phase; expenses tile shows unit under the value
+The admin home (`/admin`) is one page with four faces, chosen from
+`getActiveCycleDashboard().phase`: none → A-10 empty · `raising` → A-11 dashboard
+· `selling` → A-20 · `ended` → A-21 (the last two are placeholders until built).
+The three headline tiles (`CycleStatCard`) render a big value with a small unit
+line beneath it — so "مصاريف الدورة" keeps its **جنيه** (rule 5 / Phase-7 fix)
+without a 5-digit amount overflowing the narrow tile. The feed "المطلوب" tile
+shows بادي/نامي rounded to whole bags (`٤ / ١٤`) to match the design's compact
+format; the underlying estimate keeps its halves.
+**Why:** One page per role keeps routing simple and reuses the trusted
+`app_metadata.role` gate. The unit-under-value pattern reconciles the
+non-negotiable "unit always visible" rule with the design's small hero tiles.
+**Date:** 2026-07-23
+
 ### T-15 — No `invoice` and no `debt` table (both derived on read)
 Confirming D-05 at the schema level: the invoice = `orders` + `order_line` (actual weights × snapshotted `unit_price`) + `payment`; the debt = invoice total − sum(payments). Neither is a stored table. The price/cleaning price are **snapshotted onto `orders` at weighing** (`unit_price`, `cleaning_price`) so changing settings later never rewrites an old invoice (FR-5).
 **Why:** Single source of truth; reassigning an order to another customer (FR-16) moves its invoice and debt automatically because both derive from the order. Verified against seed data — all totals/remaining computed correctly on read.

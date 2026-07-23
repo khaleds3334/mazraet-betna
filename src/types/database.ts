@@ -248,6 +248,48 @@ export type Database = {
           },
         ]
       }
+      feed_withdrawal: {
+        Row: {
+          bags: number
+          created_at: string
+          cycle_id: string
+          farm_id: string
+          id: string
+          withdrawn_on: string
+        }
+        Insert: {
+          bags?: number
+          created_at?: string
+          cycle_id: string
+          farm_id: string
+          id?: string
+          withdrawn_on?: string
+        }
+        Update: {
+          bags?: number
+          created_at?: string
+          cycle_id?: string
+          farm_id?: string
+          id?: string
+          withdrawn_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_withdrawal_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "cycle"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_withdrawal_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farm"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mortality: {
         Row: {
           count: number

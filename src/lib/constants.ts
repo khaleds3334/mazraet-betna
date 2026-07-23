@@ -13,6 +13,21 @@ export type ExpenseCategory = Enums<"expense_category">;
 export const RAISING_PERIOD_DAYS = 30;
 
 /**
+ * Age (days) at which the admin may open the sale — the "بدء مرحلة البيع" button
+ * un-blurs and becomes active. A few days before the full raising period so the
+ * admin can open the sale as the birds approach selling weight.
+ */
+export const SALE_READY_MIN_DAY = 27;
+
+/**
+ * Whole length of a cycle in days — raising (~30) plus the selling window (~10).
+ * The feed-consumption grid on the dashboard (A-11) is one square per day across
+ * this span: day 1 is the first square, and a square lights up on the day a feed
+ * bag is withdrawn.
+ */
+export const CYCLE_TOTAL_DAYS = 40;
+
+/**
  * Expected brooding temperature per week of the cycle (FR-6, display only).
  * 34° in week 1, down ~2° each week, floor ~27–28°. Index 0 = week 1.
  */
