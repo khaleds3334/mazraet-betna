@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NavIcon } from "./NavIcon";
 import { formatArabicNumber } from "@/lib/format";
+import { isActivePath } from "@/lib/utils";
 
 /**
  * The customer bottom navigation (Component 62 in the design). Shared across all
@@ -21,13 +22,14 @@ interface NavEntry {
   label: string;
   icon: NavIconName;
   badge?: number;
+  exact?: boolean; // home matches exactly so it doesn't stay lit on sub-pages
 }
 
 export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
   const pathname = usePathname();
 
   const items: NavEntry[] = [
-    { href: "/", label: "الرئيسية", icon: "home" },
+    { href: "/", label: "الرئيسية", icon: "home", exact: true },
     { href: "/order", label: "اطلب الان", icon: "order" },
     { href: "/tracking", label: "تتبع الطلب", icon: "track", badge: activeOrders },
   ];
@@ -38,8 +40,7 @@ export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
       style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}
     >
       {items.map((item) => {
-        const active =
-          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const active = isActivePath(pathname, item.href, item.exact);
         return (
           <Link
             key={item.href}

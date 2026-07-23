@@ -7,13 +7,12 @@ import { getCurrentCustomer } from "@/lib/queries/customers";
 import { getActiveSaleState } from "@/lib/queries/cycles";
 import { getCustomerDebt } from "@/lib/queries/orders";
 import { countUnreadNotifications } from "@/lib/queries/notifications";
+import { actionBase, actionPrimary, actionOutline } from "@/components/ui/buttonStyles";
 import { cn } from "@/lib/utils";
 
-/** Shared action-button look (matches the <Button> component, but as links). */
-const ACTION_BASE =
-  "flex min-h-14 w-full items-center justify-center rounded-[10px] border-2 px-6 py-4 text-h6 font-bold text-foreground shadow-card transition-transform active:scale-[0.99]";
-const PRIMARY_ACTION = cn(ACTION_BASE, "border-primary-hover bg-primary");
-const OUTLINE_ACTION = cn(ACTION_BASE, "border-brand bg-surface-page");
+/** Home CTAs are links, not buttons, so they borrow the shared <Button> look. */
+const PRIMARY_ACTION = cn(actionBase, actionPrimary);
+const OUTLINE_ACTION = cn(actionBase, actionOutline);
 
 /**
  * Customer home (C-10→C-12). Shows the welcome, the live sale status card, and

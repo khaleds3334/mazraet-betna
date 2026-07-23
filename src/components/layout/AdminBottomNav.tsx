@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdminNavIcon, type AdminNavIconName } from "./AdminNavIcon";
+import { isActivePath } from "@/lib/utils";
 
 /**
  * The admin bottom navigation (Navigation Container in the A-10 design). Shared
@@ -18,10 +19,11 @@ interface NavEntry {
   href: string;
   label: string;
   icon: AdminNavIconName;
+  exact?: boolean; // home matches exactly so it doesn't stay lit on sub-pages
 }
 
 const ITEMS: NavEntry[] = [
-  { href: "/admin", label: "الرئيسية", icon: "home" },
+  { href: "/admin", label: "الرئيسية", icon: "home", exact: true },
   { href: "/admin/orders", label: "الطلبات", icon: "orders" },
   { href: "/admin/customers", label: "العملاء", icon: "customers" },
   { href: "/admin/cycles", label: "الدورات", icon: "cycles" },
@@ -36,10 +38,7 @@ export function AdminBottomNav() {
       style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}
     >
       {ITEMS.map((item) => {
-        const active =
-          item.href === "/admin"
-            ? pathname === "/admin"
-            : pathname.startsWith(item.href);
+        const active = isActivePath(pathname, item.href, item.exact);
         return (
           <Link
             key={item.href}

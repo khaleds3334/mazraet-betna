@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui";
 import type { IconName } from "@/lib/icons";
 import { signOut } from "@/lib/actions/auth";
 import { formatCurrency } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn, isActivePath } from "@/lib/utils";
 
 /**
  * The customer sidebar (C-13), opened from the home header's ☰ button. Matches
@@ -21,10 +21,11 @@ interface NavItem {
   label: string;
   icon: IconName;
   href?: string; // absent → not wired yet (placeholder)
+  exact?: boolean; // home matches exactly so it doesn't stay lit on sub-pages
 }
 
 const NAV: NavItem[] = [
-  { label: "الصفحة الرئيسية", icon: "home", href: "/" },
+  { label: "الصفحة الرئيسية", icon: "home", href: "/", exact: true },
   { label: "طلباتي السابقة", icon: "pastOrders", href: "/history" },
   { label: "حول التطبيق", icon: "infoSquare" },
   { label: "تواصل معنا", icon: "telephone" },
@@ -97,9 +98,7 @@ export function Sidebar({
           <nav className="flex flex-col gap-2">
             {NAV.map((item) => {
               const active = item.href
-                ? item.href === "/"
-                  ? pathname === "/"
-                  : pathname.startsWith(item.href)
+                ? isActivePath(pathname, item.href, item.exact)
                 : false;
               const content = (
                 <>

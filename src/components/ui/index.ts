@@ -5,6 +5,7 @@ export { BackButton } from "./BackButton";
 export { BottomSheet } from "./BottomSheet";
 export { Button } from "./Button";
 export { CloseButton } from "./CloseButton";
+export { ComingSoon } from "./ComingSoon";
 export { Icon } from "./Icon";
 export { InputField } from "./InputField";
 export { NumberStepper } from "./NumberStepper";
