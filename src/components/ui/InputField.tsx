@@ -16,6 +16,8 @@ type InputFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   error?: string | null;
   /** Where the error line sits — right by default (RTL), centered on login. */
   errorAlign?: "right" | "center";
+  /** A unit shown after the value inside the box (e.g. "جنية") — left in RTL. */
+  suffix?: string;
 };
 
 export function InputField({
@@ -23,6 +25,7 @@ export function InputField({
   label,
   error,
   errorAlign = "right",
+  suffix,
   className,
   ...props
 }: InputFieldProps) {
@@ -47,12 +50,15 @@ export function InputField({
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           className={cn(
-            "w-full bg-transparent text-right text-lg text-primary-foreground outline-none",
+            "min-w-0 flex-1 bg-transparent text-right text-lg text-primary-foreground outline-none",
             "placeholder:text-sm placeholder:text-disabled",
             className,
           )}
           {...props}
         />
+        {suffix && (
+          <span className="shrink-0 pr-2 text-lg text-foreground">{suffix}</span>
+        )}
       </div>
 
       {error && (

@@ -41,6 +41,7 @@
   --color-muted: #6e7c73; /* Text/body 2 — secondary text */
   --color-disabled: #8b968f; /* Text/disabled 2 */
   --color-disabled-soft: #a8b0ab; /* Text/disabled */
+  --color-ink: #1a443d; /* CSK-500 — chip / strong label text */
 
   /* ── Brand greens ─────────────────────────────────────────────────── */
   --color-primary: #d9f99d; /* Surface/action — primary (lime) button */

@@ -10,22 +10,28 @@ The dashboard the admin sees while a cycle is still growing (before selling). Sh
 
 ## Data
 **Reads:** `getActiveCycleDashboard(farmId)` — the active cycle joined with its mortality, expenses, feed purchases, and feed withdrawals, all aggregated. Returns `phase` (`raising`/`selling`/`ended`) so the home renders the right dashboard.
-**Writes:** تسجيل نافق opens the record-mortality popup (A-14) and writes via `recordMortality`. تسجيل مصاريف (A-15) and سحب شكارة (A-13) open placeholder sheets until built.
+**Writes:** تسجيل نافق opens the record-mortality popup (A-14) → `recordMortality`. تسجيل مصاريف opens the expense sheet (A-15) → `addExpense`/`addFeedPurchase`. سحب شكارة opens the "امتي فتحت الشكارة؟" popup (A-13) → `addFeedWithdrawal`.
 
 ## Calculations
 - Age = `chickAgeDays(start_date)` (whole days).
 - Expenses total = `cycleAccounting` → chicks + feed + manual expenses (FR-19).
 - Required bags = `expectedFeedBags` (بادي / نامي).
 - Available = purchased − withdrawn (`feedBagsAvailable`); withdrawn = `feedBagsWithdrawn`.
-- Grid = a day calendar (`CYCLE_TOTAL_DAYS` ≈ 40 squares, day 1 first); a square lights up on each day a bag was withdrawn (`withdrawn_on − start_date`).
+- Grid = a day calendar (`CYCLE_TOTAL_DAYS` ≈ 40 squares) that grows **upward from the bottom-left**: day 1 is the bottom-left square, days run left→right along the bottom row, newest days stack on top. A square lights up on each day a bag was withdrawn (`withdrawn_on − start_date`).
 - Sale-ready = age ≥ raising period (enables "start selling").
 
 ## Feed withdrawal model (new)
 `feed` records purchases only; a new `feed_withdrawal` table records consumption — one row per opened 50kg bag (سحب شكارة = one unit), each stamped `withdrawn_on`. Manual log, chosen by Khaled over an age-derived estimate (see D-17). The consumption grid is a **day calendar** of the whole cycle (~40 days): a square lights up on any day a bag was withdrawn. Migration `007`.
 
 ## Components
-New (admin): `CycleHeader` · `CycleStatCard` (hero tile) · `FeedGrid` · `RecordMortalityButton` (A-14 popup) · `CycleActionButton` (placeholder sheet — expense/withdraw) · `StartSellingButton` · `RaisingDashboard` (composer) · `cycleActionStyles` (shared pill look).
-New (ui): `Modal` (centered popup). Reused: `StatItem` · `NumberStepper` (new `tone="danger"`) · `BottomSheet` · `Icon`.
+Admin components live under `components/admin/home/` (the dashboard) and
+`components/admin/cycles/` (create/empty). Dashboard: `RaisingDashboard`
+(composer) · `CycleHeader` · `CycleStatCard` (hero tile) · `FeedGrid` · `ChickIcon`
+· `RecordMortalityButton` (A-14 popup) · `RecordExpenseButton` (A-15 sheet) ·
+`RecordFeedWithdrawalButton` (A-13 popup) · `StartSellingButton`.
+New (ui): `Modal` (centered popup) · `ActionButton` (the reusable compact pill —
+danger/outline — for record actions). Reused: `StatItem` · `NumberStepper` (new
+`tone="danger"`) · `Button` · `BottomSheet` · `Icon`.
 
 ## Icons
 `cycle` (eggs) · `mortality` (skull) · `payment` (money-send) · `calendar` · `chick` (bird) · `calendarStart` · `expenseEdit` (note-edit) · `add` · `settings`.

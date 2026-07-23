@@ -65,7 +65,7 @@ import {
   Calendar02Icon, // figma: calendar-02 — cycle start-date meta
 } from "@hugeicons/core-free-icons";
 // The chick glyph ("عدد الكتاكيت") isn't in the Hugeicons free pack — it's a
-// bespoke design SVG in components/admin/ChickIcon (T-19 rationale).
+// bespoke design SVG in components/admin/home/ChickIcon (T-19 rationale).
 
 export const icons = {
   // Navigation & shell

@@ -262,14 +262,25 @@ The `feed` table stays purchases-only; a new `feed_withdrawal` table records eac
 opened bag — **one row = one 50kg شكارة** (`bags` defaults to 1). From it:
 العلف المتوفر = purchased − withdrawn · العلف المسحوب = withdrawn. The
 "تتبع استهلاك العلف" grid is a **day calendar** of the whole cycle — one square
-per day for ~40 days (`CYCLE_TOTAL_DAYS`, day 1 = first square), and a square
-lights up on any day a bag was withdrawn (`withdrawn_on − start_date`).
+per day for ~40 days (`CYCLE_TOTAL_DAYS`) that grows **upward from the bottom-left**
+(day 1 = bottom-left square, days run left→right along the bottom row, newest days
+stack on top — Khaled, 2026-07-23), and a square lights up on any day a bag was
+withdrawn (`withdrawn_on − start_date`).
 Migration `007`, admin-only RLS (mirrors `feed`/`mortality`).
 **Why:** Khaled chose a manual "سحب شكارة" action over deriving consumption from
 age × a daily rate — the button exists precisely because the admin opens bags by
-hand, so the log is the source of truth. The withdraw form itself (A-13) is a
-later screen; A-11 only reads the log for now.
-**Date:** 2026-07-23
+hand, so the log is the source of truth. The withdraw popup (A-13,
+"امتي فتحت الشكارة؟") is now built — `addFeedWithdrawal` writes one `feed_withdrawal`
+row per opened bag; the day drives the grid and migration `008` adds `withdrawn_at`
+(time) so the bag-detail popup shows the exact moment.
+**Bag type (بادي/نامي) — derived by order (Khaled, 2026-07-24):** no per-bag type
+column. Bags opened chronologically are بادي until the cycle's required بادي count
+(`round(expectedFeedBags.badi)`) is used up, then نامي — the admin's FIFO mental
+model ("as long as there's still بادي, whatever I open is بادي"). Assumes بادي bought
+≈ بادي required; revisit by storing the type on `feed` if that diverges.
+**Bag detail popup (A-13, node 3238:10980):** tapping a lit grid square shows the
+bag's number, type, the flock's age that day, and the day + time it was opened.
+**Date:** 2026-07-23 (type/time additions 2026-07-24)
 
 ### T-22 — Admin home routes by cycle phase; expenses tile shows unit under the value
 The admin home (`/admin`) is one page with four faces, chosen from

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { EmptyCyclesIllustration } from "@/components/admin/EmptyCyclesIllustration";
-import { CreateCycleLauncher } from "@/components/admin/CreateCycleLauncher";
+import { EmptyCyclesIllustration } from "@/components/admin/cycles/EmptyCyclesIllustration";
+import { CreateCycleLauncher } from "@/components/admin/cycles/CreateCycleLauncher";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { hasAnyCycle } from "@/lib/queries/cycles";
 

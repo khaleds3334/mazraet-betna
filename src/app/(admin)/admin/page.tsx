@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon } from "@/components/ui";
-import { EmptyCyclesIllustration } from "@/components/admin/EmptyCyclesIllustration";
-import { CreateCycleLauncher } from "@/components/admin/CreateCycleLauncher";
-import { RaisingDashboard } from "@/components/admin/RaisingDashboard";
+import { EmptyCyclesIllustration } from "@/components/admin/cycles/EmptyCyclesIllustration";
+import { CreateCycleLauncher } from "@/components/admin/cycles/CreateCycleLauncher";
+import { RaisingDashboard } from "@/components/admin/home/RaisingDashboard";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { getActiveCycleDashboard } from "@/lib/queries/cycles";
 

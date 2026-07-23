@@ -1,9 +1,11 @@
 // Barrel export for the shared UI design system.
 // Components are added here as they're built alongside the screens.
+export { ActionButton } from "./ActionButton";
 export { AddButton } from "./AddButton";
 export { BackButton } from "./BackButton";
 export { BottomSheet } from "./BottomSheet";
 export { Button } from "./Button";
+export { Chip } from "./Chip";
 export { CloseButton } from "./CloseButton";
 export { ComingSoon } from "./ComingSoon";
 export { Icon } from "./Icon";

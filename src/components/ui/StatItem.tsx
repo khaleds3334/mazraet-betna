@@ -17,7 +17,7 @@ export function StatItem({
 }) {
   return (
     <div className="flex w-full flex-col items-center gap-1 rounded-xl border-2 border-border bg-surface-page px-2 py-3 text-center">
-      <span className="text-sm text-muted">{label}</span>
+      <span className="whitespace-pre-line text-sm text-muted">{label}</span>
       {/* Color comes from valueClassName so it can override the default cleanly —
           cn() is a plain join, so two color classes would otherwise both apply. */}
       <span className={cn("text-h4 font-bold", valueClassName ?? "text-foreground")}>

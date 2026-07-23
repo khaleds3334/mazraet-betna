@@ -255,6 +255,7 @@ export type Database = {
           cycle_id: string
           farm_id: string
           id: string
+          withdrawn_at: string | null
           withdrawn_on: string
         }
         Insert: {
@@ -263,6 +264,7 @@ export type Database = {
           cycle_id: string
           farm_id: string
           id?: string
+          withdrawn_at?: string | null
           withdrawn_on?: string
         }
         Update: {
@@ -271,6 +273,7 @@ export type Database = {
           cycle_id?: string
           farm_id?: string
           id?: string
+          withdrawn_at?: string | null
           withdrawn_on?: string
         }
         Relationships: [

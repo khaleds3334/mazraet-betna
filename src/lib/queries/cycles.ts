@@ -78,6 +78,22 @@ export async function hasActiveCycle(farmId: string): Promise<boolean> {
 /** Which stage of its life the active cycle is in — drives the admin home. */
 export type CyclePhase = "raising" | "selling" | "ended";
 
+/** One opened feed bag, with everything the bag-detail popup (A-13) shows. */
+export interface FeedWithdrawal {
+  /** Day offset (0-based, from the start date) — its cell on the grid. */
+  dayOffset: number;
+  /** 1-based order of this bag across the whole cycle (الشكارة رقم N). */
+  bagNumber: number;
+  /** بادي while inside the cycle's required starter bags, then نامي (Khaled's rule). */
+  phase: "badi" | "nami";
+  /** Chick age (days) on the day the bag was opened. */
+  ageDays: number;
+  /** Day the bag was opened (ISO date). */
+  withdrawnOn: string;
+  /** Time it was opened (`HH:mm`) or null for older rows. */
+  withdrawnAt: string | null;
+}
+
 export interface CycleDashboard {
   cycleId: string;
   /** The cycle's given name, e.g. "دورة يناير", or null if unnamed. */
@@ -103,8 +119,8 @@ export interface CycleDashboard {
     withdrawn: number;
     /** Cells in the consumption grid — one per cycle day (~40). */
     totalDays: number;
-    /** Day offsets (0-based, from the start date) a bag was withdrawn on. */
-    withdrawalDays: number[];
+    /** Full detail per opened bag, chronological — lights the grid + feeds the popup. */
+    withdrawals: FeedWithdrawal[];
   };
 }
 
@@ -135,8 +151,11 @@ export async function getActiveCycleDashboard(
     supabase.from("feed").select("bags, bag_price").eq("cycle_id", cycle.id),
     supabase
       .from("feed_withdrawal")
-      .select("bags, withdrawn_on")
-      .eq("cycle_id", cycle.id),
+      .select("bags, withdrawn_on, withdrawn_at, created_at")
+      .eq("cycle_id", cycle.id)
+      .order("withdrawn_on", { ascending: true })
+      .order("withdrawn_at", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true }),
   ]);
 
   const ageDays = chickAgeDays(cycle.start_date);
@@ -161,10 +180,32 @@ export async function getActiveCycleDashboard(
 
   const { badi, nami } = expectedFeedBags(cycle.chick_count);
 
+  // Classify each opened bag: the first `badiBagCount` bags (chronologically) are
+  // بادي, the rest نامي — Khaled's FIFO rule (بادي is opened until it runs out,
+  // then نامي). `bagNumber` is the bag's 1-based order across the whole cycle.
+  const badiBagCount = Math.round(badi);
+  let bagsSoFar = 0;
+  const withdrawalList = withdrawals.map((w) => {
+    const bagNumber = bagsSoFar + 1;
+    bagsSoFar += w.bags;
+    return {
+      dayOffset: differenceInCalendarDays(
+        new Date(w.withdrawn_on),
+        new Date(cycle.start_date),
+      ),
+      bagNumber,
+      phase: (bagNumber <= badiBagCount ? "badi" : "nami") as "badi" | "nami",
+      ageDays: chickAgeDays(cycle.start_date, new Date(w.withdrawn_on)),
+      withdrawnOn: w.withdrawn_on,
+      withdrawnAt: w.withdrawn_at,
+    };
+  });
+  // A bag opened before day 1 has no grid cell — hide it (the action blocks this,
+  // but seed/legacy rows might not).
+  const withdrawalDetails = withdrawalList.filter((w) => w.dayOffset >= 0);
+
   // Which cycle days a bag was opened on — one lit square per day on the grid.
-  const withdrawalDays = withdrawals
-    .map((w) => differenceInCalendarDays(new Date(w.withdrawn_on), new Date(cycle.start_date)))
-    .filter((d) => d >= 0);
+  const withdrawalDays = withdrawalDetails.map((w) => w.dayOffset);
   const totalDays = Math.max(CYCLE_TOTAL_DAYS, ...withdrawalDays.map((d) => d + 1));
 
   const phase: CyclePhase = cycle.ended_at
@@ -190,7 +231,7 @@ export async function getActiveCycleDashboard(
       available: feedBagsAvailable(feed, withdrawals),
       withdrawn: feedBagsWithdrawn(withdrawals),
       totalDays,
-      withdrawalDays,
+      withdrawals: withdrawalDetails,
     },
   };
 }

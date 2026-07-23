@@ -7,8 +7,9 @@ import {
 } from "@/lib/format";
 import { CycleHeader } from "./CycleHeader";
 import { CycleStatCard } from "./CycleStatCard";
-import { CycleActionButton } from "./CycleActionButton";
 import { RecordMortalityButton } from "./RecordMortalityButton";
+import { RecordExpenseButton } from "./RecordExpenseButton";
+import { RecordFeedWithdrawalButton } from "./RecordFeedWithdrawalButton";
 import { FeedGrid } from "./FeedGrid";
 import { StartSellingButton } from "./StartSellingButton";
 
@@ -57,12 +58,7 @@ export function RaisingDashboard({ data }: { data: CycleDashboard }) {
 
       {/* Record actions — expenses (wide) on the right, mortality on the left. */}
       <div className="flex items-stretch justify-between gap-3">
-        <CycleActionButton
-          label="تسجيل مصاريف"
-          icon="expenseEdit"
-          variant="outline"
-          className="flex-1"
-        />
+        <RecordExpenseButton feed={feed} className="flex-1" />
         <RecordMortalityButton className="shrink-0" />
       </div>
 
@@ -70,26 +66,27 @@ export function RaisingDashboard({ data }: { data: CycleDashboard }) {
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-3 gap-3">
           <StatItem
-            label="العلف المطلوب"
+            label={"العلف\nالمطلوب"}
             value={`${formatArabicNumber(Math.round(feed.requiredBadi))} / ${formatArabicNumber(Math.round(feed.requiredNami))}`}
           />
           <StatItem
-            label="العلف المسحوب"
+            label={"العلف\nالمسحوب"}
             value={formatArabicNumber(feed.withdrawn)}
             valueClassName="text-accent-tan"
           />
-          <StatItem label="العلف المتوفر" value={formatArabicNumber(feed.available)} />
+          <StatItem label={"العلف\nالمتوفر"} value={formatArabicNumber(feed.available)} />
         </div>
 
+        {/* Withdraw-bag button — centered, at roughly the تسجيل مصاريف width. */}
         <div className="flex justify-center">
-          <CycleActionButton label="سحب شكارة" icon="add" variant="outline" className="px-6" />
+          <RecordFeedWithdrawalButton className="w-2/3" />
         </div>
       </div>
 
       {/* Feed consumption tracker — one square per cycle day. */}
       <div className="flex flex-col gap-3">
         <h2 className="text-h6 font-bold text-heading">تتبع استهلاك العلف</h2>
-        <FeedGrid totalDays={feed.totalDays} withdrawalDays={feed.withdrawalDays} />
+        <FeedGrid totalDays={feed.totalDays} withdrawals={feed.withdrawals} />
       </div>
 
       <StartSellingButton enabled={data.saleReady} />
