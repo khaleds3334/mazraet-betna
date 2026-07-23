@@ -84,9 +84,11 @@ export type Database = {
           farm_id: string
           id: string
           is_active: boolean
+          name: string | null
           sale_closes_at: string | null
           sale_open: boolean
           start_date: string
+          start_time: string | null
         }
         Insert: {
           chick_count: number
@@ -96,9 +98,11 @@ export type Database = {
           farm_id: string
           id?: string
           is_active?: boolean
+          name?: string | null
           sale_closes_at?: string | null
           sale_open?: boolean
           start_date: string
+          start_time?: string | null
         }
         Update: {
           chick_count?: number
@@ -108,9 +112,11 @@ export type Database = {
           farm_id?: string
           id?: string
           is_active?: boolean
+          name?: string | null
           sale_closes_at?: string | null
           sale_open?: boolean
           start_date?: string
+          start_time?: string | null
         }
         Relationships: [
           {

@@ -62,3 +62,17 @@ export async function hasActiveCycle(farmId: string): Promise<boolean> {
     .maybeSingle();
   return Boolean(data);
 }
+
+/**
+ * Whether the farm has ever registered a cycle (active or ended). The cycles
+ * screen shows the empty state (A-40) only when there's none at all — once any
+ * cycle exists it shows the list (A-42).
+ */
+export async function hasAnyCycle(farmId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("cycle")
+    .select("id", { count: "exact", head: true })
+    .eq("farm_id", farmId);
+  return (count ?? 0) > 0;
+}

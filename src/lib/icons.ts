@@ -48,6 +48,7 @@ import {
   Invoice03Icon,
   BorderFullIcon, // figma: border-full — "طلباتي السابقة" in the sidebar
   Calendar01Icon, // figma: calendar-01
+  DateTimeIcon, // figma: date-time — calendar with a clock (cycle start day)
   Clock01Icon,
   Call02Icon,
   TelephoneIcon, // figma: telephone — "تواصل معنا" in the sidebar
@@ -103,6 +104,7 @@ export const icons = {
   invoice: Invoice03Icon,
   pastOrders: BorderFullIcon,
   calendar: Calendar01Icon,
+  dateTime: DateTimeIcon,
   clock: Clock01Icon,
   phone: Call02Icon,
   telephone: TelephoneIcon,

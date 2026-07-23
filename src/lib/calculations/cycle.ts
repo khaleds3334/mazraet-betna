@@ -3,7 +3,12 @@
  * the display temperature, and the final profit accounting (FR-4, 7, 19, 23).
  */
 import { addDays, differenceInCalendarDays } from "date-fns";
-import { RAISING_PERIOD_DAYS, WEEKLY_TEMPERATURE_C } from "@/lib/constants";
+import {
+  ASSUMED_FEED_BAG_PRICE,
+  RAISING_PERIOD_DAYS,
+  WEEKLY_TEMPERATURE_C,
+} from "@/lib/constants";
+import { expectedFeedBags } from "@/lib/calculations/feed";
 
 /** Age of the chicks in whole days since the cycle started (FR-7). */
 export function chickAgeDays(startDate: Date | string, today: Date = new Date()): number {
@@ -54,6 +59,23 @@ export function mortalityRate(chickCount: number, mortality: { count: number }[]
 }
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+/**
+ * Estimated total expenses of a cycle at creation time, shown on the create-cycle
+ * sheet (A-41, "المصاريف المتوقعة"). ⚠️ Provisional: a forecast, not the real
+ * total — chick cost (count × price) plus an estimate of feed cost (expected bags
+ * × the assumed bag price, since no feed is bought yet). Real expenses come from
+ * the feed/expense tables during the cycle.
+ */
+export function estimatedCycleExpenses(
+  chickCount: number,
+  chickPrice: number,
+): number {
+  const chickCost = chickCount * chickPrice;
+  const { badi, nami } = expectedFeedBags(chickCount);
+  const feedCostEstimate = (badi + nami) * ASSUMED_FEED_BAG_PRICE;
+  return round2(chickCost + feedCostEstimate);
+}
 
 export interface CycleAccounting {
   salesTotal: number;

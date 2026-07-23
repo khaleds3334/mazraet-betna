@@ -21,9 +21,17 @@ export const WEEKLY_TEMPERATURE_C = [34, 32, 30, 28, 27] as const;
 /** Feed model (FR-22). A bag is 50 kg; per-chick lifetime consumption ≈ 3.5 kg. */
 export const FEED_BAG_KG = 50;
 export const FEED_PER_CHICK_KG = {
-  grower: 0.75, // نامي
-  finisher: 2.75, // ناهي
+  grower: 0.75, // بادي (starter phase)
+  finisher: 2.75, // نامي (grower phase)
 } as const;
+
+/**
+ * ⚠️ PROVISIONAL — review with Khaled. Assumed price of one 50kg feed bag, used
+ * only to *estimate* a cycle's expected expenses on the create-cycle sheet (A-41)
+ * before any real feed is purchased. Real feed cost comes from the `feed` table
+ * once bags are actually bought (FR-22). Tune this to a realistic 2026 price.
+ */
+export const ASSUMED_FEED_BAG_PRICE = 1200;
 
 /**
  * Order status labels differ by viewer (D-03): a `pending` order reads

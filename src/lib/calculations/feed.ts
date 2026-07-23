@@ -27,6 +27,26 @@ export function expectedFeedKg(chickCount: number): number {
 }
 
 /**
+ * Expected feed bags per phase for a flock, shown on the create-cycle sheet
+ * (A-41, "العلف المطلوب"). Two values — بادي (starter) and نامي (grower) — each
+ * rounded to the nearest **half** 50kg bag (e.g. `3.5`) rather than a whole bag,
+ * so the estimate stays reasonably precise instead of always rounding up.
+ * ⚠️ Provisional: the per-chick amounts and phase labels are pending review with
+ * Khaled.
+ */
+export function expectedFeedBags(chickCount: number): {
+  badi: number;
+  nami: number;
+} {
+  const bags = (kgPerChick: number) =>
+    Math.max(0, Math.round((chickCount * kgPerChick) / FEED_BAG_KG / 0.5) * 0.5);
+  return {
+    badi: bags(FEED_PER_CHICK_KG.grower),
+    nami: bags(FEED_PER_CHICK_KG.finisher),
+  };
+}
+
+/**
  * Approximate feed still available vs. what the cycle is expected to need
  * (FR-22: "فاضل قد إيه علف"). Positive = surplus, negative = short.
  */

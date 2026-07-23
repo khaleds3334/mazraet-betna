@@ -17,6 +17,17 @@ export function toArabicDigits(input: string | number): string {
 }
 
 /**
+ * The inverse of {@link toArabicDigits}, then keep digits only — turns typed
+ * input (Arabic-Indic ٠١٢ or Latin 012) into a bare Latin digit string ready for
+ * `Number(...)`. Use in any numeric field the user types into (e.g. NumberStepper).
+ */
+export function toLatinDigits(input: string): string {
+  return input
+    .replace(/[٠-٩]/g, (d) => String(ARABIC_DIGITS.indexOf(d as (typeof ARABIC_DIGITS)[number])))
+    .replace(/\D/g, "");
+}
+
+/**
  * A plain number in Arabic-Indic digits. No unit, no grouping (the Figma design
  * shows `١٣٠٤`, not `١٬٣٠٤`). Pass `decimals` to fix the fraction length.
  */
@@ -75,12 +86,25 @@ export function formatArabicDate(
 
 /**
  * A `HH:mm` clock value (how pickup slots are stored) shown in Arabic digits
- * with ص/م, e.g. `١٦:٠٠` → `٤:٠٠ م`.
+ * with the period marker, e.g. `١٦:٠٠` → `٤:٠٠ م`. Pass `period: "long"` for the
+ * spelled-out form (`صباحا` / `مساءا`) where the short letter reads too tersely
+ * (e.g. after picking a specific time, as opposed to a pickup-slot chip).
  */
-export function formatArabicTime(time: string): string {
+export function formatArabicTime(
+  time: string,
+  options?: { period?: "short" | "long" },
+): string {
   const [hStr, mStr = "00"] = time.split(":");
   const hour = Number(hStr);
-  const period = hour < 12 ? "ص" : "م";
+  const isAm = hour < 12;
+  const period =
+    options?.period === "long"
+      ? isAm
+        ? "صباحا"
+        : "مساءا"
+      : isAm
+        ? "ص"
+        : "م";
   const hour12 = hour % 12 === 0 ? 12 : hour % 12;
   return `${toArabicDigits(hour12)}:${toArabicDigits(mStr)} ${period}`;
 }

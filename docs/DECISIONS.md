@@ -219,6 +219,29 @@ later. `getCurrentFarm` reads it and the greeting falls back to a name-less
 different thing (`مزرعة بيتنا`). Nullable keeps it optional for farms with no name set.
 **Date:** 2026-07-23
 
+### D-16 — Create-cycle (A-41) captures more than FR-4, per the design
+FR-4 lists chick count, start date, chick price. The design adds a **cycle name**
+and a **start time**, plus two computed cards (feed needed, expected expenses).
+Confirmed with Khaled: store the name (nullable `cycle.name`) and the time
+(nullable `cycle.start_time`) — migration 006. The two stat cards are computed
+**provisionally** (`expectedFeedBags`, `estimatedCycleExpenses` with a tunable
+`ASSUMED_FEED_BAG_PRICE`) and flagged for review — the real feed cost only exists
+once bags are bought (FR-22). Age is still counted in whole days (start_date); the
+time is captured for the record only.
+**Why:** The design is the source of truth for UI; the extra fields are cheap and
+useful, and Khaled wanted the screen complete now with numbers he can tune later.
+**Date:** 2026-07-23
+
+### T-21 — `BottomSheet` reuses the sidebar's scrim
+Sheets that slide up (starting with A-41) use a shared `components/ui/BottomSheet`
+with the same dimmed + blurred backdrop as the customer sidebar (`bg-black/20` +
+`backdrop-blur`), the page left mounted behind it. Date/time inputs use the native
+OS pickers under a styled box (the Figma look with native UX); a bespoke Arabic
+date/time picker is deferred as a shared follow-up (also needed by the order flow).
+**Why:** One backdrop treatment across overlays; native pickers ship the screen now
+without building two custom pickers this session.
+**Date:** 2026-07-23
+
 ### T-20 — Admin bottom nav is its own component, active-by-color
 The admin nav (`AdminBottomNav` + `AdminNavIcon`) is separate from the customer
 `BottomNav`/`NavIcon`. Its active tab is marked by COLOR only (dark green

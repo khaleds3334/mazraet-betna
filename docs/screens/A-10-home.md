@@ -38,7 +38,7 @@ No write actions on this screen, so no toast/inline error yet.
 
 ## Connected screens
 ← from: `/pin` (admin login lands here)
-→ to: "ابدأ سجل اول دورة" → `/admin/cycles` (create cycle, A-41 — stub) ·
+→ to: "ابدأ سجل اول دورة" opens the create-cycle sheet (A-41) **in place** ·
    gear → `/admin/settings` (A-70 — stub) · nav → orders / customers / cycles (stubs)
 
 ## Watch out

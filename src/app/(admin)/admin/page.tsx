@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon } from "@/components/ui";
 import { EmptyCyclesIllustration } from "@/components/admin/EmptyCyclesIllustration";
+import { CreateCycleLauncher } from "@/components/admin/CreateCycleLauncher";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { hasActiveCycle } from "@/lib/queries/cycles";
 
@@ -51,12 +52,9 @@ export default async function AdminHomePage() {
             </p>
           </div>
 
-          <Link
-            href="/admin/cycles"
-            className="mb-4 flex min-h-14 w-full items-center justify-center rounded-[10px] border-2 border-primary-hover bg-primary px-6 py-4 text-h6 font-bold text-foreground shadow-card transition-transform active:scale-[0.99]"
-          >
-            ابدأ سجل اول دورة
-          </Link>
+          <div className="mb-4">
+            <CreateCycleLauncher label="ابدأ سجل اول دورة" />
+          </div>
         </>
       )}
     </div>
