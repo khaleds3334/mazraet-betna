@@ -1,8 +1,10 @@
 import { Toaster } from "@/components/ui";
+import { AdminBottomNav } from "@/components/layout/AdminBottomNav";
 
 /**
- * Shell for the admin app (lives under /admin). Minimal for now — the full admin
- * dashboard is Phase 5. Mounts the toast host so admin screens have feedback.
+ * Shell for the admin app (lives under /admin): a centered mobile column with
+ * the shared bottom nav and the toast host. Route protection (only the admin
+ * reaches here) is handled in the middleware; this layout supplies the frame.
  */
 export default function AdminLayout({
   children,
@@ -15,7 +17,11 @@ export default function AdminLayout({
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <Toaster />
-      {children}
+      {/* Bottom padding clears the fixed AdminBottomNav (its height + safe area). */}
+      <main className="flex flex-1 flex-col pb-[calc(76px+env(safe-area-inset-bottom))]">
+        {children}
+      </main>
+      <AdminBottomNav />
     </div>
   );
 }

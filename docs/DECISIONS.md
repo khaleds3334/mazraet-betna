@@ -208,6 +208,31 @@ fill via CSS breaks monochrome knock-outs (e.g. the `+` on the add-square). The
 exported SVGs match the design exactly and still tint via `currentColor`.
 **Date:** 2026-07-23
 
+### D-15 — `farm.owner_name` for the admin greeting
+The admin home (A-10) greets the owner by name ("أهلا بيك صبري علي 👋"). The farm
+row held the farm name and the owner's phone but not the owner's personal name,
+so a nullable `owner_name` column was added (migration 005, applied to the live
+DB 2026-07-23), seeded `صبري علي` for the demo. It's edited from Settings (A-70)
+later. `getCurrentFarm` reads it and the greeting falls back to a name-less
+"أهلا بيك 👋" when it's null.
+**Why:** The personal greeting is core to the design's warmth; the farm name is a
+different thing (`مزرعة بيتنا`). Nullable keeps it optional for farms with no name set.
+**Date:** 2026-07-23
+
+### T-20 — Admin bottom nav is its own component, active-by-color
+The admin nav (`AdminBottomNav` + `AdminNavIcon`) is separate from the customer
+`BottomNav`/`NavIcon`. Its active tab is marked by COLOR only (dark green
+`primary-foreground` vs muted `brand-muted`) — the design's admin icons are plain
+strokes, not the filled-silhouette active state the customer nav uses. Keeping two
+small, single-purpose components is clearer than one branchy file with two
+active-state behaviours. The four bespoke nav SVGs live in `AdminNavIcon` (same
+rationale as T-19: the free Hugeicons pack can't provide these exact glyphs / a
+filled state, so design SVGs get their own typed component).
+**Why:** The two navs differ in both icon set and active-state styling; a shared
+`variant` prop would mix two behaviours in one file for no real reuse. Settings is
+reached from the header gear, so the admin nav is 4 tabs, not 5.
+**Date:** 2026-07-23
+
 ### T-15 — No `invoice` and no `debt` table (both derived on read)
 Confirming D-05 at the schema level: the invoice = `orders` + `order_line` (actual weights × snapshotted `unit_price`) + `payment`; the debt = invoice total − sum(payments). Neither is a stored table. The price/cleaning price are **snapshotted onto `orders` at weighing** (`unit_price`, `cleaning_price`) so changing settings later never rewrites an old invoice (FR-5).
 **Why:** Single source of truth; reassigning an order to another customer (FR-16) moves its invoice and debt automatically because both derive from the order. Verified against seed data — all totals/remaining computed correctly on read.

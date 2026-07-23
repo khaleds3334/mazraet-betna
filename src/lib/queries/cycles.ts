@@ -46,3 +46,19 @@ export async function getActiveSaleState(
   );
   return { saleOpen: false, targetDate: target.toISOString() };
 }
+
+/**
+ * Whether the farm has an active cycle right now. The admin home shows the
+ * first-time empty state (A-10) when there is none, and the running-cycle
+ * dashboard once one exists (only one cycle can be active per farm — FR-4).
+ */
+export async function hasActiveCycle(farmId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("cycle")
+    .select("id")
+    .eq("farm_id", farmId)
+    .eq("is_active", true)
+    .maybeSingle();
+  return Boolean(data);
+}

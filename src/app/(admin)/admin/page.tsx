@@ -1,12 +1,64 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Icon } from "@/components/ui";
+import { EmptyCyclesIllustration } from "@/components/admin/EmptyCyclesIllustration";
+import { getCurrentFarm } from "@/lib/queries/admin";
+import { hasActiveCycle } from "@/lib/queries/cycles";
+
 /**
- * Admin home placeholder. The real dashboard (A-10→A-22) is built in Phase 5;
- * this exists so the admin has a valid landing page after entering the PIN.
+ * Admin home. With no active cycle it shows the first-time empty state
+ * (A-10_Home_NoCycle_FirstTime): a welcome, the empty-archive illustration, and
+ * the call to start the first cycle. Once a cycle is running it hands off to the
+ * running-cycle dashboard (A-11+), which is a later screen — a placeholder for
+ * now so the routing is real.
  */
-export default function AdminHomePage() {
+export default async function AdminHomePage() {
+  const farm = await getCurrentFarm();
+  if (!farm) redirect("/login");
+
+  const cycleRunning = await hasActiveCycle(farm.farmId);
+  const greeting = farm.ownerName ? `أهلا بيك ${farm.ownerName} 👋` : "أهلا بيك 👋";
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-      <h1 className="text-h4 font-extrabold text-heading">لوحة صاحب المزرعة</h1>
-      <p className="text-muted">الصفحة تحت الإنشاء…</p>
-    </main>
+    <div className="flex flex-1 flex-col px-screen pt-4">
+      {/* Settings gear — top-left in the design (the inline end in RTL). */}
+      <header className="flex justify-end">
+        <Link
+          href="/admin/settings"
+          aria-label="الإعدادات"
+          className="flex size-11 items-center justify-center text-foreground"
+        >
+          <Icon name="settings" size={34} />
+        </Link>
+      </header>
+
+      <h1 className="mt-6 text-center text-h6 font-bold text-primary-foreground">
+        {greeting}
+      </h1>
+
+      {cycleRunning ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 pb-10 text-center">
+          <p className="text-h5 font-bold text-heading">فيه دورة شغالة دلوقتي</p>
+          <p className="text-muted">لوحة الدورة قيد الإنشاء…</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-1 flex-col items-center justify-center gap-10 pb-2 ">
+            <EmptyCyclesIllustration size={188} />
+            <p className="max-w-[345px] text-h6 font-normal leading-[1.45] text-foreground">
+              من هنا ها تقدر تدير دوراتك كلها<br /> بسهولة و امان من اول تسجيل الكتاكيت
+              لحد البيع و الحسابات
+            </p>
+          </div>
+
+          <Link
+            href="/admin/cycles"
+            className="mb-4 flex min-h-14 w-full items-center justify-center rounded-[10px] border-2 border-primary-hover bg-primary px-6 py-4 text-h6 font-bold text-foreground shadow-card transition-transform active:scale-[0.99]"
+          >
+            ابدأ سجل اول دورة
+          </Link>
+        </>
+      )}
+    </div>
   );
 }

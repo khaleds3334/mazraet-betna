@@ -11,8 +11,8 @@ declare
   o  uuid;
 begin
   -- Farm + admin credentials + sale settings
-  insert into farm (id, name, owner_phone)
-    values (v_farm, 'مزرعة بيتنا', '01000000000');
+  insert into farm (id, name, owner_name, owner_phone)
+    values (v_farm, 'مزرعة بيتنا', 'صبري علي', '01000000000');
 
   insert into admin_credentials (farm_id, pin_hash)
     values (v_farm, crypt('123456', gen_salt('bf')));
