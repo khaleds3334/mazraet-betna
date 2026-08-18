@@ -62,29 +62,28 @@ export default async function AdminOrdersPage({
       : [];
 
   return (
-    // This screen scrolls its list, not itself — so it is pinned to exactly the
-    // height <main> gives it and clips anything past that (`h-full` +
-    // `overflow-hidden`). `flex-1` alone was leaving the column a little taller
-    // than <main>, which made <main> the scroller: the list would reach its end
-    // with the last card still tucked under the tab bar, and one more swipe
-    // dragged the toolbar and the search box up with it. A definite height can't
-    // drift that way, whatever the rows inside it turn out to measure.
-    <div className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-hidden pt-4">
-      <OrdersToolbar
-        customers={customers}
-        weights={settings.availableWeights}
-        defaultCleaning={settings.defaultCleaning}
-      />
-      <div className="px-screen">
-        {/* Static until the list it would filter is wired — see SearchField. */}
-        <SearchField placeholder="ابحث باسم العميل او رقم الطلب" />
+    // One scroll container, not two. The screen used to put a scrollable list
+    // inside the already-scrollable <main>, and nesting two of them is what made
+    // the header drift: a swipe can move either box, and whichever the browser
+    // picks, the other still has slack left to give. So the cards simply flow in
+    // <main>, and the header is held in place with `sticky` — the list moves
+    // underneath it because there is nothing else that *can* move.
+    <div className="flex flex-col">
+      <div className="sticky top-0 z-10 flex flex-col gap-4 bg-background pt-4 pb-3">
+        <OrdersToolbar
+          customers={customers}
+          weights={settings.availableWeights}
+          defaultCleaning={settings.defaultCleaning}
+        />
+        <div className="px-screen">
+          {/* Static until the list it would filter is wired — see SearchField. */}
+          <SearchField placeholder="ابحث باسم العميل او رقم الطلب" />
+        </div>
+        <OrderTabs active={activeTab} counts={counts} />
       </div>
-      <OrderTabs active={activeTab} counts={counts} />
 
-      {/* Only this region scrolls. Its padding is here, not on the list, so the
-          scrollbar rides the screen edge. `overscroll-contain` keeps a swipe that
-          runs past the last card from being handed to anything behind it. */}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-screen pb-4">
+      {/* The last card clears the tab bar through <main>'s bottom padding. */}
+      <div className="px-screen pb-4">
         {orders.length === 0 ? (
           <OrdersEmptyState tab={activeTab} />
         ) : (
