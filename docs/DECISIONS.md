@@ -500,3 +500,109 @@ the cancelled card shows it back, because "why didn't this customer get his
 order" is exactly what gets forgotten. Cancelling is a critical action, so a
 failure is an inline error inside the dialog, never a toast (T-09).
 **Date:** 2026-08-18
+
+### T-28 — The list-screen chrome is shared, not redrawn per screen
+The green add pill (`ui/AddButton`) and the search box (`ui/SearchField`) are one
+component each, used by the orders screen (A-50), the customers screen (A-30) and
+the add-order sheet's customer picker (A-56) — three places that had drawn the
+same search box by hand. `SearchField` renders a real input when given `onChange`
+and static placeholder text when not; `AddButton` renders a real button when
+given `onClick` and a plain pill when not.
+**Why:** The design draws one add button and one search box for the whole admin
+app, so three copies could only drift apart. The two modes exist because a screen
+often lands before the thing behind its control does — a static box shows the
+right shape without opening a keyboard that leads nowhere, and the same file
+becomes live by passing one prop.
+**Date:** 2026-08-18
+
+### D-26 — "الآجل" is a filter in the URL, the customer count is only a readout
+On the customers screen the «الآجل» pill toggles `?debt=1` and narrows the list
+to customers who still owe money (A-31); the «٥ عملاء» pill reports how many rows
+are showing and is not tappable. Total debt in the header always covers the whole
+farm, filtered or not.
+**Why:** Same reasoning as the orders tabs (T-26) — the choice survives a refresh
+and the back button, and the screen stays a server component. Keeping the header
+total unfiltered means the admin never loses sight of what the farm is owed while
+looking at a subset.
+**Date:** 2026-08-18
+
+### D-27 — A customer row expands in place; its details are the way into his history
+Tapping the top half of a customer row (A-30) opens a summary under it — orders in
+the cycle, orders ever, invoiced, paid, and a paid-so-far bar — and tapping the top
+half again closes it. Tapping the *opened* details will lead to that customer's
+order history (a screen of its own), and the pen on the name line will open the
+edit dialog (A-35). Neither exists yet, so both render non-tappable.
+**Why:** The list stays scannable while any one customer can be inspected without
+leaving the screen — which matters because the admin reads this list while on the
+phone with the customer. Splitting "close" (top half) from "go deeper" (details)
+keeps one tap from ever doing two things.
+**Implementation note:** the toggle is an overlay button stretched across the top
+half, with the content layers passing taps through. A wrapper button is impossible
+— the WhatsApp and call shortcuts sit inside that area and are links.
+**Date:** 2026-08-18
+
+### T-29 — The paid-so-far bar fills from the physical left, not the logical start
+`left-0` is deliberate on the row's progress bar: the design puts the «مدفوع»
+label at the left end and grows the fill under it, with «إجمالي» at the right end.
+**Why:** Everything else in the app is direction-agnostic, so a future cleanup pass
+would naturally rewrite `left-0` as `start-0` and silently flip the bar.
+**Colours:** green (`brand`) is the paid share, tan (`accent-tan`) the amount still
+owed. The Figma export has them the other way round (Line 11 `#3F6246` track,
+Line 12 `#CA955D` fill); Khaled settled it as green-is-paid so tan keeps meaning
+"debt" everywhere in the app, including on the row above the bar.
+**Date:** 2026-08-18
+
+### D-28 — A settled customer reads green, not tan
+The wallet and amount are tan while anything is owed and plain green at zero — on
+each customer row and on the screen's total. Rendered once in `DebtAmount`.
+**Why:** The admin scans this list for who still owes him; colour answers that
+before he reads a single digit.
+**Date:** 2026-08-18
+
+### T-30 — `ContactLinks` puts the call button before WhatsApp
+The pair reads number → call → WhatsApp right-to-left. Corrected from the original
+order while building A-30: both designs (order card 3295:9577 and customer row
+3281:5648) place the WhatsApp mark to the *left* of the call button, so the earlier
+DOM order rendered them mirrored on the order card too.
+**Why:** One component, one order, matching the design on both screens.
+**Date:** 2026-08-18
+
+### D-29 — Registering and editing a customer are one sheet, not two
+`CustomerSheet` serves both A-34 («تسجيل عميل جديد») and A-35 («تعديل بيانات
+العميل»). Passing a `customer` puts it in edit mode; that changes the title, the
+button label and the starting values, and nothing else.
+**Why:** The two Figma frames are pixel-identical apart from those three things.
+Two files would drift the moment either frame changes, and every fix would have to
+be made twice.
+**Date:** 2026-08-18
+
+### T-31 — A modal sets `pointer-events` explicitly, never inherits it
+`BottomSheet` sets `pointer-events-auto` on its scrim and panel when open (and
+`-none` when closed) instead of leaving them to inherit.
+**Why:** `pointer-events` is an inherited CSS property, and a sheet is mounted next
+to whatever opens it. The pen on a customer row lives inside a `pointer-events-none`
+pass-through layer (D-27), so its sheet rendered perfectly and ignored every tap
+until the property was pinned down. Any future sheet opened from a similar layer is
+now safe by default.
+**Date:** 2026-08-18
+
+### T-32 — Customer search filters in the browser; the «الآجل» filter lives in the URL
+The search box on A-30 is client state over the list the page already loaded. The
+debt filter stays a URL param (D-26).
+**Why:** Two different lifetimes. A view worth keeping across a refresh, a share, or
+the back button belongs in the URL; a half-typed name does not — and pushing a
+param per keystroke would mean a server round trip per letter, on a list of tens of
+rows that is already in memory. Same reasoning as the add-order sheet's picker, and
+both now share one matcher (`lib/search.ts`).
+**Arabic matching:** names are normalised as *typed*, not as spelled. Alef, ya,
+ta-marbuta and hamza variants collapse to one form and tashkeel/tatweel are dropped;
+the definite article «ال» is ignored at the start of every word on both sides
+(«الشيخ احمد» finds «شيخ احمد»); matching is word-by-word so order doesn't
+matter; and a second pass with spaces removed catches «عبدالله» ↔ «عبد الله».
+A query containing digits is treated as a phone fragment, Arabic-Indic digits
+included.
+**Why so forgiving:** a near-miss that returns nothing doesn't read as "typo" to this
+admin — it reads as "this customer isn't registered", and he adds them a second time.
+Duplicate customers split one person's debt across two rows, which is the expensive
+failure. False positives cost him one glance.
+**Date:** 2026-08-18

@@ -1,15 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Icon } from "@/components/ui";
+import { Icon, SearchField } from "@/components/ui";
 import type { CustomerOption } from "@/lib/queries/customers";
-import { cn } from "@/lib/utils";
-
-/** Matches on name or phone, so the admin can search however he remembers them. */
-function matches(customer: CustomerOption, query: string): boolean {
-  const q = query.trim();
-  return customer.name.includes(q) || customer.phone.includes(q);
-}
+import { matchesNameOrPhone } from "@/lib/search";
 
 /**
  * Picks the customer an order belongs to (A-56). The search box is the one drawn
@@ -33,7 +27,10 @@ export function CustomerPicker({
   const [query, setQuery] = useState("");
 
   const results = useMemo(
-    () => (query.trim() ? customers.filter((c) => matches(c, query)) : []),
+    () =>
+      query.trim()
+        ? customers.filter((customer) => matchesNameOrPhone(customer, query))
+        : [],
     [customers, query],
   );
 
@@ -63,22 +60,13 @@ export function CustomerPicker({
 
   return (
     <div className="relative">
-      <div
-        className={cn(
-          "flex min-h-13 items-center gap-4 rounded-lg border border-border bg-surface px-4",
-          disabled && "opacity-60",
-        )}
-      >
-        <Icon name="search" size={32} className="shrink-0 text-foreground" />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          disabled={disabled}
-          aria-label="ابحث عن العميل"
-          placeholder="ابحث باسم العميل او رقم الهاتف"
-          className="min-w-0 flex-1 bg-transparent text-right text-sm text-primary-foreground outline-none placeholder:text-disabled"
-        />
-      </div>
+      <SearchField
+        placeholder="ابحث باسم العميل او رقم الهاتف"
+        label="ابحث عن العميل"
+        value={query}
+        onChange={setQuery}
+        disabled={disabled}
+      />
 
       {query.trim() && (
         <ul className="absolute inset-x-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-lg border border-border bg-white shadow-card">

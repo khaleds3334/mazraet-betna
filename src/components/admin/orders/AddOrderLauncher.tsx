@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "@/components/ui";
+import { AddButton } from "@/components/ui";
 import type { CustomerOption } from "@/lib/queries/customers";
 import { AddOrderSheet } from "./AddOrderSheet";
 
@@ -23,16 +23,11 @@ export function AddOrderLauncher({
 
   return (
     <>
-      <button
-        type="button"
+      <AddButton
+        label="اضافة طلب"
+        icon="addOrder"
         onClick={() => setOpen(true)}
-        className="flex min-h-11 items-center justify-center gap-1.5 rounded-md border border-brand bg-brand px-4 text-base text-surface-page transition-transform active:scale-[0.99]"
-      >
-        <span className="flex size-5 items-center justify-center">
-          <Icon name="addOrder" size={14} />
-        </span>
-        <span className="optical-center">اضافة طلب</span>
-      </button>
+      />
 
       <AddOrderSheet
         open={open}

@@ -9,6 +9,11 @@ import { cn } from "@/lib/utils";
  * page behind stays mounted and is tapped to dismiss. The sheet supplies the
  * frame and mechanics; the caller renders its own header/body as children.
  *
+ * Both layers set `pointer-events` explicitly rather than inheriting it: sheets get
+ * mounted next to whatever opens them, and `pointer-events` is an inherited
+ * property — a sheet opened from inside a pass-through layer (e.g. the pen on a
+ * customer row) would otherwise render fully but ignore every tap.
+ *
  * `size` sets how tall it comes up:
  *   • "auto" — content-driven, up to 90% of the viewport, then it scrolls.
  *   • "full" — covers the screen. A sheet that reads as a page (A-56), so it
@@ -42,7 +47,9 @@ export function BottomSheet({
         onClick={onClose}
         className={cn(
           "fixed inset-0 z-50 bg-black/25 transition-opacity duration-200",
-          open ? "opacity-100" : "pointer-events-none opacity-0",
+          open
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0",
         )}
       />
 
@@ -55,7 +62,9 @@ export function BottomSheet({
           size === "full"
             ? "top-0 border-x"
             : "max-h-[90dvh] rounded-t-xl border-t-2",
-          open ? "translate-y-0" : "translate-y-full",
+          open
+            ? "pointer-events-auto translate-y-0"
+            : "pointer-events-none translate-y-full",
         )}
         style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}
       >

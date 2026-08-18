@@ -31,7 +31,7 @@ export function EditCancelReasonButton({
         aria-label="تعديل سبب الإلغاء"
         className="flex size-11 shrink-0 items-center justify-center text-error"
       >
-        <PenGlyph />
+        <PenGlyph flipped />
       </button>
 
       <CancelReasonDialog

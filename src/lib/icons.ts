@@ -96,7 +96,10 @@ export const icons = {
   search: Search02Icon,
   check: Tick02Icon,
   filter: FilterIcon,
+  // Both add buttons use Figma's layer-add glyph (A-50 «اضافة طلب» and A-30
+  // «اضافة عميل»); two names keep each screen reading semantically.
   addOrder: LayerAddIcon,
+  addCustomer: LayerAddIcon,
   plus: PlusSignIcon,
   minus: MinusSignIcon,
   arrowRight: ArrowRight01Icon,

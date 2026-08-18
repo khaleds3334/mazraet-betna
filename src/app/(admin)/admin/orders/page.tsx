@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
+import { SearchField } from "@/components/ui";
 import { OrdersToolbar } from "@/components/admin/orders/OrdersToolbar";
-import { OrdersSearchBar } from "@/components/admin/orders/OrdersSearchBar";
 import { OrderTabs } from "@/components/admin/orders/OrderTabs";
 import { OrdersEmptyState } from "@/components/admin/orders/OrdersEmptyState";
 import { OrderCard } from "@/components/admin/orders/OrderCard";
@@ -71,7 +71,10 @@ export default async function AdminOrdersPage({
         weights={settings.availableWeights}
         defaultCleaning={settings.defaultCleaning}
       />
-      <OrdersSearchBar />
+      <div className="px-screen">
+        {/* Static until the list it would filter is wired — see SearchField. */}
+        <SearchField placeholder="ابحث باسم العميل او رقم الطلب" />
+      </div>
       <OrderTabs active={activeTab} counts={counts} />
 
       {/* Only this region scrolls. Its padding is here, not on the list, so the

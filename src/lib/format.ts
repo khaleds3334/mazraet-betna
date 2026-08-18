@@ -89,6 +89,31 @@ export function pluralizeChicken(count: number): string {
 }
 
 /**
+ * Arabic order pluralization, same shape as {@link pluralizeChicken}:
+ * `١ طلب` · `٢ طلبين` · `٣–١٠ طلبات` · `١١+ طلب`.
+ */
+export function pluralizeOrder(count: number): string {
+  const n = toArabicDigits(count);
+  if (count === 2) return `${n} طلبين`;
+  if (count >= 3 && count <= 10) return `${n} طلبات`;
+  return `${n} طلب`; // 0, 1, and 11+
+}
+
+/**
+ * Arabic customer pluralization, same shape as {@link pluralizeChicken}:
+ * `١ عميل` · `٢ عميلين` · `٣–١٠ عملاء` · `١١+ عميل`. Zero reads
+ * `٠ عملاء` — not `عميل` — because that is what the design draws on the empty
+ * customers screen (A-30).
+ */
+export function pluralizeCustomer(count: number): string {
+  const n = toArabicDigits(count);
+  if (count === 1) return `${n} عميل`;
+  if (count === 2) return `${n} عميلين`;
+  if (count === 0 || (count >= 3 && count <= 10)) return `${n} عملاء`;
+  return `${n} عميل`; // 11+
+}
+
+/**
  * Arabic day pluralization for the flock age (FR-7), same shape as
  * {@link pluralizeChicken}: `١ يوم` · `٢ يومين` · `٣–١٠ ايام` · `١١+ يوم`.
  */
