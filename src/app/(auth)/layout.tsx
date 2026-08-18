@@ -12,7 +12,7 @@ export default function AuthLayout({
 }) {
   return (
     <main
-      className="flex min-h-dvh flex-col bg-background px-6"
+      className="flex min-h-svh flex-col bg-background px-6"
       style={{
         paddingTop: "max(1.5rem, env(safe-area-inset-top))",
         paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",

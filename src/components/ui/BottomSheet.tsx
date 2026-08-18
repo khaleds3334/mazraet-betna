@@ -61,7 +61,7 @@ export function BottomSheet({
           "fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[430px] flex-col overflow-y-auto border-border bg-background transition-transform duration-300",
           size === "full"
             ? "top-0 border-x"
-            : "max-h-[90dvh] rounded-t-xl border-t-2",
+            : "max-h-[90svh] rounded-t-xl border-t-2",
           open
             ? "pointer-events-auto translate-y-0"
             : "pointer-events-none translate-y-full",

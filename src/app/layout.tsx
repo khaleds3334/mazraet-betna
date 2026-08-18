@@ -53,17 +53,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // No height on <html> on purpose. `h-full` resolves to the *large* viewport
-    // (the height with the browser's URL bar hidden), while both app shells are
-    // sized in `dvh` — the height right now, URL bar included. On a phone the two
-    // disagree by exactly the height of that bar, which made the document itself
-    // scrollable by ~60px: the toolbar, the tabs and the bottom nav all slid with
-    // the swipe instead of the list scrolling inside its own region.
+    // No height on <html> on purpose. `h-full` resolves to the viewport with the
+    // browser's address bar hidden, while the app shells are sized to the
+    // viewport with it showing — on a phone the two disagree by the height of
+    // that bar, which left the document itself scrollable by ~60px.
     // Letting <html> size to its content keeps the document exactly one screen tall.
     <html lang="ar" dir="rtl" className={`${almarai.variable} antialiased`}>
-      {/* overscroll-none stops pull-to-refresh and the rubber-band bounce, so the
-          shells read as an installed app rather than a web page. */}
-      <body className="flex min-h-dvh flex-col overscroll-none">{children}</body>
+      {/* `svh` matches the shells: a height that doesn't move when the browser
+          shows or hides its address bar. `overscroll-none` stops pull-to-refresh
+          and the rubber-band bounce, so this reads as an installed app. */}
+      <body className="flex min-h-svh flex-col overscroll-none">{children}</body>
     </html>
   );
 }
