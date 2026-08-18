@@ -62,10 +62,14 @@ export default async function AdminOrdersPage({
       : [];
 
   return (
-    // `min-h-0` all the way down is what keeps the toolbar, the search box and
-    // the tabs pinned: without it the flex children refuse to shrink, the column
-    // grows past the viewport, and the whole page scrolls instead of the list.
-    <div className="flex min-h-0 flex-1 flex-col gap-4 pt-4">
+    // This screen scrolls its list, not itself — so it is pinned to exactly the
+    // height <main> gives it and clips anything past that (`h-full` +
+    // `overflow-hidden`). `flex-1` alone was leaving the column a little taller
+    // than <main>, which made <main> the scroller: the list would reach its end
+    // with the last card still tucked under the tab bar, and one more swipe
+    // dragged the toolbar and the search box up with it. A definite height can't
+    // drift that way, whatever the rows inside it turn out to measure.
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-hidden pt-4">
       <OrdersToolbar
         customers={customers}
         weights={settings.availableWeights}
@@ -78,8 +82,9 @@ export default async function AdminOrdersPage({
       <OrderTabs active={activeTab} counts={counts} />
 
       {/* Only this region scrolls. Its padding is here, not on the list, so the
-          scrollbar rides the screen edge. */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-screen pb-2">
+          scrollbar rides the screen edge. `overscroll-contain` keeps a swipe that
+          runs past the last card from being handed to anything behind it. */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-screen pb-4">
         {orders.length === 0 ? (
           <OrdersEmptyState tab={activeTab} />
         ) : (

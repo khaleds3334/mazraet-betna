@@ -120,29 +120,31 @@ export function AddOrderSheet({
           <CloseButton onClick={onClose} />
         </header>
 
-        <CustomerPicker
-          customers={customers}
-          selected={customer}
-          onSelect={setCustomer}
-          disabled={orphan}
-        />
+        <div className="flex flex-col gap-2">
+          <CustomerPicker
+            customers={customers}
+            selected={customer}
+            onSelect={setCustomer}
+            disabled={orphan}
+          />
 
-        <div className="flex items-center justify-between gap-2">
-          <Checkbox
-            label="لحد تبع العميل؟"
-            checked={forSomeoneElse}
-            onChange={setForSomeoneElse}
-          />
-          {/* An orphan order has no customer at all (FR-13) — ticking it clears
+          <div className="flex items-center justify-between gap-2">
+            <Checkbox
+              label="لحد تبع العميل؟"
+              checked={forSomeoneElse}
+              onChange={setForSomeoneElse}
+            />
+            {/* An orphan order has no customer at all (FR-13) — ticking it clears
               and disables the picker so the two can never disagree. */}
-          <Checkbox
-            label="طلب يتيم"
-            checked={orphan}
-            onChange={(checked) => {
-              setOrphan(checked);
-              if (checked) setCustomer(null);
-            }}
-          />
+            <Checkbox
+              label="طلب يتيم"
+              checked={orphan}
+              onChange={(checked) => {
+                setOrphan(checked);
+                if (checked) setCustomer(null);
+              }}
+            />
+          </div>
         </div>
 
         {forSomeoneElse && (
