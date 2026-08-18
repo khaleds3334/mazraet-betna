@@ -120,7 +120,7 @@ export function AddOrderSheet({
           <CloseButton onClick={onClose} />
         </header>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <CustomerPicker
             customers={customers}
             selected={customer}
@@ -184,7 +184,7 @@ export function AddOrderSheet({
           <div
             role="radiogroup"
             aria-label="الوزن المطلوب"
-            className="flex items-center justify-between gap-1 overflow-x-auto"
+            className="no-scrollbar flex items-center justify-between overflow-x-auto -gap--2"
           >
             {weights.map((option) => (
               <WeightBadge

@@ -34,7 +34,7 @@ export function OrderTabs({
   return (
     <nav
       aria-label="تصنيفات الطلبات"
-      className="flex items-center justify-between overflow-x-auto px-screen"
+      className="no-scrollbar flex items-center justify-between overflow-x-auto px-screen"
     >
       {ADMIN_ORDER_TABS.map((tab) => {
         const selected = tab.key === active;

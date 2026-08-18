@@ -140,6 +140,20 @@ body {
   transform: translateY(calc(var(--text-lift-ar) * -1));
 }
 
+/*
+  Hides the scrollbar on a row that scrolls sideways (weight chips, expense
+  categories, order tabs) while it still scrolls normally by touch.
+  The bar adds nothing here — these rows are swiped, never dragged, and a grey
+  system bar under a row of designed chips reads as a rendering fault.
+*/
+@utility no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+  &::-webkit-scrollbar {
+    display: none; /* Chrome · Safari · Android */
+  }
+}
+
 /* Toast entrance — slides down and fades in from the top. */
 @keyframes toast-in {
   from {

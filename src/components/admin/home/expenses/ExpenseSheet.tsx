@@ -44,7 +44,7 @@ export function ExpenseSheet({
         </div>
 
         {/* Category chips — horizontally scrollable, feed-first (right in RTL). */}
-        <div className="flex gap-2.5 overflow-x-auto pb-1">
+        <div className="no-scrollbar flex gap-2.5 overflow-x-auto pb-1">
           {CATEGORIES.map((c) => (
             <Chip
               key={c}
