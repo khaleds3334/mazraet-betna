@@ -73,7 +73,9 @@ export function PinInput({
         aria-label="الرقم السري"
         aria-invalid={error || undefined}
         aria-describedby={describedBy}
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, length))}
+        onChange={(e) =>
+          onChange(e.target.value.replace(/\D/g, "").slice(0, length))
+        }
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className="absolute inset-0 h-full w-full cursor-pointer bg-transparent text-center text-transparent caret-transparent outline-none disabled:cursor-not-allowed"

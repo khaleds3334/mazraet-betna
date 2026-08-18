@@ -49,20 +49,21 @@ export const FEED_PER_CHICK_KG = {
 export const ASSUMED_FEED_BAG_PRICE = 1200;
 
 /**
- * Order status labels differ by viewer (D-03): a `pending` order reads
- * "قيد المراجعة" to the customer (their weights are being checked) but
- * "في الانتظار" to the admin (waiting for the pickup time).
+ * Order status labels, keyed by who is reading them (D-03). The two apps agreed
+ * on "قيد المراجعة" for a pending order — that is what the A-50 card and the
+ * customer's tracking both show — so the split currently only matters for the
+ * statuses that come after it. See the D-03 amendment of 2026-08-18.
  */
 export const ORDER_STATUS_LABEL: Record<
   "admin" | "customer",
   Record<OrderStatus, string>
 > = {
   admin: {
-    pending: "في الانتظار",
+    pending: "قيد المراجعة",
     weighed: "تم الوزن",
     ready: "جاهز للاستلام",
     delivered: "تم التسليم",
-    cancelled: "ملغي",
+    cancelled: "تم الغاء الطلب",
   },
   customer: {
     pending: "قيد المراجعة",
@@ -73,19 +74,30 @@ export const ORDER_STATUS_LABEL: Record<
   },
 };
 
+/** The three groups the admin sorts orders into on A-50 and A-20. */
+export type AdminOrderTabKey = "new" | "active" | "done";
+
 /**
  * Admin order tabs are groups of statuses, not statuses themselves (FR-12).
- * "ملغي" is a side state and lives outside these tabs.
+ * "المكتملة" means the order is finished with, either way it ended: delivered or
+ * cancelled (Khaled, 2026-08-18) — a cancelled order has to land somewhere the
+ * admin can still find it.
  */
 export const ADMIN_ORDER_TABS: {
-  key: "new" | "active" | "done";
+  key: AdminOrderTabKey;
   label: string;
   statuses: OrderStatus[];
 }[] = [
   { key: "new", label: "الجديدة", statuses: ["pending"] },
   { key: "active", label: "قيد التشغيل", statuses: ["weighed", "ready"] },
-  { key: "done", label: "المكتملة", statuses: ["delivered"] },
+  { key: "done", label: "المكتملة", statuses: ["delivered", "cancelled"] },
 ];
+
+/**
+ * The tab the orders screen opens on — the orders still waiting on the admin,
+ * which is what he opens the screen to deal with.
+ */
+export const DEFAULT_ADMIN_ORDER_TAB: AdminOrderTabKey = "new";
 
 /** Manual expense categories (FR-18 / Phase 7 chips). */
 export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategory, string> = {

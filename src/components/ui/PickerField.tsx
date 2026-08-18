@@ -42,7 +42,9 @@ export function PickerField({
       <div
         className={cn(
           "relative flex h-12 items-center rounded-lg border-2 bg-surface-page transition-shadow",
-          error ? FIELD_ERROR_SHADOW : cn("border-border", FIELD_ACTIVE_SHADOW_WITHIN),
+          error
+            ? FIELD_ERROR_SHADOW
+            : cn("border-border", FIELD_ACTIVE_SHADOW_WITHIN),
         )}
       >
         {/* Icon on the right (leading edge in RTL), value/placeholder beside it. */}

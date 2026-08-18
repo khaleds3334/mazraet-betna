@@ -34,3 +34,29 @@ export const getCurrentCustomer = cache(
     return { id: data.id, name: data.name, farmId: data.farm_id };
   },
 );
+
+/** A customer as the admin picks them — name + phone is all the picker shows. */
+export interface CustomerOption {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+/**
+ * Every customer of the farm, for the admin's customer picker (A-56). Loaded
+ * once with the screen and filtered in the browser rather than queried per
+ * keystroke: a family farm has tens of customers, not thousands, so one small
+ * read beats a round trip per letter typed. Revisit if a farm ever grows past a
+ * few hundred customers.
+ */
+export async function listFarmCustomers(
+  farmId: string,
+): Promise<CustomerOption[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("customer")
+    .select("id, name, phone")
+    .eq("farm_id", farmId)
+    .order("name");
+  return data ?? [];
+}

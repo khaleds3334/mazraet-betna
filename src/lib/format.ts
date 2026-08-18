@@ -9,7 +9,18 @@
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
-const ARABIC_DIGITS = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"] as const;
+const ARABIC_DIGITS = [
+  "٠",
+  "١",
+  "٢",
+  "٣",
+  "٤",
+  "٥",
+  "٦",
+  "٧",
+  "٨",
+  "٩",
+] as const;
 
 /** Convert every Latin digit (0–9) in a string/number to its Arabic-Indic form. */
 export function toArabicDigits(input: string | number): string {
@@ -23,7 +34,9 @@ export function toArabicDigits(input: string | number): string {
  */
 export function toLatinDigits(input: string): string {
   return input
-    .replace(/[٠-٩]/g, (d) => String(ARABIC_DIGITS.indexOf(d as (typeof ARABIC_DIGITS)[number])))
+    .replace(/[٠-٩]/g, (d) =>
+      String(ARABIC_DIGITS.indexOf(d as (typeof ARABIC_DIGITS)[number])),
+    )
     .replace(/\D/g, "");
 }
 
@@ -109,15 +122,19 @@ export function formatArabicTime(
   const hour = Number(hStr);
   const isAm = hour < 12;
   const period =
-    options?.period === "long"
-      ? isAm
-        ? "صباحا"
-        : "مساءا"
-      : isAm
-        ? "ص"
-        : "م";
+    options?.period === "long" ? (isAm ? "صباحا" : "مساءا") : isAm ? "ص" : "م";
   const hour12 = hour % 12 === 0 ? 12 : hour % 12;
   return `${toArabicDigits(hour12)}:${toArabicDigits(mStr)} ${period}`;
+}
+
+/**
+ * The number the admin reads out loud, e.g. `١٠٠٤` (Khaled, 2026-08-18): the
+ * cycle's number followed by the order's number inside that cycle, padded to
+ * three digits. Order 4 of cycle 1 → 1004. Both counters come from the database
+ * (migration 009), so the number never shifts once it is given.
+ */
+export function formatOrderNumber(cycleSeq: number, orderSeq: number): string {
+  return toArabicDigits(`${cycleSeq}${String(orderSeq).padStart(3, "0")}`);
 }
 
 /** Phone numbers stay in Latin digits (the one exception to rule 3). */

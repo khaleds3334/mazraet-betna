@@ -248,6 +248,49 @@ export async function getActiveCycleDashboard(
   };
 }
 
+/** The cycle the orders screen is scoped to — the header of that screen's data. */
+export interface OrdersCycle {
+  cycleId: string;
+  /** The cycle's own number (1, 2, 3 …) — the first digit of every order number. */
+  seq: number;
+  name: string | null;
+  startDate: string;
+  /** True while this is the farm's running cycle (nothing has ended it yet). */
+  isActive: boolean;
+}
+
+/**
+ * The cycle the orders screen (A-50) shows by default: the running cycle if
+ * there is one, otherwise the most recent cycle that ended — so the admin always
+ * lands on the orders that still matter to him. Null for a farm with no cycles.
+ *
+ * The funnel filter on that screen will let him pick any other cycle; when it
+ * lands, it only supplies the id and this stays the fallback.
+ */
+export async function getDefaultOrdersCycle(
+  farmId: string,
+): Promise<OrdersCycle | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("cycle")
+    .select("id, seq, name, start_date, is_active")
+    // Active first, then newest — one row, no second query for the fallback.
+    .eq("farm_id", farmId)
+    .order("is_active", { ascending: false })
+    .order("start_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+
+  return {
+    cycleId: data.id,
+    seq: data.seq,
+    name: data.name,
+    startDate: data.start_date,
+    isActive: data.is_active,
+  };
+}
+
 /**
  * Whether the farm has ever registered a cycle (active or ended). The cycles
  * screen shows the empty state (A-40) only when there's none at all — once any

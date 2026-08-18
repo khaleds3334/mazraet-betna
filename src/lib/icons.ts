@@ -24,6 +24,9 @@ import {
   Cancel01Icon,
   Cancel02Icon, // figma: cancel-02
   Search02Icon, // figma: search-02
+  Tick02Icon, // the tick inside a ticked checkbox
+  FilterIcon, // figma: filter — the funnel that scopes the orders list to a cycle
+  LayerAddIcon, // figma: layer-add — the glyph inside the "اضافة طلب" button
   PlusSignIcon,
   MinusSignIcon,
   ArrowRight01Icon,
@@ -91,6 +94,9 @@ export const icons = {
   close: Cancel01Icon,
   cancel: Cancel02Icon,
   search: Search02Icon,
+  check: Tick02Icon,
+  filter: FilterIcon,
+  addOrder: LayerAddIcon,
   plus: PlusSignIcon,
   minus: MinusSignIcon,
   arrowRight: ArrowRight01Icon,
@@ -144,6 +150,11 @@ export const icons = {
   cash: Wallet02Icon,
   ordersNew: BorderFullIcon,
   ordersProcessing: KnivesIcon,
+
+  // Orders list (A-50) empty states. `ordersWaiting` is the same timer glyph as
+  // `chickensRequested` — the design uses it for both "waiting on the admin"
+  // ideas, and the two names keep each screen reading semantically.
+  ordersWaiting: Timer01Icon,
 } as const;
 
 export type IconName = keyof typeof icons;

@@ -20,7 +20,9 @@ export function StatItem({
       <span className="whitespace-pre-line text-sm text-muted">{label}</span>
       {/* Color comes from valueClassName so it can override the default cleanly —
           cn() is a plain join, so two color classes would otherwise both apply. */}
-      <span className={cn("text-h4 font-bold", valueClassName ?? "text-foreground")}>
+      <span
+        className={cn("text-h4 font-bold", valueClassName ?? "text-foreground")}
+      >
         {value}
       </span>
     </div>

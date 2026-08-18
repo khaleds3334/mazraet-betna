@@ -87,6 +87,7 @@ export type Database = {
           name: string | null
           sale_closes_at: string | null
           sale_open: boolean
+          seq: number
           start_date: string
           start_time: string | null
         }
@@ -101,6 +102,7 @@ export type Database = {
           name?: string | null
           sale_closes_at?: string | null
           sale_open?: boolean
+          seq?: number
           start_date: string
           start_time?: string | null
         }
@@ -115,6 +117,7 @@ export type Database = {
           name?: string | null
           sale_closes_at?: string | null
           sale_open?: boolean
+          seq?: number
           start_date?: string
           start_time?: string | null
         }
@@ -446,6 +449,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          cancel_reason: string | null
           cancelled_at: string | null
           cleaning: boolean
           cleaning_price: number | null
@@ -459,6 +463,7 @@ export type Database = {
           on_behalf_of: string | null
           pickup_date: string | null
           pickup_time: string | null
+          seq: number
           source: Database["public"]["Enums"]["order_source"]
           status: Database["public"]["Enums"]["order_status"]
           unit_price: number | null
@@ -466,6 +471,7 @@ export type Database = {
           weighed_at: string | null
         }
         Insert: {
+          cancel_reason?: string | null
           cancelled_at?: string | null
           cleaning?: boolean
           cleaning_price?: number | null
@@ -479,6 +485,7 @@ export type Database = {
           on_behalf_of?: string | null
           pickup_date?: string | null
           pickup_time?: string | null
+          seq?: number
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
           unit_price?: number | null
@@ -486,6 +493,7 @@ export type Database = {
           weighed_at?: string | null
         }
         Update: {
+          cancel_reason?: string | null
           cancelled_at?: string | null
           cleaning?: boolean
           cleaning_price?: number | null
@@ -499,6 +507,7 @@ export type Database = {
           on_behalf_of?: string | null
           pickup_date?: string | null
           pickup_time?: string | null
+          seq?: number
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
           unit_price?: number | null

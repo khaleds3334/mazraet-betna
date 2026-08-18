@@ -101,19 +101,19 @@ export function SellingDashboard({
             <CycleStatCard
               icon="ordersNew"
               label="الطلبات الجديدة"
-              value={formatArabicNumber(orders.fresh)}
+              value={formatArabicNumber(orders.new)}
               tone="brand"
             />
             <CycleStatCard
               icon="ordersProcessing"
               label="قيد التشغيل"
-              value={formatArabicNumber(orders.inProgress)}
+              value={formatArabicNumber(orders.active)}
               tone="tan"
             />
             <CycleStatCard
               icon="delivered"
               label="المكتملة"
-              value={formatArabicNumber(orders.completed)}
+              value={formatArabicNumber(orders.done)}
               tone="olive"
             />
           </div>

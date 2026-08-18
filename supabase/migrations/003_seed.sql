@@ -18,7 +18,7 @@ begin
     values (v_farm, crypt('123456', gen_salt('bf')));
 
   insert into settings (farm_id, sale_price, cleaning_price, available_weights, pickup_times, default_cleaning)
-    values (v_farm, 130, 10, '{1.500,2.000,2.500}', array['10:00','13:00','16:00','19:00'], true);
+    values (v_farm, 130, 10, '{1.500,1.750,2.000,2.250,2.500}', array['10:00','13:00','16:00','19:00'], true);
 
   -- Active cycle: started 28 days ago, selling phase open, window closes in ~8 days
   insert into cycle (id, farm_id, chick_count, chick_price, start_date, is_active, sale_open, sale_closes_at)

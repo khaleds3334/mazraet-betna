@@ -57,7 +57,9 @@ export function InputField({
           {...props}
         />
         {suffix && (
-          <span className="shrink-0 pr-2 text-lg text-foreground">{suffix}</span>
+          <span className="shrink-0 pr-2 text-lg text-foreground">
+            {suffix}
+          </span>
         )}
       </div>
 

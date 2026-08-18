@@ -39,7 +39,9 @@ export function NumberStepper({
         label={`زيادة ${label}`}
         onClick={() => onChange(value + step)}
       />
-      <div className={`flex min-w-[48px] items-center justify-center gap-1 border-b-[3px] py-2 ${underline}`}>
+      <div
+        className={`flex min-w-[48px] items-center justify-center gap-1 border-b-[3px] py-2 ${underline}`}
+      >
         <input
           inputMode="numeric"
           aria-label={label}

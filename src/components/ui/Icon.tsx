@@ -15,6 +15,12 @@ import { icons, type IconName } from "@/lib/icons";
  * at roughly double weight next to the real strokes. `store-verified-02` is one
  * such hybrid. Every icon already carries its own 1.5 width, which is the value
  * the design uses, so leaving it undefined renders each icon exactly as drawn.
+ *
+ * An icon's stroke is drawn in its own 24-unit grid, so it thickens with `size`:
+ * the built-in 1.5 renders ~2.6px at 42px and ~6.5px at 104px. Pass
+ * `absoluteStrokeWidth` to read `strokeWidth` as real pixels instead — that is
+ * how Figma states it, so a big glyph can keep the hairline weight it is drawn
+ * with.
  */
 export function Icon({
   name,
@@ -22,6 +28,7 @@ export function Icon({
   className,
   label,
   strokeWidth,
+  absoluteStrokeWidth = false,
 }: {
   name: IconName;
   size?: number;
@@ -29,6 +36,8 @@ export function Icon({
   label?: string;
   /** Only set this to deliberately depart from the icon's own weight. */
   strokeWidth?: number;
+  /** Read `strokeWidth` as rendered pixels, independent of `size`. */
+  absoluteStrokeWidth?: boolean;
 }) {
   return (
     <HugeiconsIcon
@@ -36,6 +45,7 @@ export function Icon({
       size={size}
       color="currentColor"
       strokeWidth={strokeWidth}
+      absoluteStrokeWidth={absoluteStrokeWidth}
       className={className}
       role={label ? "img" : undefined}
       aria-label={label}

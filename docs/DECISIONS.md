@@ -402,3 +402,101 @@ Confirming D-05 at the schema level: the invoice = `orders` + `order_line` (actu
 **Why:** Single source of truth; reassigning an order to another customer (FR-16) moves its invoice and debt automatically because both derive from the order. Verified against seed data — all totals/remaining computed correctly on read.
 **Note:** The `debt` entity listed in BUILD-WORKFLOW Phase 1 is intentionally not a table for this reason; debt computation will live in `/lib/calculations` (Phase 2).
 **Date:** 2026-07-22
+
+### D-22 — The orders screen is always scoped to one cycle
+`/admin/orders` never shows "all orders ever". It scopes to a single cycle,
+defaulting to the **running cycle**, or — when none is running — the **most
+recent cycle to end**, so the admin always lands on the orders that still matter.
+The funnel in the toolbar picks any other cycle (its picker has no design yet, so
+the funnel is drawn but inert for now).
+**Consequence — the tabs change meaning on an old cycle (Khaled, 2026-08-18):**
+in a finished cycle every order is complete, so `الجديدة` / `قيد التشغيل` are
+meaningless there. The groups become **مدفوع / عليه فلوس / ملغي** instead. Those
+are derived from the invoice (T-15), not from `order_status`, which is why they
+are a later pass — `ADMIN_ORDER_TABS` stays the live set until then.
+**Why:** orders belong to a cycle in the database and in the admin's head ("طلبات
+الدورة اللي فاتت"); a global list would mix two flocks' accounting.
+**Date:** 2026-08-18
+
+### T-26 — The selected order tab lives in the URL, not in React state
+`?tab=new|active|done` drives A-50, so the whole screen stays a server component
+with no client-side state and no `"use client"` — the tabs are plain `<Link>`s.
+Refresh, the back button, and a shared link all land on the same tab. An unknown
+or missing value falls back to `الجديدة`.
+**Why:** the application of T-02 to a screen whose "state" is really a view of
+server data. It also means each tab is a fresh server render, so counts can never
+go stale behind a client-side toggle.
+**Related:** the tab counts are now one type, `OrderTabCounts`
+(`Record<AdminOrderTabKey, number>`) in `queries/orders.ts`, produced by the pure
+`tallyOrderTabs` and shared with the A-20 order tiles — they used to be two
+different shapes (`fresh/inProgress/completed` vs the tab keys) describing the
+same three numbers.
+**Date:** 2026-08-18
+
+### D-23 — Adding an order is a full-screen sheet, not a route
+"اضافة طلب" opens A-56 as a `BottomSheet` with `size="full"` over the orders
+list — a sheet that reads as a page. The list stays mounted behind it and returns
+the instant it closes; there is no `/admin/orders/new` URL.
+**Why:** Khaled, 2026-08-18 — "نافذة بس كأنها صفحة". It also keeps the list's tab
+and scroll position, which a route change would throw away.
+**Two flags on it:**
+- **طلب يتيم** → `customer_id` null (FR-13). Ticking it clears and disables the
+  customer picker so the two can never disagree.
+- **لحد تبع العميل؟** → opens a name field written to `orders.on_behalf_of`. The
+  invoice, the money, and the debt stay on the known customer; the name only
+  records who the birds were actually for.
+**The customer results list is an addition, not a design element** — the Figma
+frame draws the search box with no results anywhere. Approved 2026-08-18 as the
+smallest thing that makes the box usable.
+**Date:** 2026-08-18
+
+### T-27 — An order's price is never stamped at creation
+`createOrder` writes the order and its lines but leaves `unit_price` and
+`cleaning_price` null. They are snapshotted at weighing (T-15), so a price change
+between booking and weighing is picked up, while an already-weighed invoice never
+moves. The lines carry `approx_weight` only; `actual_weight` arrives on the
+weighing screen into the same rows (D-13).
+**Also:** if the `order_line` insert fails, the order row is deleted again —
+a bird-less order would render as an empty card in the list and read as data loss.
+**Date:** 2026-08-18
+
+### D-24 — The order number is `cycle` + `order-in-cycle`
+An order shows as `#1004`: the cycle's number (1, 2, 3 … per farm) followed by
+the order's number inside that cycle, padded to three digits. Order 4 of cycle 1
+→ 1004 (Khaled, 2026-08-18).
+Both counters are real columns (`cycle.seq`, `orders.seq`) assigned by a
+`before insert` trigger, with a unique index per farm / per cycle — so a number
+is never reused and never shifts once the admin has read it out. Migration 009;
+010 gives them a default of 0 so code can omit them (0 is the trigger's "unset"
+sentinel, since a real number starts at 1). Composition lives in one place,
+`formatOrderNumber` in `/lib/format.ts`.
+**Why not derive it from the UUID:** it would look random, carry no order, and
+could collide. The admin reads this number out loud to a customer.
+**Date:** 2026-08-18
+
+### D-03 amendment — a pending order reads "قيد المراجعة" on BOTH sides
+The original decision had the admin see "في الانتظار" while the customer saw
+"قيد المراجعة". The finished A-50 card (node 3295:9568) labels it
+**"قيد المراجعة"** on the admin side too, and Khaled used the same wording when
+asking for the card, so `ORDER_STATUS_LABEL.admin.pending` now matches.
+The per-viewer split in the label map stays — the wording may still diverge on a
+later status, and the customer app reads from the same map.
+**Why:** the tab above the card already says "الجديدة"; the pill's job is to say
+what is happening to the order, and "قيد المراجعة" says it on both screens.
+**Date:** 2026-08-18
+
+### D-25 — A cancelled order lives in the "المكتملة" tab
+`ADMIN_ORDER_TABS.done` covers `delivered` **and** `cancelled`. The tab means
+"the admin is finished with this order", whichever way it ended (Khaled,
+2026-08-18) — FR-12 originally read it as delivered-only, which left a cancelled
+order in no tab at all and therefore invisible.
+**Why not a fourth tab:** the design's tab row is already at the width of a
+320px screen, and a cancelled order is a rare, closed thing — not a working list.
+**No effect on the dashboard:** `getSellingStats` filters cancelled orders out
+before tallying, so the A-20 "المكتملة" tile still counts deliveries only, and
+neither the money totals nor `availableChickens` (D-18) see them.
+**The reason is required** and stored in `orders.cancel_reason` (migration 011);
+the cancelled card shows it back, because "why didn't this customer get his
+order" is exactly what gets forgotten. Cancelling is a critical action, so a
+failure is an inline error inside the dialog, never a toast (T-09).
+**Date:** 2026-08-18
