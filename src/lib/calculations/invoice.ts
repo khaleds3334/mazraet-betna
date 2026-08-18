@@ -119,3 +119,40 @@ export function orderRemaining(
 ): number {
   return Math.max(0, computeInvoice(order, lines, payments).remaining);
 }
+
+/** One order reduced to the three parts an invoice is computed from. */
+export interface OrderInvoiceInput {
+  order: OrderRow;
+  lines: LineRow[];
+  payments: PaymentRow[];
+}
+
+/** The money side of a whole cycle, summed across its invoices (FR-19, FR-20). */
+export interface InvoiceTotals {
+  /** Everything the cycle has invoiced so far — "اجمالي الدخل". */
+  income: number;
+  /** Cash actually in hand — "في المحفظة". */
+  collected: number;
+  /** Still owed by customers — "الديون" (income − collected, never negative). */
+  debt: number;
+}
+
+/**
+ * Roll every order in a cycle into one money picture. Orders that aren't weighed
+ * yet contribute nothing (their lines carry no actual weight), so this reflects
+ * real sales only. Cancelled orders must be filtered out before calling.
+ */
+export function sumInvoices(orders: OrderInvoiceInput[]): InvoiceTotals {
+  let income = 0;
+  let collected = 0;
+  for (const { order, lines, payments } of orders) {
+    const invoice = computeInvoice(order, lines, payments);
+    income += invoice.total;
+    collected += invoice.paid;
+  }
+  return {
+    income: toPiasters(income),
+    collected: toPiasters(collected),
+    debt: Math.max(0, toPiasters(income - collected)),
+  };
+}

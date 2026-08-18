@@ -8,18 +8,26 @@ import { icons, type IconName } from "@/lib/icons";
  *
  * Decorative by default (aria-hidden). Pass `label` for a meaningful icon that
  * conveys information on its own (e.g. an icon-only button).
+ *
+ * ⚠️ Never give `strokeWidth` a default here. HugeiconsIcon copies the prop onto
+ * EVERY path, `stroke: "currentColor"` included — so a path that is a baked
+ * outline (`fill`, no stroke) gets an extra stroke painted around it and renders
+ * at roughly double weight next to the real strokes. `store-verified-02` is one
+ * such hybrid. Every icon already carries its own 1.5 width, which is the value
+ * the design uses, so leaving it undefined renders each icon exactly as drawn.
  */
 export function Icon({
   name,
   size = 24,
   className,
   label,
-  strokeWidth = 1.5,
+  strokeWidth,
 }: {
   name: IconName;
   size?: number;
   className?: string;
   label?: string;
+  /** Only set this to deliberately depart from the icon's own weight. */
   strokeWidth?: number;
 }) {
   return (

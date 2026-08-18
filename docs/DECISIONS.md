@@ -286,15 +286,116 @@ bag's number, type, the flock's age that day, and the day + time it was opened.
 The admin home (`/admin`) is one page with four faces, chosen from
 `getActiveCycleDashboard().phase`: none → A-10 empty · `raising` → A-11 dashboard
 · `selling` → A-20 · `ended` → A-21 (the last two are placeholders until built).
-The three headline tiles (`CycleStatCard`) render a big value with a small unit
-line beneath it — so "مصاريف الدورة" keeps its **جنيه** (rule 5 / Phase-7 fix)
-without a 5-digit amount overflowing the narrow tile. The feed "المطلوب" tile
+The three headline tiles (`CycleStatCard`) render a big value alone — the
+unit-under-value idea this decision originally introduced was dropped on
+2026-08-18, see **D-20**. The feed "المطلوب" tile
 shows بادي/نامي rounded to whole bags (`٤ / ١٤`) to match the design's compact
 format; the underlying estimate keeps its halves.
 **Why:** One page per role keeps routing simple and reuses the trusted
 `app_metadata.role` gate. The unit-under-value pattern reconciles the
 non-negotiable "unit always visible" rule with the design's small hero tiles.
 **Date:** 2026-07-23
+
+### D-21 — Opening the sale is confirmed, and sets the kilo price (node 3608:3838)
+"بدء مرحلة البيع" no longer fires straight away — it opens a confirm dialog that
+also asks **سعر كيلو الفراخ؟**, pre-filled with the current price. `startSelling`
+now takes the price, writes it to **`settings.sale_price`**, then flips
+`cycle.sale_open`.
+**Why settings and not a column on `cycle`:** Khaled wants the price editable from
+Settings afterwards, and nothing is lost — an order snapshots `unit_price` at
+weighing (T-15), so a later change never rewrites an existing invoice (FR-5).
+**Write order:** price first, sale flip second — a failed flip leaves the sale
+closed and retryable, while the reverse could open the sale at the old price.
+**Failure is an inline error, not a toast:** opening the sale is visible to every
+customer; an unseen auto-dismissed toast would leave the admin waiting for orders
+that can never arrive (T-09).
+**Date:** 2026-08-18
+
+### T-25 — Arabic text needs an optical lift when vertically centred
+Almarai declares an ascent of **0.905em** but its tallest letters (ا / ل) only
+reach **0.716em** — the extra 0.189em is headroom for marks (hamza, dots above)
+that most of our UI strings never carry. CSS centres the *line box*, not the ink,
+so in any vertically-centred pill or button the text always lands low. Measured
+from `Almarai-Bold.ttf`, not eyeballed.
+Fix: `--text-lift-ar` in `globals.css` (= half the dead headroom, **0.09em**) and
+an `optical-center` utility that `translateY`s the text up by it. It goes on the
+text **inside** the box, never on the box, so the box keeps its real height and
+only the ink moves; the value is in `em`, so it scales with any font size.
+Applied to `Badge` first. Apply it to any future centred pill/button showing
+Arabic. Deeper descenders (final ع / م / ي reach −0.38em) argue for up to 0.18em;
+0.09em is the conservative, string-independent figure — raise the one variable if
+it still reads low.
+**Why not asymmetric padding:** the correction has to scale with font size and
+apply in several components; one variable plus one utility beats per-component
+padding magic numbers.
+**Date:** 2026-08-18
+
+### T-24 — `<Icon>` must never force a `strokeWidth`
+`HugeiconsIcon` copies whatever `strokeWidth` it is given onto **every** path in
+the icon, and adds `stroke: "currentColor"` along with it. Most Hugeicons are
+pure strokes so nothing looked wrong — but a few are hybrids whose main shape is
+a stroke already converted to outlines (`fill`, no stroke of its own).
+`store-verified-02` (الفراخ المتوفرة on A-20) is one: the forced stroke was
+painted *around* the already-outlined store body, so it rendered at roughly
+double the weight of the checkmark and circle beside it. Our wrapper now leaves
+`strokeWidth` undefined unless a caller deliberately passes one.
+**Why it's safe:** every icon in the pack carries its own `strokeWidth`, and
+1.5 — the value we were forcing — is the standard, so the other 56 registered
+icons render byte-identically. Bespoke SVG components (`NavIcon`,
+`AdminNavIcon`, `ChickIcon`, `EmptyCyclesIllustration`) set their own widths and
+are unaffected.
+**Date:** 2026-08-18
+
+### D-20 — Stat tiles show the bare number, no "جنيه" line (supersedes T-22's second half)
+`CycleStatCard` no longer renders a unit under the value; the `unit` prop is
+gone. The money tiles on A-20 (اجمالي الدخل · مصاريف الدورة · الديون · في
+المحفظة) show the number alone, exactly as Figma draws them — the section
+heading "الاحصائيات المالية" is what says they are money.
+**Why:** Khaled, 2026-08-18. The tile is ~104px wide; a unit line under a
+5-digit amount made the tile read as two stacked numbers.
+**Scope — this is narrow:** CLAUDE.md rule 5 (every amount carries its unit)
+still holds everywhere an amount appears in running text, a field, a badge, a
+row, or an invoice. `formatCurrency` is unchanged and still appends جنيه — the
+price badge on A-20 uses it. The exception is only these headline tiles, where
+the label above the number already carries the meaning.
+**Date:** 2026-08-18
+
+### D-18 — The flock ledger on the selling dashboard (A-20)
+The three "احصائيات الفراخ" tiles partition the flock with no overlap:
+**تم بيعها** = birds in **delivered** orders only (Khaled: a bird counts as sold
+when the customer actually takes it). **المطلوبة** = birds booked in orders that
+are still running (pending / weighed / ready). **الفراخ المتوفرة** = chick count
+− mortality − sold − requested, i.e. what is genuinely still sellable — the
+number FR-11's auto-close watches, so the admin can never sell the same bird
+twice. Implemented as `availableChickens` in `/lib/calculations/cycle.ts`.
+**Why:** Khaled's mental model, and it makes the three tiles add up against the
+flock instead of double-counting a bird that is booked but not yet handed over.
+**Date:** 2026-08-18
+
+### D-19 — "اجمالي الدخل" is tap-to-reveal, not permanently hidden
+The blurred value in the Figma frame is deliberate: the cycle's total income
+renders blurred and un-blurs when the admin taps the tile (Khaled). The whole
+100px tile is the toggle (`RevealableStatCard`), so the tap target clears the
+44px rule; tapping again hides it. Blur = "not for casual eyes / not final" is
+now used in two places (this, and the disabled "بدء مرحلة البيع" button), so it
+is the project's established treatment.
+**Why:** the admin often has the phone visible to customers standing at the
+scale; the day's takings shouldn't be readable over his shoulder by default.
+**Date:** 2026-08-18
+
+### T-23 — `components/admin/home` split by cycle phase
+The admin home folder grew to 14 files covering three different screens, so it
+was split: `shared/` (used by more than one phase — `CycleHeader`,
+`CycleStatCard`, `StatSection`, `ChickIcon`), `raising/` (A-11 + A-13 + A-14),
+`expenses/` (the A-15→A-19 sheet family), `selling/` (A-20). One tile component
+(`CycleStatCard`) now serves both dashboards via `tone` / `raised` / `blurred`
+props instead of a second near-identical card, and the settings gear became one
+shared `layout/SettingsGear` instead of three copies.
+**Why:** each admin-home face is a screen of its own; a flat folder made it
+impossible to see which file belonged to which screen. The rule going forward:
+a sub-feature of a section gets its own folder; anything used by two of them
+moves up to `shared/`, and anything used outside the section moves to `ui/`.
+**Date:** 2026-08-18
 
 ### T-15 — No `invoice` and no `debt` table (both derived on read)
 Confirming D-05 at the schema level: the invoice = `orders` + `order_line` (actual weights × snapshotted `unit_price`) + `payment`; the debt = invoice total − sum(payments). Neither is a stored table. The price/cleaning price are **snapshotted onto `orders` at weighing** (`unit_price`, `cleaning_price`) so changing settings later never rewrites an old invoice (FR-5).

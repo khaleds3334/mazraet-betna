@@ -107,14 +107,26 @@ export async function recordMortality(count: number): Promise<ActionResult> {
 }
 
 /**
- * Open the selling phase on the active cycle (A-11 "بدء مرحلة البيع"). Flips
- * `sale_open` on, which moves the admin home to the selling dashboard and lets
- * customers order (FR-11). Direct — no confirmation step; the button is gated
- * client-side until the flock reaches selling age. Admin only via RLS.
+ * Open the selling phase on the active cycle (A-11 "بدء مرحلة البيع" → the
+ * confirm dialog, node 3608:3838). Sets the kilo price the cycle sells at and
+ * flips `sale_open` on, which moves the admin home to the selling dashboard and
+ * lets customers order (FR-11).
+ *
+ * The price lands on `settings.sale_price`, so the admin can change it later from
+ * Settings without touching this cycle — and an already-weighed order keeps its
+ * own snapshotted price, so past invoices never move (T-15, FR-5).
+ *
+ * The price is written first: if that succeeds but the flip fails, the sale stays
+ * closed and the admin simply retries. The reverse order could open the sale at
+ * the old price, which is the expensive mistake.
  */
-export async function startSelling(): Promise<ActionResult> {
+export async function startSelling(salePrice: number): Promise<ActionResult> {
   const farm = await getCurrentFarm();
   if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  if (!Number.isFinite(salePrice) || salePrice <= 0) {
+    return { ok: false, error: "اكتب سعر كيلو الفراخ الأول." };
+  }
 
   const supabase = await createClient();
   const { data: cycle } = await supabase
@@ -124,6 +136,14 @@ export async function startSelling(): Promise<ActionResult> {
     .eq("is_active", true)
     .maybeSingle();
   if (!cycle) return { ok: false, error: "مفيش دورة شغالة دلوقتي." };
+
+  const { error: priceError } = await supabase
+    .from("settings")
+    .update({ sale_price: salePrice })
+    .eq("farm_id", farm.farmId);
+  if (priceError) {
+    return { ok: false, error: "مقدرناش نحفظ السعر، حاول تاني." };
+  }
 
   const { error } = await supabase
     .from("cycle")

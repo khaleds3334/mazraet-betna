@@ -1,18 +1,20 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Icon } from "@/components/ui";
 import { EmptyCyclesIllustration } from "@/components/admin/cycles/EmptyCyclesIllustration";
 import { CreateCycleLauncher } from "@/components/admin/cycles/CreateCycleLauncher";
-import { RaisingDashboard } from "@/components/admin/home/RaisingDashboard";
+import { RaisingDashboard } from "@/components/admin/home/raising/RaisingDashboard";
+import { SellingDashboard } from "@/components/admin/home/selling/SellingDashboard";
+import { SettingsGear } from "@/components/layout/SettingsGear";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { getActiveCycleDashboard } from "@/lib/queries/cycles";
+import { getSellingStats } from "@/lib/queries/selling";
 
 /**
  * Admin home. Its face depends on the active cycle:
  *   • none      → first-time empty state (A-10): welcome + start-first-cycle CTA.
  *   • raising   → the raising dashboard (A-11).
- *   • selling / ended → their own dashboards (A-20 / A-21) — later screens, a
- *     placeholder for now so the phase routing is real.
+ *   • selling   → the selling dashboard (A-20).
+ *   • ended     → its own dashboard (A-21) — a later screen, a placeholder for
+ *     now so the phase routing is real.
  */
 export default async function AdminHomePage() {
   const farm = await getCurrentFarm();
@@ -24,30 +26,32 @@ export default async function AdminHomePage() {
     return <RaisingDashboard data={dashboard} />;
   }
 
+  if (dashboard?.phase === "selling") {
+    const stats = await getSellingStats(farm.farmId, dashboard.cycleId, {
+      chickCount: dashboard.chickCount,
+      mortalityCount: dashboard.mortalityCount,
+    });
+    return <SellingDashboard cycle={dashboard} stats={stats} />;
+  }
+
   if (dashboard) {
-    // Selling (A-20) / ended (A-21) dashboards are later screens.
-    const title = dashboard.phase === "selling" ? "البيع مفتوح" : "الدورة انتهت";
+    // The end-of-cycle dashboard (A-21) is a later screen.
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-screen pb-10 text-center">
-        <p className="text-h5 font-bold text-heading">{title}</p>
+        <p className="text-h5 font-bold text-heading">الدورة انتهت</p>
         <p className="text-muted">لوحة الدورة قيد الإنشاء…</p>
       </div>
     );
   }
 
   // No active cycle — the first-time empty state (A-10).
-  const greeting = farm.ownerName ? `أهلا بيك ${farm.ownerName} 👋` : "أهلا بيك 👋";
+  const greeting = farm.ownerName
+    ? `أهلا بيك ${farm.ownerName} 👋`
+    : "أهلا بيك 👋";
   return (
     <div className="flex flex-1 flex-col px-screen pt-4">
-      {/* Settings gear — top-left in the design (the inline end in RTL). */}
-      <header className="flex justify-end">
-        <Link
-          href="/admin/settings"
-          aria-label="الإعدادات"
-          className="flex size-11 items-center justify-center text-foreground"
-        >
-          <Icon name="settings" size={34} />
-        </Link>
+      <header className="flex flex-col">
+        <SettingsGear />
       </header>
 
       <h1 className="mt-6 text-center text-h6 font-bold text-primary-foreground">
@@ -57,8 +61,8 @@ export default async function AdminHomePage() {
       <div className="flex flex-1 flex-col items-center justify-center gap-10 pb-2">
         <EmptyCyclesIllustration size={188} />
         <p className="max-w-[345px] text-h6 font-normal leading-[1.45] text-foreground">
-          من هنا ها تقدر تدير دوراتك كلها<br /> بسهولة و امان من اول تسجيل الكتاكيت
-          لحد البيع و الحسابات
+          من هنا ها تقدر تدير دوراتك كلها
+          <br /> بسهولة و امان من اول تسجيل الكتاكيت لحد البيع و الحسابات
         </p>
       </div>
 

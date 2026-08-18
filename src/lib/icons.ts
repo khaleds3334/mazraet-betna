@@ -63,6 +63,12 @@ import {
   EggsIcon, // figma: eggs — cycle title glyph
   NoteEditIcon, // figma: note-edit — تسجيل مصاريف
   Calendar02Icon, // figma: calendar-02 — cycle start-date meta
+  // ── Domain: selling dashboard (A-20) ──
+  StoreVerified02Icon, // figma: store-verified-02 — الفراخ المتوفرة
+  Timer01Icon, // figma: timer-01 — الفراخ المطلوبة
+  Wallet03Icon, // figma: wallet-03 — الديون
+  Wallet02Icon, // figma: wallet-02 — في المحفظة
+  KnivesIcon, // figma: knives — الطلبات قيد التشغيل
 } from "@hugeicons/core-free-icons";
 // The chick glyph ("عدد الكتاكيت") isn't in the Hugeicons free pack — it's a
 // bespoke design SVG in components/admin/home/ChickIcon (T-19 rationale).
@@ -106,7 +112,7 @@ export const icons = {
   delivered: PackageDelivered01Icon,
   wallet: Wallet01Icon,
   walletAdd: WalletAdd01Icon,
-  debt: MoneyBag02Icon,
+  income: MoneyBag02Icon,
   payment: MoneySendFlow01Icon,
   invoice: Invoice03Icon,
   pastOrders: BorderFullIcon,
@@ -127,6 +133,17 @@ export const icons = {
   cycle: EggsIcon,
   expenseEdit: NoteEditIcon,
   calendarStart: Calendar02Icon,
+
+  // Selling dashboard (A-20). `ordersNew` deliberately shares the border-full
+  // glyph with `pastOrders` — the design uses it for both, and separate names
+  // keep each screen reading semantically.
+  chickensAvailable: StoreVerified02Icon,
+  chickensSold: TickDouble03Icon,
+  chickensRequested: Timer01Icon,
+  debt: Wallet03Icon,
+  cash: Wallet02Icon,
+  ordersNew: BorderFullIcon,
+  ordersProcessing: KnivesIcon,
 } as const;
 
 export type IconName = keyof typeof icons;

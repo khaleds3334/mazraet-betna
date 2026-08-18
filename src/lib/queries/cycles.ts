@@ -16,6 +16,7 @@ import {
   feedCost,
 } from "@/lib/calculations/feed";
 import { CYCLE_TOTAL_DAYS, SALE_READY_MIN_DAY } from "@/lib/constants";
+import { getFarmSettings } from "@/lib/queries/settings";
 
 export interface SaleState {
   saleOpen: boolean;
@@ -105,6 +106,9 @@ export interface CycleDashboard {
   phase: CyclePhase;
   /** True once the birds have reached the selling age (age ≥ raising period). */
   saleReady: boolean;
+  /** Live kilo price from settings — the open-sale dialog opens on it, and the
+   *  selling dashboard shows it in the header badge (FR-26). */
+  salePrice: number;
   /** Total birds lost so far (FR-23). */
   mortalityCount: number;
   /** Cycle expenses so far: chicks + feed + manual expenses (FR-19). */
@@ -145,18 +149,20 @@ export async function getActiveCycleDashboard(
     .maybeSingle();
   if (!cycle) return null;
 
-  const [mortalityRes, expenseRes, feedRes, withdrawalRes] = await Promise.all([
-    supabase.from("mortality").select("count").eq("cycle_id", cycle.id),
-    supabase.from("expense").select("amount").eq("cycle_id", cycle.id),
-    supabase.from("feed").select("bags, bag_price").eq("cycle_id", cycle.id),
-    supabase
-      .from("feed_withdrawal")
-      .select("bags, withdrawn_on, withdrawn_at, created_at")
-      .eq("cycle_id", cycle.id)
-      .order("withdrawn_on", { ascending: true })
-      .order("withdrawn_at", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: true }),
-  ]);
+  const [mortalityRes, expenseRes, feedRes, withdrawalRes, settings] =
+    await Promise.all([
+      supabase.from("mortality").select("count").eq("cycle_id", cycle.id),
+      supabase.from("expense").select("amount").eq("cycle_id", cycle.id),
+      supabase.from("feed").select("bags, bag_price").eq("cycle_id", cycle.id),
+      supabase
+        .from("feed_withdrawal")
+        .select("bags, withdrawn_on, withdrawn_at, created_at")
+        .eq("cycle_id", cycle.id)
+        .order("withdrawn_on", { ascending: true })
+        .order("withdrawn_at", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true }),
+      getFarmSettings(farmId),
+    ]);
 
   const ageDays = chickAgeDays(cycle.start_date);
   const feed = feedRes.data ?? [];
@@ -174,7 +180,9 @@ export async function getActiveCycleDashboard(
     salesTotal: 0,
     chickCount: cycle.chick_count,
     chickPrice: Number(cycle.chick_price),
-    feedCost: feedCost(feed.map((f) => ({ bags: f.bags, bag_price: Number(f.bag_price) }))),
+    feedCost: feedCost(
+      feed.map((f) => ({ bags: f.bags, bag_price: Number(f.bag_price) })),
+    ),
     otherExpenses,
   });
 
@@ -206,7 +214,10 @@ export async function getActiveCycleDashboard(
 
   // Which cycle days a bag was opened on — one lit square per day on the grid.
   const withdrawalDays = withdrawalDetails.map((w) => w.dayOffset);
-  const totalDays = Math.max(CYCLE_TOTAL_DAYS, ...withdrawalDays.map((d) => d + 1));
+  const totalDays = Math.max(
+    CYCLE_TOTAL_DAYS,
+    ...withdrawalDays.map((d) => d + 1),
+  );
 
   const phase: CyclePhase = cycle.ended_at
     ? "ended"
@@ -223,6 +234,7 @@ export async function getActiveCycleDashboard(
     ageDays,
     phase,
     saleReady: ageDays >= SALE_READY_MIN_DAY,
+    salePrice: settings.salePrice,
     mortalityCount,
     expensesTotal,
     feed: {

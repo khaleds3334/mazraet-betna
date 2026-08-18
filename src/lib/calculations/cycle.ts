@@ -58,6 +58,36 @@ export function mortalityRate(chickCount: number, mortality: { count: number }[]
   return died / chickCount;
 }
 
+/**
+ * Birds still free to sell — the "الفراخ المتوفرة" tile on the selling dashboard
+ * (A-20). The flock minus the birds that died, the birds already handed over,
+ * and the birds committed to orders that haven't been delivered yet. Committed
+ * birds are subtracted so the admin never sells the same bird twice; this is the
+ * number the sale's auto-close watches (FR-11).
+ */
+export function availableChickens(input: {
+  chickCount: number;
+  mortalityCount: number;
+  /** Birds handed over to customers (delivered orders). */
+  soldCount: number;
+  /** Birds booked in orders that are still running (pending / weighed / ready). */
+  requestedCount: number;
+}): number {
+  const committed = input.mortalityCount + input.soldCount + input.requestedCount;
+  return Math.max(0, input.chickCount - committed);
+}
+
+/**
+ * Mean actual weight of the birds weighed so far — "متوسط اوزان الدورة" (A-20).
+ * Returns 0 before anything has been weighed, so the tile shows `٠.٠٠٠ كجم`
+ * rather than NaN.
+ */
+export function averageChickenWeight(weights: number[]): number {
+  if (weights.length === 0) return 0;
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  return total / weights.length;
+}
+
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 /**

@@ -1,9 +1,9 @@
 /**
- * ic:round-plus glyph (filled), tinted by the parent's text color. A bespoke
- * design SVG on purpose: it's an Iconify Material glyph the Hugeicons free pack
- * doesn't provide, so it lives in its own component (same rationale as T-19).
- * viewBox is a tight crop of the glyph's own bounding box (no built-in padding —
- * the parent square supplies that via flex centering).
+ * The two stepper glyphs from the design (Iconify "ic:round-plus" and
+ * "humbleicons:minus"). Bespoke design SVGs on purpose: the Hugeicons free pack
+ * doesn't provide these exact shapes, so they live in their own component (same
+ * rationale as T-19). Each viewBox is a tight crop of the glyph's own bounding
+ * box — the parent square supplies the padding via flex centering.
  */
 function PlusGlyph({ size }: { size: number }) {
   return (
@@ -19,23 +19,45 @@ function PlusGlyph({ size }: { size: number }) {
   );
 }
 
+/** A round-capped bar, drawn on the same 25.67 grid as the plus so both match. */
+function MinusGlyph({ size }: { size: number }) {
+  return (
+    <svg
+      viewBox="19.1667 19.163 25.6666 25.6667"
+      width={size}
+      height={size}
+      fill="none"
+      aria-hidden
+    >
+      <path
+        d="M43 31.9963H21"
+        stroke="currentColor"
+        strokeWidth="4.67"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /**
- * The round "+" button from the design (Figma "ic:round-plus", A-41 stepper —
- * node 3264:2480): a soft lime rounded square (rx=6) behind a filled plus glyph,
- * with a faint green blur behind it. The visible square IS the touch target — at
- * the default 44px it already satisfies the ≥44px admin touch-target rule, no
- * extra wrapper needed. `size` lets a caller scale it if a spot ever needs a
- * smaller/larger one, but keep it ≥44 for anything the admin taps directly.
+ * A stepper button from the design: a soft lime rounded square (rx=6) behind a
+ * green glyph, with a faint lime glow behind it. The visible square IS the touch
+ * target — at the default 44px it already meets the ≥44px admin touch-target
+ * rule, so no extra wrapper is needed. `size` lets a caller scale it, but keep it
+ * ≥44 for anything the admin taps while weighing.
  */
-export function AddButton({
+export function StepButton({
   onClick,
   label,
+  sign = "plus",
   size = 44,
 }: {
   onClick: () => void;
   label: string;
+  sign?: "plus" | "minus";
   size?: number;
 }) {
+  const glyphSize = Math.round(size * 0.5833);
   return (
     <button
       type="button"
@@ -48,7 +70,11 @@ export function AddButton({
       }}
       className="flex shrink-0 items-center justify-center rounded-md bg-surface text-foreground"
     >
-      <PlusGlyph size={Math.round(size * 0.5833)} />
+      {sign === "plus" ? (
+        <PlusGlyph size={glyphSize} />
+      ) : (
+        <MinusGlyph size={glyphSize} />
+      )}
     </button>
   );
 }

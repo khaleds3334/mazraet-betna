@@ -5,10 +5,11 @@ import {
   pluralizeChicken,
   pluralizeDay,
 } from "@/lib/format";
-import { CycleHeader } from "./CycleHeader";
-import { CycleStatCard } from "./CycleStatCard";
+import { CycleHeader } from "../shared/CycleHeader";
+import { CycleStatCard } from "../shared/CycleStatCard";
+import { StatSection } from "../shared/StatSection";
+import { RecordExpenseButton } from "../expenses/RecordExpenseButton";
 import { RecordMortalityButton } from "./RecordMortalityButton";
-import { RecordExpenseButton } from "./RecordExpenseButton";
 import { RecordFeedWithdrawalButton } from "./RecordFeedWithdrawalButton";
 import { FeedGrid } from "./FeedGrid";
 import { StartSellingButton } from "./StartSellingButton";
@@ -31,35 +32,35 @@ export function RaisingDashboard({ data }: { data: CycleDashboard }) {
         chickCount={data.chickCount}
         badgeLabel="مرحلة التربية"
       />
-
-      {/* Three headline figures. DOM order is right→left (RTL): age · expenses ·
+      <div className="flex gap-3 flex-col">
+        {/* Three headline figures. DOM order is right→left (RTL): age · expenses ·
           mortality, matching the design's on-screen order. */}
-      <div className="grid grid-cols-3 gap-2">
-        <CycleStatCard
-          icon="calendar"
-          label="عمر الفراخ"
-          value={pluralizeDay(data.ageDays)}
-          tone="brand"
-        />
-        <CycleStatCard
-          icon="payment"
-          label="مصاريف الدورة"
-          value={formatArabicNumber(data.expensesTotal)}
-          
-          tone="danger"
-        />
-        <CycleStatCard
-          icon="mortality"
-          label="عدد النافق"
-          value={pluralizeChicken(data.mortalityCount)}
-          tone="danger"
-        />
-      </div>
+        <div className="grid grid-cols-3 gap-2">
+          <CycleStatCard
+            icon="calendar"
+            label="عمر الفراخ"
+            value={pluralizeDay(data.ageDays)}
+            tone="brand"
+          />
+          <CycleStatCard
+            icon="payment"
+            label="مصاريف الدورة"
+            value={formatArabicNumber(data.expensesTotal)}
+            tone="danger"
+          />
+          <CycleStatCard
+            icon="mortality"
+            label="عدد النافق"
+            value={pluralizeChicken(data.mortalityCount)}
+            tone="danger"
+          />
+        </div>
 
-      {/* Record actions — expenses (wide) on the right, mortality on the left. */}
-      <div className="flex items-stretch justify-between gap-3">
-        <RecordExpenseButton feed={feed} className="flex-1" />
-        <RecordMortalityButton className="shrink-0" />
+        {/* Record actions — expenses (wide) on the right, mortality on the left. */}
+        <div className="flex items-stretch justify-between gap-3">
+          <RecordExpenseButton feed={feed} className="flex-1" />
+          <RecordMortalityButton className="shrink-0" />
+        </div>
       </div>
 
       {/* Feed section — required · withdrawn · available (right→left). */}
@@ -74,7 +75,10 @@ export function RaisingDashboard({ data }: { data: CycleDashboard }) {
             value={formatArabicNumber(feed.withdrawn)}
             valueClassName="text-accent-tan"
           />
-          <StatItem label={"العلف\nالمتوفر"} value={formatArabicNumber(feed.available)} />
+          <StatItem
+            label={"العلف\nالمتوفر"}
+            value={formatArabicNumber(feed.available)}
+          />
         </div>
 
         {/* Withdraw-bag button — centered, at roughly the تسجيل مصاريف width. */}
@@ -84,12 +88,11 @@ export function RaisingDashboard({ data }: { data: CycleDashboard }) {
       </div>
 
       {/* Feed consumption tracker — one square per cycle day. */}
-      <div className="flex flex-col gap-3">
-        <h2 className="text-h6 font-bold text-heading">تتبع استهلاك العلف</h2>
+      <StatSection title="تتبع استهلاك العلف">
         <FeedGrid totalDays={feed.totalDays} withdrawals={feed.withdrawals} />
-      </div>
+      </StatSection>
 
-      <StartSellingButton enabled={data.saleReady} />
+      <StartSellingButton enabled={data.saleReady} salePrice={data.salePrice} />
     </div>
   );
 }

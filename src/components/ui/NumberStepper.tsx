@@ -1,8 +1,8 @@
 import { toArabicDigits, toLatinDigits } from "@/lib/format";
-import { AddButton } from "./AddButton";
+import { StepButton } from "./StepButton";
 
 /**
- * An underlined whole-number field with an `AddButton` (Figma count/price
+ * An underlined whole-number field with a "+" `StepButton` (Figma count/price
  * inputs, e.g. A-41). The value shows in Arabic-Indic digits (FR-3); typing
  * accepts either digit set. `suffix` renders a unit after the number (e.g.
  * "جنية"). `step` sets how much the "+" button adds each tap — default 1, pass a
@@ -35,7 +35,7 @@ export function NumberStepper({
     // lands on the right (same convention as BottomNav) — matches the design,
     // where the underlined field sits right of the "+" (node 3264:2480).
     <div className="flex items-center justify-center gap-3">
-      <AddButton
+      <StepButton
         label={`زيادة ${label}`}
         onClick={() => onChange(value + step)}
       />

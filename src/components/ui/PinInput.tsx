@@ -36,24 +36,29 @@ export function PinInput({
 }: PinInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const digits = value.split("");
+  const activeIndex = Math.min(value.length, length - 1);
 
   return (
     <div className="relative w-full">
       <div className="flex gap-2" dir="ltr" aria-hidden>
-        {Array.from({ length }).map((_, i) => (
-          <div
-            key={i}
-            className={cn(
-              "flex h-14 flex-1 items-center justify-center rounded-[10px] border-2 bg-surface-page transition-shadow",
-              "text-h3 font-bold text-heading",
-              error && FIELD_ERROR_SHADOW,
-              !error && isFocused && FIELD_ACTIVE_SHADOW,
-              !error && !isFocused && "border-border",
-            )}
-          >
-            {digits[i] ? toArabicDigits(digits[i]) : ""}
-          </div>
-        ))}
+        {Array.from({ length }).map((_, i) => {
+          const isActive = isFocused && i === activeIndex;
+
+          return (
+            <div
+              key={i}
+              className={cn(
+                "flex h-14 flex-1 items-center justify-center rounded-[10px] border-2 bg-surface-page transition-shadow",
+                "text-h3 font-bold text-heading",
+                error && FIELD_ERROR_SHADOW,
+                !error && isActive && FIELD_ACTIVE_SHADOW,
+                !error && !isActive && "border-border",
+              )}
+            >
+              {digits[i] ? toArabicDigits(digits[i]) : ""}
+            </div>
+          );
+        })}
       </div>
 
       <input

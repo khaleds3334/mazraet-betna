@@ -25,7 +25,7 @@ function PhaseRow({
   return (
     <div className="flex w-full flex-col gap-4">
       <p className="w-full text-right text-h6 font-bold text-foreground">{title}</p>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between">
         <NumberStepper label={`عدد شكاير ${title}`} value={bags} onChange={onBags} />
         <NumberStepper
           label={`سعر شكارة ${title}`}

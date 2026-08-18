@@ -19,6 +19,8 @@
 
   /* Headings (Almarai Bold, tight 1.2 leading). p-scale uses Tailwind
      defaults, which already match Figma: 16 / 14 / 18 / 12 px. */
+  --text-h2: 32px; /* the big stepper value (kilo price on the open-sale dialog) */
+  --text-h2--line-height: 1.2;
   --text-h3: 28px; /* e.g. the admin PIN digits */
   --text-h3--line-height: 1.2;
   --text-h4: 24px;
@@ -99,6 +101,18 @@ body {
 */
 :root {
   --screen-pad: 24px;
+
+  /*
+    Optical centring for Arabic text — measured from Almarai-Bold.ttf, not guessed.
+    The font declares an ascent of 0.905em, but its tallest letters (ا / ل) only
+    reach 0.716em; the remaining 0.189em is headroom for marks (hamza, dots above)
+    that most of our strings never carry. So in any vertically-centred box the ink
+    always sits below the true centre and the text reads as "نازل تحت شوية".
+    The lift is half that dead headroom: (0.905 − 0.716) / 2 ≈ 0.09em.
+    In em, so it scales with the font size. **Raise this one value if it still
+    reads low** — 0.12em and 0.14em are the next sensible steps.
+  */
+  --text-lift-ar: 0.09em;
 }
 @media (max-width: 389.98px) {
   :root {
@@ -113,6 +127,16 @@ body {
 
 @utility px-screen {
   padding-inline: var(--screen-pad);
+}
+
+/*
+  Lifts text to the optical centre of the box around it (see --text-lift-ar).
+  Use it on the text INSIDE a vertically-centred pill/button/tile — never on the
+  box itself, so the box keeps its real height and only the ink moves.
+*/
+@utility optical-center {
+  display: inline-block;
+  transform: translateY(calc(var(--text-lift-ar) * -1));
 }
 
 /* Toast entrance — slides down and fades in from the top. */
