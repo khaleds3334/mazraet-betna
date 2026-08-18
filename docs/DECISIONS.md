@@ -586,6 +586,32 @@ until the property was pinned down. Any future sheet opened from a similar layer
 now safe by default.
 **Date:** 2026-08-18
 
+### T-35 — One scroll container per screen, sized in `svh`, header held by `sticky`
+The rule every list screen follows from now on: **`<main>` is the only thing that
+scrolls.** A screen never puts a second `overflow-y-auto` inside it. Anything
+that must stay visible — a toolbar, filter pills, a search box, tabs — goes in
+one `sticky top-0 z-10 bg-background` block at the top of the page, and the rows
+flow underneath it. Applied to the orders screen (A-50) and the customers screen
+(A-30).
+**Why not a nested scroller:** it looks correct and behaves badly on a phone. A
+swipe can move either box, and whichever the browser picks, the other still has
+slack to give — so the list reaches its end with the last card under the tab bar
+and one more swipe drags the whole header up. Matching the two heights exactly
+is not a fix; the second scroller is.
+**And the shells are sized in `svh`, never `dvh`.** `dvh` is the viewport *right
+now*, so the shell grew by ~60px the instant the browser retracted its address
+bar and everything under the tab bar jumped into view mid-swipe — reported twice
+as a scrolling bug on two different screens before the cause was found, because
+it is not scrolling at all. `svh` is the height with the browser UI showing: a
+number that never changes. `overscroll-contain` on `<main>` keeps a swipe past
+the last row from reaching the document, which is what invites the retraction.
+Both are moot once the app is installed (no address bar), which is exactly why
+it never reproduced on a laptop.
+**Also:** `no-scrollbar` (globals.css) on rows that scroll sideways — weight
+chips, order tabs, expense categories. They are swiped, never dragged, and a
+grey system bar under designed chips reads as a rendering fault.
+**Date:** 2026-08-18
+
 ### T-34 — A session the app can't place is ended, never routed
 Found on the first deploy: the owner's auth account carried its role in
 `user_metadata` (written by an early build) instead of `app_metadata`, where the
