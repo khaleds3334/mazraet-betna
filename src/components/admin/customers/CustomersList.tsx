@@ -20,9 +20,12 @@ import { CustomerRow } from "./CustomerRow";
 export function CustomersList({
   customers,
   debtOnly,
+  children,
 }: {
   customers: CustomerSummary[];
   debtOnly: boolean;
+  /** The screen's toolbar, so it can live inside the one pinned header block. */
+  children: React.ReactNode;
 }) {
   const [query, setQuery] = useState("");
 
@@ -47,20 +50,25 @@ export function CustomersList({
 
   return (
     <>
-      <CustomersFilterBar count={visible.length} debtOnly={debtOnly} />
+      {/* Held in place while the rows scroll under it. */}
+      <div className="sticky top-0 z-10 flex flex-col gap-4 bg-background pt-4 pb-3">
+        {children}
 
-      <div className="px-screen">
-        <SearchField
-          placeholder="ابحث باسم العميل او رقم الهاتف"
-          label="ابحث عن عميل"
-          value={query}
-          onChange={setQuery}
-        />
+        <CustomersFilterBar count={visible.length} debtOnly={debtOnly} />
+
+        <div className="px-screen">
+          <SearchField
+            placeholder="ابحث باسم العميل او رقم الهاتف"
+            label="ابحث عن عميل"
+            value={query}
+            onChange={setQuery}
+          />
+        </div>
       </div>
 
-      {/* Only this region scrolls. The gutter is on the rows, not here, so the
-          dividers run the full width of the screen the way the design draws them. */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      {/* No gutter here: it sits on the rows instead, so the dividers run the
+          full width of the screen the way the design draws them. */}
+      <div className="pb-4">
         {visible.length === 0 ? (
           // 78px under the search box is where the design puts the ring, and it
           // stays put on any screen height rather than centring in what's left.

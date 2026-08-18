@@ -33,12 +33,15 @@ export default async function AdminCustomersPage({
   const totalDebt = customers.reduce((sum, customer) => sum + customer.debt, 0);
 
   return (
-    // `min-h-0` down the column is what pins the toolbar, the filters and the
-    // search box: without it the flex children refuse to shrink and the whole
-    // screen scrolls instead of the list. Same frame as the orders screen.
-    <div className="flex min-h-0 flex-1 flex-col gap-4 pt-4">
-      <CustomersToolbar totalDebt={totalDebt} />
-      <CustomersList customers={customers} debtOnly={debt === "1"} />
+    // One scroll container (<main>) with a `sticky` header, same frame as the
+    // orders screen — see the note there for why nesting a second scroller
+    // inside it goes wrong on a phone. The toolbar is handed to the list as
+    // children so it can sit inside the one pinned block, together with the
+    // filter pills and the search box that depend on the list's own state.
+    <div className="flex flex-col">
+      <CustomersList customers={customers} debtOnly={debt === "1"}>
+        <CustomersToolbar totalDebt={totalDebt} />
+      </CustomersList>
     </div>
   );
 }
