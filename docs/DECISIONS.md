@@ -586,6 +586,31 @@ until the property was pinned down. Any future sheet opened from a similar layer
 now safe by default.
 **Date:** 2026-08-18
 
+### T-33 — The PWA ships in two stages; the manifest is a typed route, not a static file
+Stage one (now): `src/app/manifest.ts` + app icons + `appleWebApp` metadata, so the
+app installs to the home screen and opens **standalone** — no URL bar, no tabs.
+Stage two (Phase 8): service worker, offline caching, the install banner (FR-2),
+notifications.
+**Why the split — the service worker is deliberately deferred, not forgotten:**
+every screen in this app renders live server data (orders, weights, payments,
+debts). A cache-first service worker added now would let the admin open the app
+and act on a **cancelled order or a stale balance** — a worse failure than not
+working offline at all. It lands once the screens are finished and we can decide
+per route what may be cached (shell and fonts: yes; any page holding money or an
+order status: never).
+**Why a typed route instead of `public/manifest.json`** (which the structure in
+BUILD-WORKFLOW section 2 lists): `MetadataRoute.Manifest` type-checks the file at
+build time. A misspelled key in a static JSON manifest fails silently — the
+install prompt just never appears on the phone, with nothing in the console —
+and this is exactly the kind of bug a designer testing on a phone cannot diagnose.
+Next.js links it from the root layout automatically at `/manifest.webmanifest`.
+**iOS needs both:** Safari ignores the manifest, so `appleWebApp` +
+`apple-touch-icon.png` carry the same information again in the metadata.
+**`formatDetection: { telephone: false }`** stops iOS auto-linking runs of digits
+— on these screens a number is almost always a weight, a price, or an order
+number, and the real phone numbers already have their own buttons (`ContactLinks`).
+**Date:** 2026-08-18
+
 ### T-32 — Customer search filters in the browser; the «الآجل» filter lives in the URL
 The search box on A-30 is client state over the list the page already loaded. The
 debt filter stays a URL param (D-26).

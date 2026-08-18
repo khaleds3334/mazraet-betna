@@ -17,6 +17,25 @@ const almarai = localFont({
 export const metadata: Metadata = {
   title: "مزرعة بيتنا",
   description: "إدارة مزرعة الدواجن العائلية — الطلبات والدورات والحسابات",
+  applicationName: "مزرعة بيتنا",
+  // iOS ignores the manifest: it needs its own touch icon and its own
+  // "open without browser chrome" flag (the manifest handles Android).
+  appleWebApp: {
+    capable: true,
+    title: "مزرعة بيتنا",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
+  // Stops iOS from turning any run of digits into a blue phone link — every
+  // number on screen here is a weight, a price, or an order number, and the
+  // real phone numbers already have their own call buttons (ContactLinks).
+  formatDetection: { telephone: false },
 };
 
 // عرض مناسب للموبايل، بدون تكبير يكسر التصميم (320→430px+).
