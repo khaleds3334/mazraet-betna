@@ -46,6 +46,11 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+
+  // /logout is the escape hatch from a session the app can't place, so it must
+  // never be redirected — not even the "signed in? go home" rule below.
+  if (pathname === "/logout") return response;
+
   const publicPath = isPublic(pathname);
 
   // No session on a protected route → go log in.
@@ -57,6 +62,15 @@ export async function updateSession(request: NextRequest) {
   // root; the admin app lives under /admin. Send each to their own home and keep
   // them out of the other's area.
   const role = user?.app_metadata?.role;
+
+  // A signed-in account that is neither has no home to be sent to, and every
+  // screen it reaches bounces it back to /login — which bounces it here again.
+  // Ending the session is the only exit, so do it rather than loop.
+  if (user && role !== "admin" && role !== "customer") {
+    await supabase.auth.signOut({ scope: "local" });
+    return redirectTo(request, response, "/login");
+  }
+
   const homePath = role === "admin" ? "/admin" : "/";
   const inAdminArea = pathname === "/admin" || pathname.startsWith("/admin/");
 

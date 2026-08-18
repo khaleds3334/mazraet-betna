@@ -38,7 +38,7 @@ export default async function AdminOrdersPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const farm = await getCurrentFarm();
-  if (!farm) redirect("/login");
+  if (!farm) redirect("/logout");
 
   const [{ tab }, cycle, customers, settings] = await Promise.all([
     searchParams,

@@ -16,7 +16,7 @@ export default async function AdminCustomersPage({
   searchParams: Promise<{ debt?: string }>;
 }) {
   const farm = await getCurrentFarm();
-  if (!farm) redirect("/login");
+  if (!farm) redirect("/logout");
 
   const [{ debt }, cycle] = await Promise.all([
     searchParams,

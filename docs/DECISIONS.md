@@ -586,6 +586,30 @@ until the property was pinned down. Any future sheet opened from a similar layer
 now safe by default.
 **Date:** 2026-08-18
 
+### T-34 — A session the app can't place is ended, never routed
+Found on the first deploy: the owner's auth account carried its role in
+`user_metadata` (written by an early build) instead of `app_metadata`, where the
+middleware reads it (D-14). The account signed in fine and then belonged to
+neither app — the middleware sent it to the customer home, the customer home
+found no customer row and redirected to `/login`, and the middleware saw a live
+session there and sent it home again. **ERR_TOO_MANY_REDIRECTS, with no screen
+left to tap.** Three changes, because the loop and its trigger are separate bugs:
+1. **The middleware ends a session whose role is neither `admin` nor `customer`**
+   (local sign-out + `/login`) instead of guessing a home for it.
+2. **`/logout`** — a GET route that clears the session and then goes to `/login`.
+   Every page that finds a session but no matching row redirects *there*, not to
+   `/login`, so the dead end can never close into a circle again. It is exempt
+   from every middleware rule, including "signed in → go home".
+3. **`signIn` repairs the role on the way through** — if `app_metadata.role`
+   doesn't match, it is written and the sign-in is repeated, because the session
+   token is stamped with `app_metadata` when it is minted, so the first token
+   would still lack the role. Skipped entirely on a healthy account.
+**Why not just fix the one row:** the row was fixed too, but a redirect loop is
+the worst possible failure for these users — there is no error to read, no button
+to press, and clearing browser data is not something this admin will do while
+standing at a scale. The exit had to exist in the code, not in the data.
+**Date:** 2026-08-18
+
 ### T-33 — The PWA ships in two stages; the manifest is a typed route, not a static file
 Stage one (now): `src/app/manifest.ts` + app icons + `appleWebApp` metadata, so the
 app installs to the home screen and opens **standalone** — no URL bar, no tabs.

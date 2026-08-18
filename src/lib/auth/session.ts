@@ -54,7 +54,7 @@ export async function signInCustomer(phone: string, customer: CustomerAuthRow) {
     });
   }
 
-  const userId = await signIn(email, password);
+  const userId = await signIn(email, password, "customer");
 
   // Link the row to the real session id (fixes the case where the auth user
   // existed but was never linked — otherwise RLS can't match the customer).
@@ -81,7 +81,7 @@ export async function signInAdmin(phone: string, farm: FarmAuthRow) {
     });
   }
 
-  const userId = await signIn(email, password);
+  const userId = await signIn(email, password, "admin");
 
   if (farm.owner_id !== userId) {
     await admin.from("farm").update({ owner_id: userId }).eq("id", farm.id);
@@ -91,13 +91,37 @@ export async function signInAdmin(phone: string, farm: FarmAuthRow) {
 /**
  * Sign in through the cookie-bound server client so the session persists, and
  * return the authenticated user id for linking.
+ *
+ * Also repairs the account's role. An early build wrote the role into
+ * `user_metadata`, which the middleware can't trust and therefore ignores — so
+ * such an account signs in successfully and then belongs to neither app. The
+ * repair has to happen here rather than at creation, because the account is only
+ * created once and these accounts already exist. Signing in a second time is
+ * what makes it stick: the session token is stamped with `app_metadata` at the
+ * moment it is minted, so a token minted before the fix still lacks the role.
+ * Costs nothing on a healthy account — the branch is skipped entirely.
  */
-async function signIn(email: string, password: string): Promise<string> {
+async function signIn(
+  email: string,
+  password: string,
+  role: "customer" | "admin",
+): Promise<string> {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+  const credentials = { email, password };
+
+  const first = await supabase.auth.signInWithPassword(credentials);
+  if (first.error || !first.data.user) {
+    throw first.error ?? new Error("sign-in failed");
+  }
+  if (first.data.user.app_metadata?.role === role) return first.data.user.id;
+
+  await createAdminClient().auth.admin.updateUserById(first.data.user.id, {
+    app_metadata: { role },
   });
-  if (error || !data.user) throw error ?? new Error("sign-in failed");
-  return data.user.id;
+
+  const second = await supabase.auth.signInWithPassword(credentials);
+  if (second.error || !second.data.user) {
+    throw second.error ?? new Error("sign-in failed");
+  }
+  return second.data.user.id;
 }

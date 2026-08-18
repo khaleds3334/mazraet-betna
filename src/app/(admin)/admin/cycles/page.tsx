@@ -12,7 +12,7 @@ import { hasAnyCycle } from "@/lib/queries/cycles";
  */
 export default async function AdminCyclesPage() {
   const farm = await getCurrentFarm();
-  if (!farm) redirect("/login");
+  if (!farm) redirect("/logout");
 
   const anyCycle = await hasAnyCycle(farm.farmId);
 

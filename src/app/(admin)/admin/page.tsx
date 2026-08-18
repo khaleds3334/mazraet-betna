@@ -18,7 +18,7 @@ import { getSellingStats } from "@/lib/queries/selling";
  */
 export default async function AdminHomePage() {
   const farm = await getCurrentFarm();
-  if (!farm) redirect("/login");
+  if (!farm) redirect("/logout");
 
   const dashboard = await getActiveCycleDashboard(farm.farmId);
 

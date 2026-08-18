@@ -21,7 +21,7 @@ const OUTLINE_ACTION = cn(actionBase, actionOutline);
  */
 export default async function CustomerHomePage() {
   const customer = await getCurrentCustomer();
-  if (!customer) redirect("/login");
+  if (!customer) redirect("/logout");
 
   const [sale, unreadCount, debtAmount] = await Promise.all([
     getActiveSaleState(customer.farmId),
