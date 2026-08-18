@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useIsHydrated } from "@/hooks/useIsHydrated";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,6 +22,8 @@ export function Modal({
   label: string;
   children: React.ReactNode;
 }) {
+  const hydrated = useIsHydrated();
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -27,7 +31,12 @@ export function Modal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  return (
+  // Rendered into <body> for the same reason as `BottomSheet` — an overlay must
+  // not be ranked inside whatever positioned ancestor its trigger happens to
+  // live in, or the bottom nav ends up painting over it.
+  if (!hydrated) return null;
+
+  return createPortal(
     <div
       className={cn(
         "fixed inset-0 z-50 flex items-center justify-center px-screen",
@@ -57,6 +66,7 @@ export function Modal({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

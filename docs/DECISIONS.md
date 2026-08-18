@@ -586,6 +586,23 @@ until the property was pinned down. Any future sheet opened from a similar layer
 now safe by default.
 **Date:** 2026-08-18
 
+### T-36 — Overlays render through a portal into `<body>`
+`BottomSheet` and `Modal` `createPortal` into `document.body` instead of
+rendering where they are written (behind `useIsHydrated`, since there is no
+`<body>` to portal into on the server).
+**Why:** `z-index` only ranks an element against its siblings **inside the same
+stacking context**, and a positioned ancestor with a `z-index` creates one. When
+the list screens gained a `sticky top-0 z-10` header (T-35), the add-order and
+add-customer buttons moved inside it — so their sheets' `z-50` was suddenly
+being measured *within* a z-10 header, and the bottom nav at z-40 painted over
+them. Raising numbers would have fixed those two screens and left the trap set
+for the next one: a sheet is opened from whatever button happens to need it, and
+that button can sit anywhere. A portal removes the sheet from every ancestor's
+ranking, which is the only arrangement that keeps being true.
+**Sibling of T-31** — same lesson from the other direction: an overlay must not
+inherit its behaviour from where it was declared.
+**Date:** 2026-08-18
+
 ### T-35 — One scroll container per screen, sized in `svh`, header held by `sticky`
 The rule every list screen follows from now on: **`<main>` is the only thing that
 scrolls.** A screen never puts a second `overflow-y-auto` inside it. Anything

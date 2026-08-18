@@ -184,7 +184,7 @@ export function AddOrderSheet({
           <div
             role="radiogroup"
             aria-label="الوزن المطلوب"
-            className="no-scrollbar flex items-center justify-between overflow-x-auto -gap--2"
+            className="no-scrollbar flex items-center justify-between overflow-x-auto"
           >
             {weights.map((option) => (
               <WeightBadge

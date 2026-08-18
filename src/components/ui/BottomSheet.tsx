@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useIsHydrated } from "@/hooks/useIsHydrated";
 import { cn } from "@/lib/utils";
 
 /**
@@ -32,6 +34,8 @@ export function BottomSheet({
   size?: "auto" | "full";
   children: React.ReactNode;
 }) {
+  const hydrated = useIsHydrated();
+
   // Close on Escape while open.
   useEffect(() => {
     if (!open) return;
@@ -40,7 +44,17 @@ export function BottomSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  return (
+  // Rendered into <body>, never where it was written. A sheet is opened from
+  // whatever button happens to need it, and a `z-index` only ranks against
+  // siblings inside the same stacking context — so a sheet whose button sits in
+  // a positioned ancestor (the sticky header on the list screens, T-35) had its
+  // z-50 measured inside that header and came out *underneath* the bottom nav.
+  // The portal takes it out of every ancestor's ranking, which is the only way
+  // an overlay can be reliably on top. There is no <body> to portal into while
+  // rendering on the server, hence the hydration check.
+  if (!hydrated) return null;
+
+  return createPortal(
     <>
       <div
         aria-hidden
@@ -70,6 +84,7 @@ export function BottomSheet({
       >
         {children}
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
