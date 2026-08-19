@@ -18,6 +18,7 @@ export { NumberStepper } from "./NumberStepper";
 export { PickerField } from "./PickerField";
 export { PinInput } from "./PinInput";
 export { SearchField } from "./SearchField";
+export { Skeleton, SkeletonScreen } from "./Skeleton";
 export { StatItem } from "./StatItem";
 export { StepButton } from "./StepButton";
 export { Stepper } from "./Stepper";

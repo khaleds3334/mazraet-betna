@@ -58,6 +58,7 @@
   /* ── Borders ──────────────────────────────────────────────────────── */
   --color-border: #ecf0ed; /* Border/default */
   --color-control-border: #d9e0da; /* Outline of an unticked control (checkbox, weight badge) */
+  --color-skeleton: var(--color-border); /* Placeholder blocks while a screen loads */
 
   /* ── Status ───────────────────────────────────────────────────────── */
   --color-success: #2c854d; /* Text/success 3 */
