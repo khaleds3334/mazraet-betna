@@ -20,7 +20,7 @@ import {
   // ── Actions ──
   Add01Icon,
   Delete02Icon,
-  PencilEdit01Icon,
+  PencilEdit02Icon, // figma: pencil-edit-02 — «تعديل» on the invoice
   Cancel01Icon,
   Cancel02Icon, // figma: cancel-02
   Search02Icon, // figma: search-02
@@ -90,7 +90,7 @@ export const icons = {
   // Actions
   add: Add01Icon,
   delete: Delete02Icon,
-  edit: PencilEdit01Icon,
+  edit: PencilEdit02Icon,
   close: Cancel01Icon,
   cancel: Cancel02Icon,
   search: Search02Icon,

@@ -119,6 +119,8 @@ export interface OrderListItem {
   status: OrderStatus;
   /** When the order was placed — the card's second line. */
   createdAt: string;
+  /** When the birds were handed over — the invoice sheet's header line. */
+  deliveredAt: string | null;
   /** null for an orphan order, which has no customer yet (FR-13). */
   customer: { name: string; phone: string } | null;
   /** Who the birds are for, when the order was placed for a relative. */
@@ -161,7 +163,7 @@ export async function listCycleOrders(
   const { data } = await supabase
     .from("orders")
     .select(
-      "id, seq, status, created_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, approx_weight, actual_weight, cleaning), payment(amount)",
+      "id, seq, status, created_at, delivered_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, approx_weight, actual_weight, cleaning), payment(amount)",
     )
     .eq("farm_id", farmId)
     .eq("cycle_id", cycle.cycleId)
@@ -178,6 +180,7 @@ export async function listCycleOrders(
       number: formatOrderNumber(cycle.seq, order.seq),
       status: order.status,
       createdAt: order.created_at,
+      deliveredAt: order.delivered_at,
       customer: order.customer
         ? { name: order.customer.name, phone: order.customer.phone }
         : null,

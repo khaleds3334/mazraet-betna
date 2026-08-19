@@ -7,7 +7,10 @@ import type { IconName } from "@/lib/icons";
 import { advanceOrder } from "@/lib/actions/orders";
 import { deliverOrder } from "@/lib/actions/payments";
 import { useToast } from "@/hooks/useToast";
+import type { Invoice } from "@/lib/calculations/invoice";
+import type { OrderListItem } from "@/lib/queries/orders";
 import { PaymentDialog } from "../PaymentDialog";
+import { InvoiceButton } from "../invoice/InvoiceButton";
 
 /**
  * What a weighed order's card offers next (A-50): one button that hands the
@@ -39,15 +42,20 @@ const STAGE = {
 >;
 
 export function OrderStageActions({
-  orderId,
+  order,
   stage,
-  amountDue,
+  invoice,
+  unitPrice,
+  cleaningPrice,
 }: {
-  orderId: string;
+  order: OrderListItem;
   stage: keyof typeof STAGE;
-  /** Still owed on this order — what the payment dialog opens on. */
-  amountDue: number;
+  invoice: Invoice;
+  unitPrice: number;
+  cleaningPrice: number;
 }) {
+  const orderId = order.id;
+  const amountDue = Math.max(0, invoice.remaining);
   const router = useRouter();
   const toast = useToast();
   const [saving, setSaving] = useState(false);
@@ -102,10 +110,12 @@ export function OrderStageActions({
         {step.label}
       </CardAction>
 
-      {/* Not a control yet: the invoice screen (A-6x) is designed, not built. */}
-      <CardAction variant="outline" icon="invoice" interactive={false}>
-        الفاتورة
-      </CardAction>
+      <InvoiceButton
+        order={order}
+        invoice={invoice}
+        unitPrice={unitPrice}
+        cleaningPrice={cleaningPrice}
+      />
 
       <PaymentDialog
         open={collecting}

@@ -641,6 +641,20 @@ is unchanged. That is why the call stays where it is.
 verification; every request on that warm instance is then local.
 **Date:** 2026-08-19
 
+### D-33 — The invoice and the weights table are shared between both apps
+`InvoiceSection` and `WeightsSection` live in `components/shared/invoice/`, not under
+`admin/`. The admin's invoice sheet (A-63) frames them with its own header; the
+customer's order details (C-41 / C-43) will frame them with theirs.
+**Why:** they are the same figures read by two people. A second copy under `customer/`
+would be two renderings of one bill, free to drift — and the day they disagree, one of
+them is telling a customer a number the farm doesn't think it charged.
+**What makes it safe:** both are pure views over the `Invoice` that `computeInvoice`
+returns (D-05). They hold no state, fetch nothing, and know nothing about who is
+reading — so they compose inside a server component in either app.
+**Where the line falls:** anything that *acts* stays with its app. «دفع» and «تعديل»
+belong to the admin's sheet; the shared parts only display.
+**Date:** 2026-08-19
+
 ### D-29 — Registering and editing a customer are one sheet, not two
 `CustomerSheet` serves both A-34 («تسجيل عميل جديد») and A-35 («تعديل بيانات
 العميل»). Passing a `customer` puts it in edit mode; that changes the title, the

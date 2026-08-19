@@ -58,8 +58,9 @@ export function OrderCard({
   // what it came to — the invoice is the order itself (D-05).
   const weighed = order.status !== "pending" && order.status !== "cancelled";
   const unitPrice = order.weighing.unitPrice ?? 0;
+  const cleaningFee = order.weighing.cleaningPrice ?? 0;
   const invoice = computeInvoice(
-    { unit_price: unitPrice, cleaning_price: order.weighing.cleaningPrice },
+    { unit_price: unitPrice, cleaning_price: cleaningFee },
     order.weighing.lines.map((line) => ({
       id: line.id,
       batch_no: 1,
@@ -163,13 +164,20 @@ export function OrderCard({
           )}
           {(order.status === "weighed" || order.status === "ready") && (
             <OrderStageActions
-              orderId={order.id}
+              order={order}
               stage={order.status}
-              amountDue={amountDue}
+              invoice={invoice}
+              unitPrice={unitPrice}
+              cleaningPrice={cleaningFee}
             />
           )}
           {order.status === "delivered" && (
-            <DeliveredOrderActions orderId={order.id} amountDue={amountDue} />
+            <DeliveredOrderActions
+              order={order}
+              invoice={invoice}
+              unitPrice={unitPrice}
+              cleaningPrice={cleaningFee}
+            />
           )}
         </>
       )}

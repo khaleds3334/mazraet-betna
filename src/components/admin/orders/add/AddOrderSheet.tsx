@@ -110,15 +110,16 @@ export function AddOrderSheet({
       onClose={onClose}
       label="انشاء طلب باسم عميل"
       size="full"
-    >
-      <div className="flex min-h-full flex-col gap-6 px-screen pt-4">
-        <header className="flex items-center justify-between">
+      header={
+        <div className="flex items-center justify-between px-screen pt-4 pb-2">
           <h2 className="text-h6 font-bold text-heading">
             انشاء طلب باسم عميل
           </h2>
           <CloseButton onClick={onClose} />
-        </header>
-
+        </div>
+      }
+    >
+      <div className="flex min-h-full flex-col gap-6 px-screen pt-2">
         <OrderRecipient
           value={recipient}
           onChange={setRecipient}

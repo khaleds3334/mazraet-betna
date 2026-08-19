@@ -21,6 +21,10 @@ import { cn } from "@/lib/utils";
  *   • "full" — covers the screen. A sheet that reads as a page (A-56), so it
  *     drops the rounded top edge that marks a partial sheet.
  *
+ * `header` is pinned to the top of the sheet while the body scrolls under it.
+ * The close button belongs there: a sheet whose only way out scrolls off the
+ * screen is a sheet with no way out until you scroll back.
+ *
  * Sits on the overlay tier (z-50) of the layer ladder in globals.css — above
  * the sidebar drawer, below the toasts. Never share a tier with another
  * overlay: equal z-index falls back to DOM order (T-40).
@@ -30,12 +34,15 @@ export function BottomSheet({
   onClose,
   label,
   size = "auto",
+  header,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   label: string;
   size?: "auto" | "full";
+  /** Stays put while the body scrolls. Bring your own padding. */
+  header?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const hydrated = useIsHydrated();
@@ -86,6 +93,11 @@ export function BottomSheet({
         )}
         style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}
       >
+        {header && (
+          <div className="sticky top-0 z-10 shrink-0 bg-background">
+            {header}
+          </div>
+        )}
         {children}
       </div>
     </>,

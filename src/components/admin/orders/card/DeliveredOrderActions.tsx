@@ -1,42 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { CardAction } from "@/components/ui";
-import { recordPayment } from "@/lib/actions/payments";
-import { useToast } from "@/hooks/useToast";
-import { PaymentDialog } from "../PaymentDialog";
+import type { Invoice } from "@/lib/calculations/invoice";
+import type { OrderListItem } from "@/lib/queries/orders";
+import { RecordPaymentDialog } from "../RecordPaymentDialog";
+import { InvoiceButton } from "../invoice/InvoiceButton";
 
 /**
  * A delivered order's card (A-50). The birds are gone, so the only thing left to
- * do with it is money: look at the invoice, and — while anything is still owed —
- * take another instalment (FR-17). A settled order shows the invoice alone.
+ * do with it is money: read the invoice, and — while anything is still owed —
+ * take another instalment (FR-17). A settled order shows the invoice alone, and
+ * it takes the whole row.
  */
 export function DeliveredOrderActions({
-  orderId,
-  amountDue,
+  order,
+  invoice,
+  unitPrice,
+  cleaningPrice,
 }: {
-  orderId: string;
-  /** Still owed. Zero means the order is finished with. */
-  amountDue: number;
+  order: OrderListItem;
+  invoice: Invoice;
+  unitPrice: number;
+  cleaningPrice: number;
 }) {
-  const router = useRouter();
-  const toast = useToast();
-  const [collecting, setCollecting] = useState(false);
-
-  async function pay(amount: number) {
-    // «لم يدفع» on an order already handed over means "not today" — there is
-    // nothing to write, so the dialog just closes.
-    if (amount <= 0) return { ok: true };
-
-    const result = await recordPayment({ orderId, amount });
-    if (result.ok) {
-      toast.success("تم تسجيل الدفع");
-      router.refresh();
-    }
-    // A failure stays inside the dialog — money never fades away in a toast.
-    return result;
-  }
+  const [paying, setPaying] = useState(false);
+  const amountDue = Math.max(0, invoice.remaining);
 
   return (
     <div className="flex items-center gap-4">
@@ -45,28 +34,26 @@ export function DeliveredOrderActions({
           variant="brand"
           icon="walletAdd"
           grow
-          onClick={() => setCollecting(true)}
+          onClick={() => setPaying(true)}
         >
           دفع
         </CardAction>
       )}
 
-      {/* Not a control yet: the invoice screen (A-6x) is designed, not built.
-          It takes the whole row on a settled order, which is the design. */}
-      <CardAction
-        variant="outline"
-        icon="invoice"
+      <InvoiceButton
+        order={order}
+        invoice={invoice}
+        unitPrice={unitPrice}
+        cleaningPrice={cleaningPrice}
+        label="عرض الفاتورة"
         grow={amountDue <= 0}
-        interactive={false}
-      >
-        عرض الفاتورة
-      </CardAction>
+      />
 
-      <PaymentDialog
-        open={collecting}
-        onClose={() => setCollecting(false)}
+      <RecordPaymentDialog
+        open={paying}
+        onClose={() => setPaying(false)}
+        orderId={order.id}
         amountDue={amountDue}
-        onConfirm={pay}
       />
     </div>
   );
