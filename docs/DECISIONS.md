@@ -586,6 +586,75 @@ until the property was pinned down. Any future sheet opened from a similar layer
 now safe by default.
 **Date:** 2026-08-18
 
+### T-39 — The proxy file lives in `src/`, and is named `proxy`, not `middleware`
+`src/proxy.ts`, exporting `proxy()`. Not `middleware.ts`, and **not at the repo
+root** beside `src/`.
+**Why:** the root file was silently ignored by the dev server — no warning, no
+compile line, no error. `next build` still listed it in the middleware manifest,
+so everything looked wired up while **every guarded route answered as though no
+guard existed**: an anonymous request to `/admin` rendered the admin home with a
+200 instead of being sent to `/login`. It was only caught because a redirect bug
+sent us reading the response headers. Moving the file into `src/` made the proxy
+run on the first request, and made Next print the deprecation warning that named
+the second half: Next 16 renamed the convention, so `middleware`/`middleware.ts`
+now only warns, and `proxy`/`proxy.ts` is the current name (`npx @next/codemod
+middleware-to-proxy` does the rename; we did it by hand, it is one file).
+**Nothing leaked** — every admin page independently calls `getCurrentFarm()` and
+redirects to `/logout` when there is none — but that is the second line of
+defence, and it was carrying the whole load on its own.
+**`/lib/supabase/middleware.ts` keeps its name:** it is Supabase's own file
+convention for `updateSession`, not a Next one, and matching Supabase's docs is
+worth more than matching Next's new vocabulary.
+**Date:** 2026-08-19
+
+### T-38 — Never build a redirect URL from `request.url`
+Two forms, one per context, both measured rather than assumed:
+- **Proxy** (`/lib/supabase/middleware.ts`): `NextResponse.redirect()` of a URL
+  cloned from `request.nextUrl`. Next emits a same-origin proxy redirect as a
+  **relative** `Location`, so it is correct on every host.
+- **Route handler** (`/logout`): `redirectTo()` from `/lib/redirect.ts`, which
+  sets a relative `Location` by hand. A route handler gets no such normalisation
+  — it sends the absolute URL it is handed.
+
+**Why:** `request.url` is the address the server was **bound** to. `next dev`
+binds to `0.0.0.0` by default, so `/logout` answered
+`Location: http://0.0.0.0:3000/login`; 0.0.0.0 means "every interface", not a
+destination, and Chrome showed "can't reach this site" on a server that was
+working perfectly. Independent of the `Host` header the browser sent — tested.
+**And `request.nextUrl` is not the fix in a route handler:** it reports the dev
+server's canonical `http://localhost:3000` and does **not** follow `Host`
+either — also tested — so on the father's phone over the Wi-Fi it would redirect
+the phone to *its own* localhost. The path is the only part the server truly
+knows; the browser resolves a relative `Location` against the address it is
+already on, which is right from the laptop, the phone, and behind Vercel's proxy
+alike.
+**Not the dev script.** `-H 0.0.0.0` in `pnpm dev` is exactly the `next dev`
+default (`next dev --help`), so removing it changes nothing about this. It is
+worth dropping only so the startup banner prints the real LAN IP instead of
+`0.0.0.0`, which is the address you need when testing on the phone.
+**Date:** 2026-08-19
+
+### T-37 — Every route gets a `loading.tsx` shaped like its own screen
+A route folder is not finished until it has a `loading.tsx` beside its `page.tsx`,
+built from `Skeleton` / `SkeletonScreen` and laid out like the screen it stands
+in for — same frame, same header, same row shape. A route never inherits a
+parent's loading face, and a generic spinner is not an acceptable substitute.
+**Why:** Next keeps the *old* screen on display until the new one is fully ready,
+so on a real phone a tap produced nothing for one to five seconds. The problem
+was never the speed — it was the silence, and this admin answers silence by
+tapping again, which is the same failure mode the toast system exists to prevent
+(BUILD-WORKFLOW §5). A skeleton that matches the screen also stops the layout
+jumping when the real content lands. Inheriting a parent's file is worse than
+having none: tapping the settings gear would flash a cycle-dashboard skeleton on
+the way to a screen that looks nothing like one — so `/admin/settings` has its
+own, and every future route does too.
+**Second effect, free:** Next only prefetches a dynamic route when it finds a
+`loading.tsx` next to it, so the bottom-nav tabs became genuinely instant, not
+just visibly busy.
+**Applies to the customer app as well** — those screens take their `loading.tsx`
+as they are built, not as a sweep afterwards.
+**Date:** 2026-08-19
+
 ### T-36 — Overlays render through a portal into `<body>`
 `BottomSheet` and `Modal` `createPortal` into `document.body` instead of
 rendering where they are written (behind `useIsHydrated`, since there is no
