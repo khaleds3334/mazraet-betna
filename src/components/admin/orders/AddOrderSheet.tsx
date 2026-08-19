@@ -123,7 +123,7 @@ export function AddOrderSheet({
           <CloseButton onClick={onClose} />
         </header>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5">
           {/* First, because it changes what the rest of the form means: a house
               order belongs to nobody, so everything about "who" disappears. */}
           <div className="flex items-center justify-between gap-2">
@@ -149,7 +149,7 @@ export function AddOrderSheet({
               ولا هتعمل آجل على حد.
             </p>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col">
               <CustomerPicker
                 customers={customers}
                 selected={customer}
