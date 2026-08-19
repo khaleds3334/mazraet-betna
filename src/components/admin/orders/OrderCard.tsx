@@ -8,8 +8,11 @@ import {
   formatWeight,
   pluralizeChicken,
 } from "@/lib/format";
+import { computeInvoice } from "@/lib/calculations/invoice";
 import { EditCancelReasonButton } from "./EditCancelReasonButton";
+import { InvoiceTotal } from "./InvoiceTotal";
 import { OrderCardActions } from "./OrderCardActions";
+import { OrderStageActions } from "./OrderStageActions";
 
 /** One labelled figure in the card's middle row. */
 function Stat({ label, value }: { label: string; value: string }) {
@@ -50,6 +53,20 @@ export function OrderCard({
   cleaningPrice: number;
 }) {
   const placedAt = new Date(order.createdAt);
+  // Once an order is weighed the card stops showing what was asked for and shows
+  // what it came to — the invoice is the order itself (D-05).
+  const weighed = order.status !== "pending" && order.status !== "cancelled";
+  const unitPrice = order.weighing.unitPrice ?? 0;
+  const invoice = computeInvoice(
+    { unit_price: unitPrice, cleaning_price: order.weighing.cleaningPrice },
+    order.weighing.lines.map((line) => ({
+      id: line.id,
+      batch_no: 1,
+      position: line.position,
+      actual_weight: line.actualWeight,
+      cleaning: line.cleaning,
+    })),
+  );
 
   return (
     <article className="flex flex-col gap-[13px] rounded-xl border-2 border-border p-4 shadow-card">
@@ -63,16 +80,7 @@ export function OrderCard({
             )}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {/* Sits beside the status, not instead of it: a house order still moves
-              through pending → weighed → delivered like any other. */}
-          {order.isHouse && (
-            <Badge tone="accent" size="sm">
-              للبيت
-            </Badge>
-          )}
-          <OrderStatusBadge status={order.status} />
-        </div>
+        <OrderStatusBadge status={order.status} />
       </div>
 
       <div className="flex items-center justify-between gap-2">
@@ -92,6 +100,13 @@ export function OrderCard({
           )}
         </div>
         {order.customer && <ContactLinks phone={order.customer.phone} />}
+        {/* A house order has nobody to call, so the badge takes the space the
+            contact buttons would have filled rather than crowding the status. */}
+        {order.isHouse && (
+          <Badge tone="accent" size="sm">
+            للبيت
+          </Badge>
+        )}
       </div>
 
       {/* A cancelled order drops the figures and the actions: what matters about
@@ -111,33 +126,40 @@ export function OrderCard({
         </div>
       ) : (
         <>
-          <div className="flex items-start justify-between gap-2">
-            <Stat
-              label="العدد المطلوب"
-              value={pluralizeChicken(order.chickenCount)}
-            />
-            <Stat
-              label="الوزن المطلوب"
-              value={
-                order.approxWeight == null
-                  ? "أوزان مختلفة"
-                  : formatWeight(order.approxWeight)
-              }
-            />
-            <Stat
-              label="ميعاد تجهيز الفراخ"
-              value={pickupLabel(order.pickupDate, order.pickupTime)}
-            />
-          </div>
+          {weighed ? (
+            <InvoiceTotal invoice={invoice} unitPrice={unitPrice} />
+          ) : (
+            <div className="flex items-start justify-between gap-2">
+              <Stat
+                label="العدد المطلوب"
+                value={pluralizeChicken(order.chickenCount)}
+              />
+              <Stat
+                label="الوزن المطلوب"
+                value={
+                  order.approxWeight == null
+                    ? "أوزان مختلفة"
+                    : formatWeight(order.approxWeight)
+                }
+              />
+              <Stat
+                label="ميعاد تجهيز الفراخ"
+                value={pickupLabel(order.pickupDate, order.pickupTime)}
+              />
+            </div>
+          )}
 
-          {/* Only the pending card's actions are designed (A-50). The other
-              statuses get theirs as their cards are drawn. */}
+          {/* Pending, weighed and ready are designed (A-50); a delivered card
+              gets its actions when that state is drawn. */}
           {order.status === "pending" && (
             <OrderCardActions
               order={order}
               salePrice={salePrice}
               cleaningPrice={cleaningPrice}
             />
+          )}
+          {(order.status === "weighed" || order.status === "ready") && (
+            <OrderStageActions orderId={order.id} stage={order.status} />
           )}
         </>
       )}

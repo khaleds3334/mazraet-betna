@@ -6,13 +6,14 @@ import { cn } from "@/lib/utils";
  * list and in the customer's tracking, and the two read the same state under
  * different names (D-03) — `viewer` picks which wording to show.
  *
- * Only the pending tone is taken from a finished design (A-50); the other four
- * follow the palette's own meaning and get confirmed as their cards are drawn.
+ * The pending, weighed and ready tones are taken from finished designs (A-50);
+ * the other two follow the palette's own meaning and get confirmed as their
+ * cards are drawn.
  */
 const TONE: Record<OrderStatus, string> = {
   pending: "bg-warning-surface text-warning",
-  weighed: "bg-info-surface text-ink",
-  ready: "bg-primary text-primary-foreground",
+  weighed: "bg-info-surface text-info",
+  ready: "bg-primary text-foreground",
   delivered: "bg-success-surface text-success",
   cancelled: "bg-error-soft text-white",
 };

@@ -567,6 +567,19 @@ DOM order rendered them mirrored on the order card too.
 **Why:** One component, one order, matching the design on both screens.
 **Date:** 2026-08-18
 
+### D-30 — An invoice total is whole pounds, rounded once
+The order's grand total is rounded to the nearest pound: under 50 piasters is dropped,
+50 or over becomes a pound. Per-bird charges and the weights stay exact — only the
+total is rounded, and only once (Khaled, 2026-08-19).
+**Why round at all:** nobody on this farm hands over change, and the total is spoken,
+not shown — a price the customer can repeat back is a price he can check.
+**Why not per bird:** rounding each of five birds and then adding can land more than
+two pounds away from the sum of what was actually weighed. The number the admin says
+out loud has to be the one the scale justifies.
+**Where:** `toPounds()` in `lib/calculations/invoice.ts`, so every screen that shows a
+total — the weighing sheet, the order card, the cycle's income — agrees by construction.
+**Date:** 2026-08-19
+
 ### D-29 — Registering and editing a customer are one sheet, not two
 `CustomerSheet` serves both A-34 («تسجيل عميل جديد») and A-35 («تعديل بيانات
 العميل»). Passing a `customer` puts it in edit mode; that changes the title, the

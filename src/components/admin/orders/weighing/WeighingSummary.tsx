@@ -1,5 +1,6 @@
 import { Button, InlineError } from "@/components/ui";
-import { formatCurrency, formatWeight } from "@/lib/format";
+import type { Invoice } from "@/lib/calculations/invoice";
+import { InvoiceTotal } from "../InvoiceTotal";
 
 /**
  * The invoice foot of the weighing sheet (A-52) — the total, how it was reached,
@@ -15,38 +16,21 @@ import { formatCurrency, formatWeight } from "@/lib/format";
  * would walk away believing the weights were saved.
  */
 export function WeighingSummary({
-  total,
-  totalWeight,
+  invoice,
   unitPrice,
-  cleaningTotal,
   error,
   saving,
   onSave,
 }: {
-  total: number;
-  totalWeight: number;
+  invoice: Invoice;
   unitPrice: number;
-  cleaningTotal: number;
   error: string | null;
   saving: boolean;
   onSave: () => void;
 }) {
-  const weights = `(${formatWeight(totalWeight)} × ${formatCurrency(unitPrice)})`;
-  const cleaning =
-    cleaningTotal > 0 ? ` + ${formatCurrency(cleaningTotal)} تنظيف` : "";
-
   return (
-    <div className="flex shrink-0 flex-col gap-4 border-t-2 border-border px-screen pt-4">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between text-h6 font-bold text-primary-foreground">
-          <span>اجمالي السعر النهائي</span>
-          <span>{formatCurrency(total)}</span>
-        </div>
-        <p className="text-center text-sm text-muted">
-          {weights}
-          {cleaning} = {formatCurrency(total)}
-        </p>
-      </div>
+    <div className="flex shrink-0 flex-col gap-4 border-t-2 border-border px-screen pt-6">
+      <InvoiceTotal invoice={invoice} unitPrice={unitPrice} size="lg" />
 
       {error && <InlineError message={error} />}
 

@@ -305,3 +305,39 @@ export async function saveWeights(
   revalidatePath("/admin");
   return { ok: true };
 }
+
+/** Each stage may only be reached from the one before it. */
+const STAGE_BEFORE = { ready: "weighed", delivered: "ready" } as const;
+
+/**
+ * Move a weighed order along: ready for collection, then collected (FR-15, A-50).
+ * Nothing about the money changes at either step — the invoice was settled when
+ * the birds were weighed — so these are plain status moves.
+ *
+ * The update names the stage the order must currently be in, so a double tap or
+ * a stale card can never drag an order backwards or skip it past a step.
+ */
+export async function advanceOrder(
+  orderId: string,
+  to: keyof typeof STAGE_BEFORE,
+): Promise<CreateOrderResult> {
+  const farm = await getCurrentFarm();
+  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      status: to,
+      ...(to === "delivered" ? { delivered_at: new Date().toISOString() } : {}),
+    })
+    .eq("id", orderId)
+    .eq("farm_id", farm.farmId)
+    .eq("status", STAGE_BEFORE[to]);
+
+  if (error) return { ok: false, error: "مقدرناش نغيّر حالة الطلب، حاول تاني." };
+
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin");
+  return { ok: true };
+}

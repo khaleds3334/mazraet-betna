@@ -92,10 +92,6 @@ export function WeighingSheet({
       cleaning,
     })),
   );
-  const totalWeight = drafts.reduce(
-    (sum, draft) => sum + (draft.actualWeight ?? 0),
-    0,
-  );
 
   async function submit() {
     const unweighed = drafts.filter((draft) => draft.actualWeight == null);
@@ -179,10 +175,8 @@ export function WeighingSheet({
         />
 
         <WeighingSummary
-          total={invoice.total}
-          totalWeight={totalWeight}
+          invoice={invoice}
           unitPrice={unitPrice}
-          cleaningTotal={invoice.cleaningTotal}
           error={error}
           saving={saving}
           onSave={submit}

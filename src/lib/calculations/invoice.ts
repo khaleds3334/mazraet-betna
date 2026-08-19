@@ -32,6 +32,8 @@ export interface BatchSummary {
 
 export interface Invoice {
   batches: BatchSummary[];
+  /** Every actual weight added up — the كجم in the invoice's own explanation. */
+  totalWeight: number;
   chickenTotal: number; // sum of weight charges only
   cleaningTotal: number;
   total: number;
@@ -42,6 +44,21 @@ export interface Invoice {
 
 /** Round to piasters (2 decimals) — money never carries float noise. */
 const toPiasters = (n: number): number => Math.round(n * 100) / 100;
+
+/**
+ * The grand total is whole pounds: under 50 piasters is dropped, 50 or over
+ * becomes a pound (Khaled, 2026-08-19). Nobody on this farm hands over change,
+ * and a price read aloud as "ألف وأربعمية وأربعة وستين" is one the customer can
+ * repeat back.
+ *
+ * Rounded once, on the total — never per bird. Five birds rounded one by one can
+ * drift the invoice by more than two pounds away from the sum of what was
+ * actually weighed, and it is the sum the admin says out loud.
+ */
+const toPounds = (n: number): number => Math.round(n);
+
+/** Weights add up to the gram (3 decimals), the way the scale reads them. */
+const toGrams = (n: number): number => Math.round(n * 1000) / 1000;
 
 /**
  * Compute an order's full invoice. Lines with no actual weight yet contribute
@@ -85,13 +102,16 @@ export function computeInvoice(
       ),
     }));
 
+  const totalWeight = toGrams(
+    lines.reduce((sum, line) => sum + (line.actual_weight ?? 0), 0),
+  );
   const chickenTotal = toPiasters(
     charges.reduce((sum, c) => sum + c.weightCharge, 0),
   );
   const cleaningTotal = toPiasters(
     charges.reduce((sum, c) => sum + c.cleaningCharge, 0),
   );
-  const total = toPiasters(chickenTotal + cleaningTotal);
+  const total = toPounds(chickenTotal + cleaningTotal);
   const paid = toPiasters(payments.reduce((sum, p) => sum + p.amount, 0));
   const remaining = toPiasters(total - paid);
 
@@ -102,6 +122,7 @@ export function computeInvoice(
 
   return {
     batches,
+    totalWeight,
     chickenTotal,
     cleaningTotal,
     total,

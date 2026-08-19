@@ -68,7 +68,9 @@ export const ORDER_STATUS_LABEL: Record<
 > = {
   admin: {
     pending: "قيد المراجعة",
-    weighed: "تم الوزن",
+    // The admin's card says it in full — he is scanning a list of cards, and
+    // "تم الوزن" alone reads as a step rather than a state (A-50 weighed).
+    weighed: "تم وزن الفراخ",
     ready: "جاهز للاستلام",
     delivered: "تم التسليم",
     cancelled: "تم الغاء الطلب",
