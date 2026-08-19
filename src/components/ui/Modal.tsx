@@ -10,6 +10,10 @@ import { cn } from "@/lib/utils";
  * record-mortality and similar confirm dialogs), as opposed to the `BottomSheet`
  * that slides up from the bottom. The page behind stays mounted; tapping the
  * scrim or pressing Escape dismisses. The caller renders the card's contents.
+ *
+ * Sits on the overlay tier (z-50) of the layer ladder in globals.css — above
+ * the sidebar drawer, below the toasts. Never share a tier with another
+ * overlay: equal z-index falls back to DOM order (T-40).
  */
 export function Modal({
   open,

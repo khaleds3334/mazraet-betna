@@ -50,7 +50,7 @@ export function Sidebar({
         aria-hidden
         onClick={onClose}
         className={cn(
-          "fixed inset-0 z-50 bg-black/20 backdrop-blur-sm transition-opacity duration-200",
+          "fixed inset-0 z-45 bg-black/20 backdrop-blur-sm transition-opacity duration-200",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
@@ -60,7 +60,7 @@ export function Sidebar({
         aria-modal="true"
         aria-label="القائمة"
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex w-[300px] max-w-[75%] flex-col bg-background shadow-card transition-transform duration-200",
+          "fixed inset-y-0 right-0 z-45 flex w-[300px] max-w-[75%] flex-col bg-background shadow-card transition-transform duration-200",
           open ? "translate-x-0" : "translate-x-full",
         )}
         style={{ paddingTop: "env(safe-area-inset-top)" }}

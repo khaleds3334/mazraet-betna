@@ -87,6 +87,28 @@
   --shadow-modal: 0 8px 16px 4px #3f624640;
 }
 
+/*
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  Layer ladder (z-index) — the one place it is written down.          │
+  │                                                                      │
+  │    40  bottom nav            (BottomNav · AdminBottomNav)            │
+  │    45  sidebar drawer        (Sidebar + its scrim)                   │
+  │    50  overlays              (BottomSheet · Modal)                   │
+  │    60  toasts                (Toaster)                               │
+  │                                                                      │
+  │  Every tier must differ. Two overlays on the SAME number do not      │
+  │  stack by intent — the browser falls back to DOM order, and an       │
+  │  overlay is opened from whatever button happens to need it, so that  │
+  │  order is never something a screen controls. The sidebar and the     │
+  │  sheets both sat on 50, which is why a sheet opened from inside the  │
+  │  sidebar came out underneath it (T-40).                              │
+  │                                                                      │
+  │  Overlays sit ABOVE the drawer because a sheet is opened *from* it   │
+  │  and must be answerable; toasts sit above everything because a       │
+  │  message fired from inside an open sheet has to be readable.         │
+  └─────────────────────────────────────────────────────────────────────┘
+*/
+
 body {
   background: var(--color-background);
   color: var(--color-foreground);

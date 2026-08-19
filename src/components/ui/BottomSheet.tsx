@@ -20,6 +20,10 @@ import { cn } from "@/lib/utils";
  *   • "auto" — content-driven, up to 90% of the viewport, then it scrolls.
  *   • "full" — covers the screen. A sheet that reads as a page (A-56), so it
  *     drops the rounded top edge that marks a partial sheet.
+ *
+ * Sits on the overlay tier (z-50) of the layer ladder in globals.css — above
+ * the sidebar drawer, below the toasts. Never share a tier with another
+ * overlay: equal z-index falls back to DOM order (T-40).
  */
 export function BottomSheet({
   open,

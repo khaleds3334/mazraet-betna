@@ -586,6 +586,28 @@ until the property was pinned down. Any future sheet opened from a similar layer
 now safe by default.
 **Date:** 2026-08-18
 
+### T-40 — One z-index tier per kind of surface; no two share a number
+The ladder is written down once, in `globals.css`: **40** bottom nav · **45**
+sidebar drawer · **50** overlays (`BottomSheet`, `Modal`) · **60** toasts. A new
+surface takes its own number or an existing one — it never doubles up.
+**Why:** the sidebar and the sheets both sat on `z-50`. Equal z-index is not a
+tie the CSS resolves by intent — the browser falls back to DOM order, and an
+overlay is opened from whatever button happens to need it, so that order is
+never something a screen controls. The logout sheet, opened from *inside* the
+sidebar, came out underneath it.
+Which side won the tie did not need diagnosing: **the tie itself is the defect**.
+Giving the drawer its own tier below the overlays fixes it deterministically, and
+would have fixed it whichever way round the symptom had appeared.
+**Why the drawer goes below and not the overlays above:** a sheet is opened
+*from* the sidebar and has to be answerable while it is open, and the toast tier
+already sat above the overlays for the same reason (a validation message fired
+from inside an open sheet must be readable). Moving the drawer down touched one
+file; moving the other two tiers up would have touched three and re-opened a
+relationship that was already correct.
+**Sibling of T-36** — same lesson a third time: an overlay must not inherit its
+rank from where it happens to be written.
+**Date:** 2026-08-19
+
 ### T-39 — The proxy file lives in `src/`, and is named `proxy`, not `middleware`
 `src/proxy.ts`, exporting `proxy()`. Not `middleware.ts`, and **not at the repo
 root** beside `src/`.
