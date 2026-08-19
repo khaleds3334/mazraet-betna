@@ -40,10 +40,15 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Touching the user refreshes the session cookies. Do not remove.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Reads the signed-in user from the access token, verifying it locally with
+  // the project's public key (ES256) instead of asking the auth server. Same
+  // guarantee — a forged token still fails — without a network round trip on
+  // every single request, which is the tax every navigation used to pay (D-32).
+  //
+  // Still refreshes the session cookies when the token is near expiry, which is
+  // the other reason this call has to stay here. Do not remove.
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims ?? null;
 
   const { pathname } = request.nextUrl;
 
@@ -54,19 +59,19 @@ export async function updateSession(request: NextRequest) {
   const publicPath = isPublic(pathname);
 
   // No session on a protected route → go log in.
-  if (!user && !publicPath) {
+  if (!claims && !publicPath) {
     return redirectTo(request, response, "/login");
   }
 
   // The role lives in app_metadata (service-role-only, D-14). Customers own the
   // root; the admin app lives under /admin. Send each to their own home and keep
   // them out of the other's area.
-  const role = user?.app_metadata?.role;
+  const role = claims?.app_metadata?.role;
 
   // A signed-in account that is neither has no home to be sent to, and every
   // screen it reaches bounces it back to /login — which bounces it here again.
   // Ending the session is the only exit, so do it rather than loop.
-  if (user && role !== "admin" && role !== "customer") {
+  if (claims && role !== "admin" && role !== "customer") {
     await supabase.auth.signOut({ scope: "local" });
     return redirectTo(request, response, "/login");
   }
@@ -75,12 +80,12 @@ export async function updateSession(request: NextRequest) {
   const inAdminArea = pathname === "/admin" || pathname.startsWith("/admin/");
 
   // Already signed in but sitting on an auth screen → go to the right home.
-  if (user && publicPath) {
+  if (claims && publicPath) {
     return redirectTo(request, response, homePath);
   }
 
   // Wrong app for the role → bounce to the right one.
-  if (user && !publicPath) {
+  if (claims && !publicPath) {
     if (role === "admin" && !inAdminArea) {
       return redirectTo(request, response, "/admin");
     }

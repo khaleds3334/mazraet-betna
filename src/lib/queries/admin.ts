@@ -20,15 +20,16 @@ export interface CurrentFarm {
  */
 export const getCurrentFarm = cache(async (): Promise<CurrentFarm | null> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  // Verified locally against the project's public key, not fetched from the
+  // auth server — one network round trip off every screen (D-32).
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims.sub;
+  if (!userId) return null;
 
   const { data } = await supabase
     .from("farm")
     .select("id, name, owner_name")
-    .eq("owner_id", user.id)
+    .eq("owner_id", userId)
     .maybeSingle();
   if (!data) return null;
 

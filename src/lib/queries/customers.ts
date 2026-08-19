@@ -20,15 +20,16 @@ export interface CurrentCustomer {
 export const getCurrentCustomer = cache(
   async (): Promise<CurrentCustomer | null> => {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return null;
+    // Verified locally against the project's public key, not fetched from the
+    // auth server — one network round trip off every screen (D-32).
+    const { data: auth } = await supabase.auth.getClaims();
+    const userId = auth?.claims.sub;
+    if (!userId) return null;
 
     const { data } = await supabase
       .from("customer")
       .select("id, name, farm_id")
-      .eq("auth_user_id", user.id)
+      .eq("auth_user_id", userId)
       .maybeSingle();
     if (!data) return null;
 

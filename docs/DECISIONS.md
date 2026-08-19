@@ -622,6 +622,25 @@ filter is still in the URL. What changed is that being in the URL no longer impl
 trip to the server.
 **Date:** 2026-08-19
 
+### D-32 — The signed-in user is read from the token, not from the auth server
+`auth.getClaims()` replaces `auth.getUser()` in the middleware and in both session
+lookups (`getCurrentFarm`, `getCurrentCustomer`). The project signs its JWTs with an
+asymmetric key (ES256), so the token is verified locally with WebCrypto against a
+cached public key — no network call.
+**Why:** every navigation paid for two auth round trips before a single row of its own
+data was read — one in the middleware, one in the page's session lookup — and then a
+third to find the farm. That tax was on every screen of both apps.
+**Why it is not weaker:** `getClaims()` verifies the signature. A forged or edited
+token still fails; what goes away is *asking someone else* to check a signature we hold
+the key for. This is not `getSession()`, which trusts the cookie unread and must never
+be used on the server.
+**What still holds:** the middleware call also refreshes the session when the token is
+near expiry — `getClaims()` does that first, so the cookie refresh the app depends on
+is unchanged. That is why the call stays where it is.
+**Caveat:** on a cold serverless instance the key set is fetched once before the first
+verification; every request on that warm instance is then local.
+**Date:** 2026-08-19
+
 ### D-29 — Registering and editing a customer are one sheet, not two
 `CustomerSheet` serves both A-34 («تسجيل عميل جديد») and A-35 («تعديل بيانات
 العميل»). Passing a `customer` puts it in edit mode; that changes the title, the
