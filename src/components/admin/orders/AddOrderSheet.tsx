@@ -123,58 +123,60 @@ export function AddOrderSheet({
           <CloseButton onClick={onClose} />
         </header>
 
-        {/* First, because it changes what the rest of the form means: a house
-            order belongs to nobody, so everything about "who" disappears. */}
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-base text-heading">الطلب ده للبيت</span>
-          <Toggle
-            checked={isHouse}
-            onChange={(checked) => {
-              setIsHouse(checked);
-              if (checked) {
-                setCustomer(null);
-                setOrphan(false);
-                setForSomeoneElse(false);
-                setOnBehalfOf("");
-              }
-            }}
-            label="الطلب ده للبيت"
-          />
-        </div>
-
-        {isHouse ? (
-          <p className="text-sm text-muted">
-            الفراخ دي هتتشال من المتاح زي أي طلب، بس مش هتتحسب في ايراد الدورة
-            ولا هتعمل آجل على حد.
-          </p>
-        ) : (
-        <div className="flex flex-col gap-3">
-          <CustomerPicker
-            customers={customers}
-            selected={customer}
-            onSelect={setCustomer}
-            disabled={orphan}
-          />
-
+        <div className="flex flex-col gap-2">
+          {/* First, because it changes what the rest of the form means: a house
+              order belongs to nobody, so everything about "who" disappears. */}
           <div className="flex items-center justify-between gap-2">
-            <Checkbox
-              label="لحد تبع العميل؟"
-              checked={forSomeoneElse}
-              onChange={setForSomeoneElse}
-            />
-            {/* An orphan order has no customer at all (FR-13) — ticking it clears
-              and disables the picker so the two can never disagree. */}
-            <Checkbox
-              label="طلب يتيم"
-              checked={orphan}
+            <span className="text-base text-heading">الطلب ده للبيت</span>
+            <Toggle
+              checked={isHouse}
               onChange={(checked) => {
-                setOrphan(checked);
-                if (checked) setCustomer(null);
+                setIsHouse(checked);
+                if (checked) {
+                  setCustomer(null);
+                  setOrphan(false);
+                  setForSomeoneElse(false);
+                  setOnBehalfOf("");
+                }
               }}
+              label="الطلب ده للبيت"
             />
           </div>
+
+          {isHouse ? (
+            <p className="text-sm text-muted">
+              الفراخ دي هتتشال من المتاح زي أي طلب، بس مش هتتحسب في ايراد الدورة
+              ولا هتعمل آجل على حد.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <CustomerPicker
+                customers={customers}
+                selected={customer}
+                onSelect={setCustomer}
+                disabled={orphan}
+              />
+
+              <div className="flex items-center justify-between gap-2">
+                <Checkbox
+                  label="لحد تبع العميل؟"
+                  checked={forSomeoneElse}
+                  onChange={setForSomeoneElse}
+                />
+                {/* An orphan order has no customer at all (FR-13) — ticking it
+                    clears and disables the picker so the two can never disagree. */}
+                <Checkbox
+                  label="طلب يتيم"
+                  checked={orphan}
+                  onChange={(checked) => {
+                    setOrphan(checked);
+                    if (checked) setCustomer(null);
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
-        )}
 
         {forSomeoneElse && (
           <InputField
