@@ -47,11 +47,14 @@ export function OrderCard({
   order,
   salePrice,
   cleaningPrice,
+  weights,
 }: {
   order: OrderListItem;
   /** Live settings, handed to the weighing sheet this card opens (T-15). */
   salePrice: number;
   cleaningPrice: number;
+  /** The weights an order may be asked at — the split dialog picks from these. */
+  weights: number[];
 }) {
   const placedAt = new Date(order.createdAt);
   // Once an order is weighed the card stops showing what was asked for and shows
@@ -63,7 +66,9 @@ export function OrderCard({
     { unit_price: unitPrice, cleaning_price: cleaningFee },
     order.weighing.lines.map((line) => ({
       id: line.id,
-      batch_no: 1,
+      // The bag the bird is actually in — hardcoding 1 here collapsed a split
+      // order back into one bag on its way to the invoice (FR-14ب).
+      batch_no: line.batchNo,
       position: line.position,
       actual_weight: line.actualWeight,
       cleaning: line.cleaning,
@@ -160,6 +165,7 @@ export function OrderCard({
               order={order}
               salePrice={salePrice}
               cleaningPrice={cleaningPrice}
+              weights={weights}
             />
           )}
           {(order.status === "weighed" || order.status === "ready") && (

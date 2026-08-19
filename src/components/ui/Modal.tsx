@@ -11,9 +11,11 @@ import { cn } from "@/lib/utils";
  * that slides up from the bottom. The page behind stays mounted; tapping the
  * scrim or pressing Escape dismisses. The caller renders the card's contents.
  *
- * Sits on the overlay tier (z-50) of the layer ladder in globals.css — above
- * the sidebar drawer, below the toasts. Never share a tier with another
- * overlay: equal z-index falls back to DOM order (T-40).
+ * Sits on the dialog tier (z-55) of the layer ladder in globals.css — above the
+ * sheets, below the toasts. Above the sheets because a dialog is opened *from*
+ * one: the split dialog comes out of the weighing sheet and has to be answerable
+ * over it. Never share a tier with another overlay — equal z-index is not a tie
+ * the browser breaks by intent, it falls back to DOM order (T-40).
  */
 export function Modal({
   open,
@@ -43,7 +45,7 @@ export function Modal({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center px-screen",
+        "fixed inset-0 z-55 flex items-center justify-center px-screen",
         open ? "" : "pointer-events-none",
       )}
     >

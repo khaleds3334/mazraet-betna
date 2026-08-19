@@ -1,50 +1,43 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  clearStoredDraft,
+  readStoredDraft,
+  writeStoredDraft,
+} from "./weighingDraftStorage";
 
 /** One bird while it is being weighed — a row on screen, an `order_line` on save. */
 export type WeighingDraft = {
   /** Unique inside this order; a bird added on the sheet has no database row. */
   key: string;
   id?: string;
+  /** Which bag this bird goes in (FR-14ب). 1 until the order is split. */
+  batchNo: number;
   approxWeight: number | null;
   actualWeight: number | null;
 };
+
+/** One bag as the split dialog defines it: how many birds, at what asked weight. */
+export type WeighingBatch = { count: number; weight: number };
 
 export interface WeighingState {
   cleaning: boolean;
   lines: WeighingDraft[];
 }
 
-const storageKey = (orderId: string) => `mazraa:weighing:${orderId}`;
-
-const isDraft = (value: unknown): value is WeighingDraft => {
-  if (typeof value !== "object" || value === null) return false;
-  const line = value as Record<string, unknown>;
-  return (
-    typeof line.key === "string" &&
-    (line.id === undefined || typeof line.id === "string") &&
-    (line.approxWeight === null || typeof line.approxWeight === "number") &&
-    (line.actualWeight === null || typeof line.actualWeight === "number")
+/**
+ * The bags the lines currently form — what the split dialog opens on. Read off
+ * the lines rather than stored beside them, so the two can never drift apart.
+ */
+function toBatches(lines: WeighingDraft[]): WeighingBatch[] {
+  const bags = [...new Set(lines.map((line) => line.batchNo))].sort(
+    (a, b) => a - b,
   );
-};
-
-/** Reads back a stored weigh-out, or null if there isn't a usable one. */
-function readStored(orderId: string): WeighingState | null {
-  try {
-    const raw = window.localStorage.getItem(storageKey(orderId));
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return null;
-    const state = parsed as Record<string, unknown>;
-    if (typeof state.cleaning !== "boolean") return null;
-    if (!Array.isArray(state.lines) || !state.lines.every(isDraft)) return null;
-    return { cleaning: state.cleaning, lines: state.lines };
-  } catch {
-    // A full or blocked storage, or something else's key under ours — either
-    // way the order still weighs fine from the server's values.
-    return null;
-  }
+  return bags.map((batchNo) => {
+    const inBag = lines.filter((line) => line.batchNo === batchNo);
+    return { count: inBag.length, weight: inBag[0]?.approxWeight ?? 0 };
+  });
 }
 
 /** New birds are keyed `new-1`, `new-2`… — pick up after the restored ones. */
@@ -69,8 +62,9 @@ function openingState(
   orderId: string,
   fromServer: WeighingState,
 ): { state: WeighingState; restored: boolean } {
-  if (typeof window === "undefined") return { state: fromServer, restored: false };
-  const stored = readStored(orderId);
+  if (typeof window === "undefined")
+    return { state: fromServer, restored: false };
+  const stored = readStoredDraft(orderId);
   // Only worth restoring if a weight was actually entered — otherwise the
   // server's rows are the fresher copy of the very same thing.
   return stored?.lines.some((line) => line.actualWeight != null)
@@ -96,19 +90,7 @@ export function useWeighingDraft(orderId: string, fromServer: WeighingState) {
   const added = useRef(lastAddedNumber(opening.state.lines));
 
   useEffect(() => {
-    try {
-      if (lines.some((line) => line.actualWeight != null)) {
-        window.localStorage.setItem(
-          storageKey(orderId),
-          JSON.stringify({ cleaning, lines }),
-        );
-      } else {
-        // Back to an untouched sheet — leave nothing behind to restore.
-        window.localStorage.removeItem(storageKey(orderId));
-      }
-    } catch {
-      // Storage full or blocked: weighing carries on, it just won't survive.
-    }
+    writeStoredDraft(orderId, { cleaning, lines });
   }, [orderId, cleaning, lines]);
 
   const weigh = useCallback((key: string, weight: number) => {
@@ -125,6 +107,9 @@ export function useWeighingDraft(orderId: string, fromServer: WeighingState) {
       ...current,
       {
         key: `new-${(added.current += 1)}`,
+        // A bird added at the end joins the last bag — that is where the admin
+        // is standing when he adds it.
+        batchNo: current.at(-1)?.batchNo ?? 1,
         approxWeight: current.at(-1)?.approxWeight ?? null,
         actualWeight: null,
       },
@@ -135,23 +120,39 @@ export function useWeighingDraft(orderId: string, fromServer: WeighingState) {
     setLines((current) => current.slice(0, -1));
   }, []);
 
+  /**
+   * Deal the birds into bags (FR-14ب). The same birds in the same order — only
+   * which bag they belong to and what was asked for them changes, so a weight
+   * already read off the scale survives being re-bagged.
+   */
+  const split = useCallback((batches: WeighingBatch[]) => {
+    setLines((current) => {
+      const dealt = batches.flatMap((batch, index) =>
+        Array.from({ length: batch.count }, () => ({
+          batchNo: index + 1,
+          approxWeight: batch.weight,
+        })),
+      );
+      return current.map((line, position) => ({
+        ...line,
+        ...(dealt[position] ?? { batchNo: 1 }),
+      }));
+    });
+  }, []);
+
   /** Called once the weights are safely on the server. */
-  const clear = useCallback(() => {
-    try {
-      window.localStorage.removeItem(storageKey(orderId));
-    } catch {
-      // Nothing to do — the draft is only a convenience.
-    }
-  }, [orderId]);
+  const clear = useCallback(() => clearStoredDraft(orderId), [orderId]);
 
   return {
     lines,
+    batches: toBatches(lines),
     cleaning,
     setCleaning,
     restored: opening.restored,
     weigh,
     addBird,
     removeLast,
+    split,
     clear,
   };
 }

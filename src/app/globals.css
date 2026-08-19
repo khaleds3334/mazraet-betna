@@ -95,7 +95,8 @@
   │                                                                      │
   │    40  bottom nav            (BottomNav · AdminBottomNav)            │
   │    45  sidebar drawer        (Sidebar + its scrim)                   │
-  │    50  overlays              (BottomSheet · Modal)                   │
+  │    50  sheets                (BottomSheet)                           │
+  │    55  dialogs               (Modal)                                 │
   │    60  toasts                (Toaster)                               │
   │                                                                      │
   │  Every tier must differ. Two overlays on the SAME number do not      │
@@ -105,9 +106,11 @@
   │  sheets both sat on 50, which is why a sheet opened from inside the  │
   │  sidebar came out underneath it (T-40).                              │
   │                                                                      │
-  │  Overlays sit ABOVE the drawer because a sheet is opened *from* it   │
-  │  and must be answerable; toasts sit above everything because a       │
-  │  message fired from inside an open sheet has to be readable.         │
+  │  Sheets sit ABOVE the drawer because a sheet is opened *from* it     │
+  │  and must be answerable; dialogs sit above sheets for the same       │
+  │  reason (the split dialog is opened from inside the weighing         │
+  │  sheet); toasts sit above everything because a message fired from    │
+  │  inside an open dialog has to be readable.                           │
   └─────────────────────────────────────────────────────────────────────┘
 */
 

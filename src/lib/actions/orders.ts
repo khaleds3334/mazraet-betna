@@ -191,6 +191,8 @@ export type WeighedLineInput = {
   /** The `order_line` row this came from — absent for a bird added while weighing. */
   id?: string;
   position: number;
+  /** Which bag this bird goes in (FR-14ب). */
+  batchNo: number;
   approxWeight: number | null;
   /** The scale reading, in kg. Every bird kept must have one. */
   actualWeight: number;
@@ -253,7 +255,7 @@ export async function saveWeights(
     farm_id: farm.farmId,
     order_id: order.id,
     position: line.position,
-    batch_no: 1,
+    batch_no: line.batchNo,
     approx_weight: line.approxWeight,
     actual_weight: line.actualWeight,
     cleaning: input.cleaning,

@@ -724,8 +724,15 @@ customers' phones hold the shop — but on one phone, switching means signing ou
 
 ### T-40 — One z-index tier per kind of surface; no two share a number
 The ladder is written down once, in `globals.css`: **40** bottom nav · **45**
-sidebar drawer · **50** overlays (`BottomSheet`, `Modal`) · **60** toasts. A new
-surface takes its own number or an existing one — it never doubles up.
+sidebar drawer · **50** sheets (`BottomSheet`) · **55** dialogs (`Modal`) ·
+**60** toasts. A new surface takes its own number — it never doubles up.
+
+**Amended 2026-08-19:** sheets and dialogs used to share **50**, and the defect
+came back exactly as this decision predicts it does. The split dialog, opened from
+*inside* the weighing sheet, rendered underneath it. Same shape as the logout sheet
+under the sidebar: a tie the browser breaks by DOM order, which no screen controls.
+Dialogs now sit above sheets, for the same reason sheets sit above the drawer — a
+dialog is opened *from* a sheet and has to be answerable over it.
 **Why:** the sidebar and the sheets both sat on `z-50`. Equal z-index is not a
 tie the CSS resolves by intent — the browser falls back to DOM order, and an
 overlay is opened from whatever button happens to need it, so that order is

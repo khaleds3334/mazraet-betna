@@ -25,9 +25,9 @@ import { cn } from "@/lib/utils";
  * The close button belongs there: a sheet whose only way out scrolls off the
  * screen is a sheet with no way out until you scroll back.
  *
- * Sits on the overlay tier (z-50) of the layer ladder in globals.css — above
- * the sidebar drawer, below the toasts. Never share a tier with another
- * overlay: equal z-index falls back to DOM order (T-40).
+ * Sits on the sheet tier (z-50) of the layer ladder in globals.css — above the
+ * sidebar drawer, below the dialogs a sheet can open and the toasts. Never share
+ * a tier with another overlay: equal z-index falls back to DOM order (T-40).
  */
 export function BottomSheet({
   open,

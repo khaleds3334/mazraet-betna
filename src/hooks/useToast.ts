@@ -87,10 +87,14 @@ interface ToastOptions {
 
 // Stable across renders — safe to call from anywhere.
 const api = {
-  success: (message: string, o?: ToastOptions) => push("success", message, o?.duration),
-  error: (message: string, o?: ToastOptions) => push("error", message, o?.duration),
-  warning: (message: string, o?: ToastOptions) => push("warning", message, o?.duration),
-  info: (message: string, o?: ToastOptions) => push("info", message, o?.duration),
+  success: (message: string, o?: ToastOptions) =>
+    push("success", message, o?.duration),
+  error: (message: string, o?: ToastOptions) =>
+    push("error", message, o?.duration),
+  warning: (message: string, o?: ToastOptions) =>
+    push("warning", message, o?.duration),
+  info: (message: string, o?: ToastOptions) =>
+    push("info", message, o?.duration),
   dismiss: dismissToast,
 };
 

@@ -2,23 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BottomSheet, Checkbox, CloseButton } from "@/components/ui";
+import { BottomSheet } from "@/components/ui";
 import { computeInvoice } from "@/lib/calculations/invoice";
 import { saveWeights } from "@/lib/actions/orders";
 import type { OrderListItem } from "@/lib/queries/orders";
 import { useToast } from "@/hooks/useToast";
-import {
-  useWeighingDraft,
-  type WeighingDraft,
-} from "@/hooks/useWeighingDraft";
-import { WeighingHeader } from "./WeighingHeader";
+import { useWeighingDraft, type WeighingDraft } from "@/hooks/useWeighingDraft";
+import { WeighingSheetHeader } from "./WeighingSheetHeader";
 import { WeighingList } from "./WeighingList";
+import { SplitOrderDialog } from "./SplitOrderDialog";
 import { WeighingSummary } from "./WeighingSummary";
 
 function toDrafts(order: OrderListItem): WeighingDraft[] {
   return order.weighing.lines.map((line) => ({
     key: line.id,
     id: line.id,
+    batchNo: line.batchNo,
     approxWeight: line.approxWeight,
     actualWeight: line.actualWeight,
   }));
@@ -38,6 +37,7 @@ export function WeighingSheet({
   order,
   salePrice,
   cleaningPrice,
+  weights,
 }: {
   open: boolean;
   onClose: () => void;
@@ -45,6 +45,8 @@ export function WeighingSheet({
   /** Live settings — used until this order stamps its own prices (T-15). */
   salePrice: number;
   cleaningPrice: number;
+  /** The weights an order may be asked at (FR-5) — what a bag can be set to. */
+  weights: number[];
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -53,12 +55,14 @@ export function WeighingSheet({
   // the sheet being closed by accident and the page being reloaded (see the hook).
   const {
     lines: drafts,
+    batches,
     cleaning,
     setCleaning,
     restored,
     weigh,
     addBird,
     removeLast,
+    split,
     clear,
   } = useWeighingDraft(order.id, {
     cleaning: order.weighing.cleaning,
@@ -66,6 +70,7 @@ export function WeighingSheet({
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [splitting, setSplitting] = useState(false);
 
   // Said out loud the first time the sheet is opened: weights appearing on their
   // own would otherwise read as the app having saved something it hasn't. Gated
@@ -86,7 +91,7 @@ export function WeighingSheet({
     { unit_price: unitPrice, cleaning_price: cleaningFee },
     drafts.map((draft, index) => ({
       id: draft.key,
-      batch_no: 1,
+      batch_no: draft.batchNo,
       position: index + 1,
       actual_weight: draft.actualWeight,
       cleaning,
@@ -112,6 +117,7 @@ export function WeighingSheet({
       lines: drafts.map((draft, index) => ({
         id: draft.id,
         position: index + 1,
+        batchNo: draft.batchNo,
         approxWeight: draft.approxWeight,
         actualWeight: draft.actualWeight ?? 0,
       })),
@@ -129,6 +135,13 @@ export function WeighingSheet({
     router.refresh();
   }
 
+  // What each bag comes to so far, for the running subtotal over its rows.
+  const subtotals = Object.fromEntries(
+    invoice.batches.map((batch) => [batch.batchNo, batch.subtotal]),
+  );
+
+  const isSplit = batches.length > 1;
+
   return (
     <BottomSheet
       open={open}
@@ -137,38 +150,23 @@ export function WeighingSheet({
       size="full"
     >
       <div className="flex h-full flex-col">
-        <div className="flex shrink-0 flex-col gap-4 px-screen pt-4">
-          <header className="flex items-center justify-between">
-            <h2 className="text-h6 font-bold text-heading">
-              اضافة اوزان الطلب
-            </h2>
-            <CloseButton onClick={onClose} />
-          </header>
-
-          <WeighingHeader
-            order={order}
-            unitPrice={unitPrice}
-            chickenCount={drafts.length}
-            cleaning={cleaning}
-            onCleaningChange={setCleaning}
-          />
-
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-base font-bold text-heading">
-              ضع الوزن الصافي (كجم)
-            </span>
-            {/* Visible but inert until the split weigh-out is built (FR-14ب). */}
-            <Checkbox
-              label="تقسيم الطلب"
-              checked={false}
-              onChange={() => {}}
-              disabled
-            />
-          </div>
-        </div>
+        <WeighingSheetHeader
+          order={order}
+          unitPrice={unitPrice}
+          chickenCount={drafts.length}
+          cleaning={cleaning}
+          onCleaningChange={setCleaning}
+          isSplit={isSplit}
+          onSplit={() => setSplitting(true)}
+          onUnsplit={() =>
+            split([{ count: drafts.length, weight: batches[0].weight }])
+          }
+          onClose={onClose}
+        />
 
         <WeighingList
           drafts={drafts}
+          subtotals={subtotals}
           onWeigh={weigh}
           onRemoveLast={removeLast}
           onAdd={addBird}
@@ -180,6 +178,18 @@ export function WeighingSheet({
           error={error}
           saving={saving}
           onSave={submit}
+        />
+
+        <SplitOrderDialog
+          open={splitting}
+          onClose={() => setSplitting(false)}
+          chickenCount={drafts.length}
+          weights={weights}
+          initial={batches}
+          onSave={(batches) => {
+            split(batches);
+            setSplitting(false);
+          }}
         />
       </div>
     </BottomSheet>

@@ -25,11 +25,13 @@ function OrdersPanel({
   tab,
   salePrice,
   cleaningPrice,
+  weights,
 }: {
   orders: OrderListItem[];
   tab: AdminOrderTabKey;
   salePrice: number;
   cleaningPrice: number;
+  weights: number[];
 }) {
   if (orders.length === 0) return <OrdersEmptyState tab={tab} />;
 
@@ -41,6 +43,7 @@ function OrdersPanel({
             order={order}
             salePrice={salePrice}
             cleaningPrice={cleaningPrice}
+            weights={weights}
           />
         </li>
       ))}
@@ -85,6 +88,7 @@ export default async function AdminOrdersPage({
         orders={orders.filter((order) => group.statuses.includes(order.status))}
         salePrice={settings.salePrice}
         cleaningPrice={settings.cleaningPrice}
+        weights={settings.availableWeights}
       />,
     ]),
   ) as Record<AdminOrderTabKey, React.ReactNode>;

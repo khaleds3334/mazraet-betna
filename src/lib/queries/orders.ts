@@ -87,6 +87,8 @@ export function tallyOrderTabs(
 export interface WeighingLine {
   id: string;
   position: number;
+  /** Which bag this bird is in (FR-14ب). 1 unless the order was split. */
+  batchNo: number;
   /** What the customer asked for — the greyed number a blank row starts on. */
   approxWeight: number | null;
   /** What the scale actually read. null until the admin weighs this bird. */
@@ -163,7 +165,7 @@ export async function listCycleOrders(
   const { data } = await supabase
     .from("orders")
     .select(
-      "id, seq, status, created_at, delivered_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, approx_weight, actual_weight, cleaning), payment(amount)",
+      "id, seq, status, created_at, delivered_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, batch_no, approx_weight, actual_weight, cleaning), payment(amount)",
     )
     .eq("farm_id", farmId)
     .eq("cycle_id", cycle.cycleId)
@@ -203,6 +205,7 @@ export async function listCycleOrders(
           .map((line) => ({
             id: line.id,
             position: line.position,
+            batchNo: line.batch_no,
             approxWeight: line.approx_weight,
             actualWeight: line.actual_weight,
             cleaning: line.cleaning,

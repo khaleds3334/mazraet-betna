@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 /**
  * The two stepper glyphs from the design (Iconify "ic:round-plus" and
  * "humbleicons:minus"). Bespoke design SVGs on purpose: the Hugeicons free pack
@@ -40,22 +42,29 @@ function MinusGlyph({ size }: { size: number }) {
 }
 
 /**
- * A stepper button from the design: a soft lime rounded square (rx=6) behind a
- * green glyph, with a faint lime glow behind it. The visible square IS the touch
- * target — at the default 44px it already meets the ≥44px admin touch-target
- * rule, so no extra wrapper is needed. `size` lets a caller scale it, but keep it
- * ≥44 for anything the admin taps while weighing.
+ * A stepper button from the design, in the two weights it is drawn in:
+ *   • `soft` — a pale lime square under a faint glow, 44px (the weighing rows)
+ *   • `solid` — a small filled lime square, 24px (the split dialog)
+ *
+ * However small it is drawn, it stays a 44px target: an invisible pad is centred
+ * on it, so the finger gets the size the admin needs (rule 8) while the design
+ * keeps the size it asks for. Everything the admin taps here, he taps standing
+ * over a scale.
  */
 export function StepButton({
   onClick,
   label,
   sign = "plus",
   size = 44,
+  tone = "soft",
+  disabled = false,
 }: {
   onClick: () => void;
   label: string;
   sign?: "plus" | "minus";
   size?: number;
+  tone?: "soft" | "solid";
+  disabled?: boolean;
 }) {
   const glyphSize = Math.round(size * 0.5833);
   return (
@@ -63,12 +72,19 @@ export function StepButton({
       type="button"
       aria-label={label}
       onClick={onClick}
+      disabled={disabled}
       style={{
         width: size,
         height: size,
-        boxShadow: "0 0 10px 0 rgba(217,249,157,0.4)",
+        boxShadow:
+          tone === "soft" ? "0 0 10px 0 rgba(217,249,157,0.4)" : undefined,
       }}
-      className="flex shrink-0 items-center justify-center rounded-md bg-surface text-foreground"
+      className={cn(
+        "relative flex shrink-0 items-center justify-center rounded-md text-foreground disabled:opacity-40",
+        tone === "soft" ? "bg-surface" : "bg-primary",
+        // The tap target, centred on the square and never under 44px.
+        "before:absolute before:top-1/2 before:left-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']",
+      )}
     >
       {sign === "plus" ? (
         <PlusGlyph size={glyphSize} />

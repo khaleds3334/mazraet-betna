@@ -17,10 +17,12 @@ export function OrderCardActions({
   order,
   salePrice,
   cleaningPrice,
+  weights,
 }: {
   order: OrderListItem;
   salePrice: number;
   cleaningPrice: number;
+  weights: number[];
 }) {
   const [weighing, setWeighing] = useState(false);
 
@@ -38,6 +40,7 @@ export function OrderCardActions({
         order={order}
         salePrice={salePrice}
         cleaningPrice={cleaningPrice}
+        weights={weights}
       />
     </div>
   );
