@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui";
+import { LogoutButton } from "@/components/shared/LogoutButton";
 import type { IconName } from "@/lib/icons";
-import { signOut } from "@/lib/actions/auth";
 import { formatCurrency } from "@/lib/format";
 import { cn, isActivePath } from "@/lib/utils";
 
@@ -145,15 +145,7 @@ export function Sidebar({
               </span>
             </button>
 
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="flex items-center gap-1 text-error"
-              >
-                <Icon name="logout" size={24} />
-                <span className="text-base font-bold">تسجيل الخروج</span>
-              </button>
-            </form>
+            <LogoutButton />
           </div>
         </div>
       </aside>
