@@ -21,10 +21,11 @@ function ConfirmButton() {
       isLoading={pending}
       className="flex-1"
     >
-      خروج
-      {/* Trailing the word, the way the design draws it — so this is written out
-          rather than passed as ActionButton's `icon`, which leads instead. */}
+      {/* Written out rather than passed as ActionButton's `icon` only for the
+          size: the design draws it at 16px, the prop renders 20px. It leads the
+          word, the way every other ActionButton in the app carries its icon. */}
       <Icon name="logout" size={16} />
+      خروج
     </ActionButton>
   );
 }

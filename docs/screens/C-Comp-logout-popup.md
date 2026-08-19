@@ -56,8 +56,10 @@ leaves the user exactly where they were, still signed in.
     `Button` component too.
   - The design's scrim is `black/50`; the shared `BottomSheet` uses `black/25`
     everywhere. Left alone — changing it would move every other sheet in the app.
-- **The door icon trails the word خروج**, it does not lead it, so it is written
-  into the button's children rather than passed as `ActionButton`'s `icon`.
+- **The door icon leads the word خروج** (Khaled, 2026-08-19), the way every
+  other `ActionButton` in the app carries its icon. It is still written into the
+  children rather than passed as the `icon` prop, only because the design draws
+  it at 16px where the prop renders 20px.
 - **A-70 does not draw a sign-out row.** Its placement on the settings screen is
   Khaled's call (2026-08-19): the same row as the sidebar, at the bottom of the
   page. When A-70 is built it keeps that position, under «حفظ الاعدادات».
