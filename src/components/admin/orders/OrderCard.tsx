@@ -39,7 +39,16 @@ function pickupLabel(date: string | null, time: string | null): string {
  *
  * A pure view — every value arrives formatted-ready on `order`.
  */
-export function OrderCard({ order }: { order: OrderListItem }) {
+export function OrderCard({
+  order,
+  salePrice,
+  cleaningPrice,
+}: {
+  order: OrderListItem;
+  /** Live settings, handed to the weighing sheet this card opens (T-15). */
+  salePrice: number;
+  cleaningPrice: number;
+}) {
   const placedAt = new Date(order.createdAt);
 
   return (
@@ -124,7 +133,11 @@ export function OrderCard({ order }: { order: OrderListItem }) {
           {/* Only the pending card's actions are designed (A-50). The other
               statuses get theirs as their cards are drawn. */}
           {order.status === "pending" && (
-            <OrderCardActions orderId={order.id} />
+            <OrderCardActions
+              order={order}
+              salePrice={salePrice}
+              cleaningPrice={cleaningPrice}
+            />
           )}
         </>
       )}

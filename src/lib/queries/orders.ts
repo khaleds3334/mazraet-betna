@@ -101,6 +101,34 @@ export async function getOrderTabCounts(
   return tallyOrderTabs(data ?? []);
 }
 
+/** One bird's row on the weighing sheet (A-52) — the same `order_line` (D-13). */
+export interface WeighingLine {
+  id: string;
+  position: number;
+  /** What the customer asked for — the greyed number a blank row starts on. */
+  approxWeight: number | null;
+  /** What the scale actually read. null until the admin weighs this bird. */
+  actualWeight: number | null;
+  cleaning: boolean;
+}
+
+/**
+ * What the weighing sheet needs, carried on the list row rather than fetched
+ * when the sheet opens. The admin taps "وزن الفراخ" standing over a scale with
+ * the birds in his hands — the sheet has to be there instantly, and one extra
+ * round-trip at that moment is one too many.
+ */
+export interface OrderWeighing {
+  /** The customer's note, shown in the orange box above the rows. */
+  notes: string | null;
+  /** Cleaning for the whole order — the switch beside the knife. */
+  cleaning: boolean;
+  /** Prices snapshotted at weighing (T-15) — null until the order is weighed. */
+  unitPrice: number | null;
+  cleaningPrice: number | null;
+  lines: WeighingLine[];
+}
+
 /** One order as the list on A-50 renders it. */
 export interface OrderListItem {
   id: string;
@@ -123,6 +151,8 @@ export interface OrderListItem {
   cancelReason: string | null;
   /** Birds taken for the family house — not a sale (FR-36). */
   isHouse: boolean;
+  /** Everything the weighing sheet opens with (A-52). */
+  weighing: OrderWeighing;
 }
 
 /**
@@ -138,7 +168,7 @@ export async function listOrders(
   const { data } = await supabase
     .from("orders")
     .select(
-      "id, seq, status, created_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, customer(name, phone), order_line(approx_weight)",
+      "id, seq, status, created_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, approx_weight, actual_weight, cleaning)",
     )
     .eq("farm_id", farmId)
     .eq("cycle_id", cycle.cycleId)
@@ -167,6 +197,21 @@ export async function listOrders(
         weights.size === 1 ? (lines[0].approx_weight ?? null) : null,
       cancelReason: order.cancel_reason,
       isHouse: order.is_house,
+      weighing: {
+        notes: order.notes,
+        cleaning: order.cleaning,
+        unitPrice: order.unit_price,
+        cleaningPrice: order.cleaning_price,
+        lines: [...lines]
+          .sort((a, b) => a.position - b.position)
+          .map((line) => ({
+            id: line.id,
+            position: line.position,
+            approxWeight: line.approx_weight,
+            actualWeight: line.actual_weight,
+            cleaning: line.cleaning,
+          })),
+      },
     };
   });
 }

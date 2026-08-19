@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
+import { getFarmSettings } from "@/lib/queries/settings";
 
 /**
  * Order actions (admin only). Writes go through the RLS-bound client — the order
@@ -182,5 +183,125 @@ export async function updateCancelReason(
   }
 
   revalidatePath("/admin/orders");
+  return { ok: true };
+}
+
+/** One bird as the weighing sheet hands it back. */
+export type WeighedLineInput = {
+  /** The `order_line` row this came from — absent for a bird added while weighing. */
+  id?: string;
+  position: number;
+  approxWeight: number | null;
+  /** The scale reading, in kg. Every bird kept must have one. */
+  actualWeight: number;
+};
+
+export type SaveWeightsInput = {
+  orderId: string;
+  /** Cleaning for the whole order — the switch at the top of the sheet. */
+  cleaning: boolean;
+  lines: WeighedLineInput[];
+};
+
+/**
+ * Record an order's actual weights (A-52, FR-14) — the write the whole project
+ * exists for. The order moves to "تم الوزن" and its invoice becomes real, because
+ * the invoice IS the order: these same `order_line` rows now carry a weight, and
+ * `computeInvoice` reads a total off them (D-05).
+ *
+ * Prices are stamped here, not at booking (T-15): the kilo price and cleaning fee
+ * are copied onto the order the first time it is weighed, so a later price change
+ * never rewrites an invoice the customer has already been told.
+ *
+ * Re-weighing is allowed — the admin can reopen a weighed order and fix a number
+ * (FR-16). The stamped prices are kept on a re-weigh, for the same reason.
+ */
+export async function saveWeights(
+  input: SaveWeightsInput,
+): Promise<CreateOrderResult> {
+  const farm = await getCurrentFarm();
+  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  if (input.lines.length === 0) {
+    return { ok: false, error: "لازم تسيب فرخة واحدة على الأقل في الطلب." };
+  }
+  if (input.lines.some((line) => !(line.actualWeight > 0))) {
+    return { ok: false, error: "في فرخة لسه من غير وزن — اوزنها او امسحها." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id, status, unit_price, cleaning_price")
+    .eq("id", input.orderId)
+    .eq("farm_id", farm.farmId)
+    .maybeSingle();
+  if (!order) return { ok: false, error: "الطلب ده مش موجود." };
+  if (order.status === "cancelled") {
+    return { ok: false, error: "الطلب ده ملغي — مينفعش يتوزن." };
+  }
+
+  const settings = await getFarmSettings(farm.farmId);
+  // Stamped once, on the first weigh-in, and never touched again (T-15).
+  const unitPrice = order.unit_price ?? settings.salePrice;
+  const cleaningPrice = order.cleaning_price ?? settings.cleaningPrice;
+
+  const failed = { ok: false, error: "مقدرناش نحفظ الأوزان، حاول تاني." } as const;
+
+  const row = (line: WeighedLineInput) => ({
+    farm_id: farm.farmId,
+    order_id: order.id,
+    position: line.position,
+    batch_no: 1,
+    approx_weight: line.approxWeight,
+    actual_weight: line.actualWeight,
+    cleaning: input.cleaning,
+  });
+
+  // Birds the admin removed while weighing (FR-14ج) are gone from the order.
+  const keptIds = input.lines
+    .map((line) => line.id)
+    .filter((id): id is string => id != null);
+  const removals = supabase
+    .from("order_line")
+    .delete()
+    .eq("order_id", order.id);
+  const { error: deleteError } = await (keptIds.length > 0
+    ? removals.not("id", "in", `(${keptIds.join(",")})`)
+    : removals);
+  if (deleteError) return failed;
+
+  // Kept birds are updated in place — same row, now with a weight. Birds added
+  // on this screen are new rows; the two can't go in one call, because an upsert
+  // needs every row to carry the same columns.
+  const kept = input.lines.filter((line) => line.id != null);
+  if (kept.length > 0) {
+    const { error } = await supabase
+      .from("order_line")
+      .upsert(kept.map((line) => ({ id: line.id, ...row(line) })));
+    if (error) return failed;
+  }
+
+  const added = input.lines.filter((line) => line.id == null);
+  if (added.length > 0) {
+    const { error } = await supabase.from("order_line").insert(added.map(row));
+    if (error) return failed;
+  }
+
+  const { error: orderError } = await supabase
+    .from("orders")
+    .update({
+      status: "weighed",
+      weighed_at: new Date().toISOString(),
+      cleaning: input.cleaning,
+      unit_price: unitPrice,
+      cleaning_price: cleaningPrice,
+    })
+    .eq("id", order.id);
+  if (orderError) return failed;
+
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin");
   return { ok: true };
 }

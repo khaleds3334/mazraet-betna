@@ -90,7 +90,11 @@ export default async function AdminOrdersPage({
           <ul className="flex flex-col gap-3">
             {orders.map((order) => (
               <li key={order.id}>
-                <OrderCard order={order} />
+                <OrderCard
+                  order={order}
+                  salePrice={settings.salePrice}
+                  cleaningPrice={settings.cleaningPrice}
+                />
               </li>
             ))}
           </ul>

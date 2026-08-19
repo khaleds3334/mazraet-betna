@@ -14,11 +14,14 @@ export function Checkbox({
   checked,
   onChange,
   label,
+  disabled = false,
   className,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
+  /** Dimmed and inert — for a box whose feature isn't built yet. */
+  disabled?: boolean;
   className?: string;
 }) {
   return (
@@ -26,8 +29,13 @@ export function Checkbox({
       type="button"
       role="checkbox"
       aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={cn("flex min-h-11 items-center gap-1.5", className)}
+      aria-disabled={disabled || undefined}
+      onClick={() => !disabled && onChange(!checked)}
+      className={cn(
+        "flex min-h-11 items-center gap-1.5",
+        disabled && "opacity-60",
+        className,
+      )}
     >
       <span
         className={cn(

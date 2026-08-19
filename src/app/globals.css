@@ -179,6 +179,39 @@ body {
   }
 }
 
+/*
+  The dashed outline of an "add another" box (the weighing sheet's «اضافة فرخة
+  اخري»). Not `border-dashed`: the browser picks its own dash length — roughly
+  6px at a 2px border — while the design draws a 16px dash with a 7px gap, which
+  reads as a much calmer, more deliberate line.
+
+  So the outline is drawn instead, on a pseudo-element: the SVG rect is a *mask*
+  carrying only the shape, and the color is a plain background behind it. That is
+  what keeps the color a token — a CSS variable can't reach inside a data: URI,
+  so an SVG that painted its own stroke would have to repeat the hex by hand.
+  Override `--dashed-frame-color` on the element to draw it in another color.
+
+  The rect is stroked at 4px with its outer half clipped away, which leaves the
+  2px the design asks for and keeps the corners round.
+*/
+@utility dashed-frame {
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background-color: var(--dashed-frame-color, var(--color-border));
+    --dashed-frame-shape: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='10' stroke='%23000' stroke-width='4' stroke-dasharray='16 7'/%3e%3c/svg%3e");
+    -webkit-mask-image: var(--dashed-frame-shape);
+    mask-image: var(--dashed-frame-shape);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+  }
+}
+
 /* Toast entrance — slides down and fades in from the top. */
 @keyframes toast-in {
   from {

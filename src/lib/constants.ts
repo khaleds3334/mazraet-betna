@@ -49,6 +49,14 @@ export const FEED_PER_CHICK_KG = {
 export const ASSUMED_FEED_BAG_PRICE = 1200;
 
 /**
+ * One tap of ± on the weighing screen (A-52) — 5 grams. The admin types the
+ * reading off the scale and then nudges it; 5 g is the finest correction he
+ * actually makes, and it keeps a nudge from being a whole 10 g jump
+ * (Khaled, 2026-08-19).
+ */
+export const WEIGHT_STEP_KG = 0.005;
+
+/**
  * Order status labels, keyed by who is reading them (D-03). The two apps agreed
  * on "قيد المراجعة" for a pending order — that is what the A-50 card and the
  * customer's tracking both show — so the split currently only matters for the

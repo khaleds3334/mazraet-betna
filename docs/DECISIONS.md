@@ -742,6 +742,24 @@ ranking, which is the only arrangement that keeps being true.
 inherit its behaviour from where it was declared.
 **Date:** 2026-08-18
 
+### T-43 — A weigh-out is kept on the device until it is saved, never on the server
+The weights typed on A-52 are written to `localStorage` under the order's id on every
+change, restored when the sheet is opened again, and deleted the moment `saveWeights`
+succeeds. Nothing is sent to the server before the admin taps «حفظ الاوزان».
+**Why keep it at all:** the admin weighs four birds, the phone locks in his pocket or
+he taps the wrong thing, and four weights are gone — so he reweighs birds already in
+the bag, or guesses. The paper notebook this app replaces never lost a line
+(Khaled, 2026-08-19).
+**Why not autosave to the database instead:** a half-weighed order would carry a real
+`actual_weight` on some rows and none on others, and every read path — the invoice,
+the cycle income, the customer's debt — would be quoting a price for birds that
+aren't all on the scale yet. An order not yet priced is safe; an order priced wrong
+is money. So the partial state stays somewhere it can't be mistaken for a fact.
+**Consequence, accepted:** the draft is tied to one device and one browser. On a farm
+with one admin phone that costs nothing, and it is why the restore announces itself
+with a toast — weights appearing on their own must not read as "the app saved it".
+**Date:** 2026-08-19
+
 ### T-35 — One scroll container per screen, sized in `svh`, header held by `sticky`
 The rule every list screen follows from now on: **`<main>` is the only thing that
 scrolls.** A screen never puts a second `overflow-y-auto` inside it. Anything

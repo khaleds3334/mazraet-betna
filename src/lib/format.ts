@@ -77,6 +77,30 @@ export function formatWeight(
 }
 
 /**
+ * Read a weight the admin typed — Arabic-Indic or Latin digits, with a dot, an
+ * Arabic decimal mark, or a comma — into a number. Returns `null` when there is
+ * no number in the text, so the caller can keep the previous value.
+ *
+ * {@link toLatinDigits} can't do this: it throws away the decimal separator
+ * along with everything else that isn't a digit, turning `1.840` into `1840`.
+ */
+export function parseWeight(input: string): number | null {
+  const normalized = input
+    .replace(/[٠-٩]/g, (d) =>
+      String(ARABIC_DIGITS.indexOf(d as (typeof ARABIC_DIGITS)[number])),
+    )
+    .replace(/[٫,]/g, ".")
+    .replace(/[^0-9.]/g, "");
+
+  // Keep only the first dot — "1.8.4" is a slip, not a second decimal place.
+  const [whole, ...rest] = normalized.split(".");
+  const text = rest.length > 0 ? `${whole}.${rest.join("")}` : whole;
+
+  const value = Number(text);
+  return text === "" || !Number.isFinite(value) ? null : value;
+}
+
+/**
  * Arabic chicken pluralization (rule 7) — never a blanket `${n} فرخات`.
  *   ١ فرخة · ٢ فرختين · ٣–١٠ فرخات · ١١+ (and ٠) فرخة
  */
