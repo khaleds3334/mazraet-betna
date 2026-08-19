@@ -19,11 +19,12 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Everything except Next internals and static assets.
   //
-  // manifest.webmanifest is excluded on purpose: the browser fetches it without
-  // credentials, so the session guard would see an anonymous request and answer
-  // the manifest with a redirect to /login — and a manifest that doesn't load is
-  // an app that can't be installed to the home screen.
+  // Every *.webmanifest is excluded on purpose — the customer one and the admin
+  // one alike: the browser fetches a manifest WITHOUT credentials, so the session
+  // guard would see an anonymous request and answer the manifest with a redirect
+  // to /login — and a manifest that does not load is an app that cannot be
+  // installed to the home screen.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\.webmanifest|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

@@ -1,5 +1,30 @@
+import type { Metadata } from "next";
 import { Toaster } from "@/components/ui";
 import { AdminBottomNav } from "@/components/layout/AdminBottomNav";
+
+/**
+ * The admin half of the site advertises the **second** manifest, so "install"
+ * from any admin screen adds «لوحة التحكم» to the home screen rather than a
+ * second copy of the customer app. iOS ignores manifests entirely and reads the
+ * page's own title and touch icon, which is why both are restated here.
+ */
+export const metadata: Metadata = {
+  title: "لوحة التحكم",
+  applicationName: "لوحة التحكم",
+  manifest: "/admin.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "لوحة التحكم",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/admin-icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/admin-icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icons/admin-apple-touch-icon.png",
+  },
+};
 
 /**
  * Shell for the admin app (lives under /admin): a centered mobile column with

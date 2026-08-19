@@ -586,6 +586,32 @@ until the property was pinned down. Any future sheet opened from a similar layer
 now safe by default.
 **Date:** 2026-08-18
 
+### T-41 — Two installable apps from one origin, told apart by manifest `id`
+The site serves two manifests: `/manifest.webmanifest` (`id: "/"`, «مزرعة بيتنا»,
+starts at `/`) and `/admin.webmanifest` (`id: "/admin"`, «لوحة التحكم», starts at
+`/admin`). The admin route group overrides `metadata.manifest`, the title and the
+touch icon, so installing from any admin screen adds the dashboard icon.
+**Why:** the father wants the dashboard one tap from the home screen, and his
+customers want the shop — the same code, two doors. `id` is what browsers key an
+installed app on, so two manifests on one origin install as two separate apps.
+**`scope` is `/` on both, not `/admin`:** the sign-in screens live at `/login`
+and `/pin`, outside `/admin`. Under the tighter scope the very first launch would
+throw the admin out into a browser tab to type the PIN and back again — the app
+would leave its own window exactly when that hurts most. Overlapping scope is
+allowed; `id` is what keeps them two apps.
+**The proxy must never guard a manifest.** The browser fetches one *without*
+credentials, so a guarded manifest answers with a redirect to `/login` and the
+app silently stops being installable. The matcher excludes `.*\.webmanifest`
+rather than the one filename it used to name, so the next manifest is covered
+before it is written.
+**The limit, and it is not fixable:** two icons are two shortcuts, **not two
+sessions**. Both apps are one origin and share one cookie jar, so the phone is
+signed in as one person at a time. Opening the customer icon while signed in as
+the admin lands on the dashboard, because the proxy sends each role to its own
+home. In real use this never bites — the father's phone holds the dashboard, the
+customers' phones hold the shop — but on one phone, switching means signing out.
+**Date:** 2026-08-19
+
 ### T-40 — One z-index tier per kind of surface; no two share a number
 The ladder is written down once, in `globals.css`: **40** bottom nav · **45**
 sidebar drawer · **50** overlays (`BottomSheet`, `Modal`) · **60** toasts. A new

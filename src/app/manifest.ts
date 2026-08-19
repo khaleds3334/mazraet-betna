@@ -15,6 +15,10 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    // Stated explicitly so the browser keys the installed icon on this and not
+    // on start_url — the admin app is a second manifest on the same origin
+    // (/admin.webmanifest), and `id` is the only thing that keeps them apart.
+    id: "/",
     name: "مزرعة بيتنا",
     short_name: "مزرعة بيتنا",
     description: "إدارة مزرعة الدواجن العائلية — الطلبات والدورات والحسابات",
