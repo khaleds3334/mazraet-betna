@@ -4,8 +4,12 @@ import { useMemo, useState } from "react";
 import { EmptyState, SearchField } from "@/components/ui";
 import type { CustomerSummary } from "@/lib/queries/customers";
 import { matchesNameOrPhone } from "@/lib/search";
+import { useUrlParam } from "@/hooks/useUrlParam";
 import { CustomersFilterBar } from "./CustomersFilterBar";
 import { CustomerRow } from "./CustomerRow";
+
+const readDebtOnly = (raw: string | null) => raw === "1";
+const writeDebtOnly = (debtOnly: boolean) => (debtOnly ? "1" : null);
 
 /**
  * The searchable part of the customers screen (A-30): the count + «الآجل» pills,
@@ -13,21 +17,32 @@ import { CustomerRow } from "./CustomerRow";
  *
  * Search filters the list the page already loaded, in the browser — no round trip
  * per keystroke, and results appear as fast as he types. A family farm has tens of
- * customers, not thousands; the same reasoning as the order sheet's picker. The
- * «الآجل» filter stays in the URL (D-26) because it's a view worth keeping across
- * a refresh, while a half-typed name is not.
+ * customers, not thousands; the same reasoning as the order sheet's picker.
+ *
+ * «الآجل» filters the same loaded list, on the same line as the search. It keeps
+ * its place in the URL (D-26) because it is a view worth surviving a refresh,
+ * while a half-typed name is not — but keeping it there costs nothing now
+ * (D-31). It used to re-run the whole page to fetch the very rows already on
+ * screen, and the pill took about a second to light up.
  */
 export function CustomersList({
   customers,
-  debtOnly,
+  initialDebtOnly,
   children,
 }: {
   customers: CustomerSummary[];
-  debtOnly: boolean;
+  /** Whatever `?debt=` said when the page was opened or shared. */
+  initialDebtOnly: boolean;
   /** The screen's toolbar, so it can live inside the one pinned header block. */
   children: React.ReactNode;
 }) {
   const [query, setQuery] = useState("");
+  const [debtOnly, setDebtOnly] = useUrlParam(
+    "debt",
+    initialDebtOnly,
+    readDebtOnly,
+    writeDebtOnly,
+  );
 
   const visible = useMemo(
     () =>
@@ -54,7 +69,11 @@ export function CustomersList({
       <div className="sticky top-0 z-10 flex flex-col gap-4 bg-background pt-4 pb-3">
         {children}
 
-        <CustomersFilterBar count={visible.length} debtOnly={debtOnly} />
+        <CustomersFilterBar
+          count={visible.length}
+          debtOnly={debtOnly}
+          onToggle={setDebtOnly}
+        />
 
         <div className="px-screen">
           <SearchField

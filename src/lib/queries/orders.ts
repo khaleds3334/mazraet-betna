@@ -83,24 +83,6 @@ export function tallyOrderTabs(
   return counts;
 }
 
-/**
- * The tab counts for one cycle — the numbers in the tab bar on A-50. Reads the
- * cycle's order statuses once and tallies them in memory: a single small round
- * trip instead of one COUNT query per tab.
- */
-export async function getOrderTabCounts(
-  farmId: string,
-  cycleId: string,
-): Promise<OrderTabCounts> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("orders")
-    .select("status")
-    .eq("farm_id", farmId)
-    .eq("cycle_id", cycleId);
-  return tallyOrderTabs(data ?? []);
-}
-
 /** One bird's row on the weighing sheet (A-52) — the same `order_line` (D-13). */
 export interface WeighingLine {
   id: string;
@@ -156,13 +138,22 @@ export interface OrderListItem {
 }
 
 /**
- * The orders of one cycle in one tab, newest first (A-50). Each row arrives with
+ * Every order of one cycle, newest first (A-50). Each row arrives with
  * everything its card shows, so the card component stays a pure view.
+ *
+ * The whole cycle in one read, not one read per tab. The three tabs are three
+ * views of the same set, so this single query feeds all of them *and* the counts
+ * above them (`tallyOrderTabs`) — which is both one round trip instead of two,
+ * and the reason the numbers can never disagree with the list under them: they
+ * are counted off the same rows.
+ *
+ * It is also what makes switching tabs cost nothing. The admin was waiting
+ * seconds for a filter, because a tab was a fresh trip through auth → farm →
+ * cycle → count → list every time (D-31).
  */
-export async function listOrders(
+export async function listCycleOrders(
   farmId: string,
   cycle: { cycleId: string; seq: number },
-  statuses: OrderStatus[],
 ): Promise<OrderListItem[]> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -172,7 +163,6 @@ export async function listOrders(
     )
     .eq("farm_id", farmId)
     .eq("cycle_id", cycle.cycleId)
-    .in("status", statuses)
     .order("created_at", { ascending: false });
 
   return (data ?? []).map((order) => {

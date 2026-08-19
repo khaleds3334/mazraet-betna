@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Icon } from "@/components/ui";
 import { pluralizeCustomer } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -12,17 +11,19 @@ const PILL =
  * is showing (A-30), and the «الآجل» filter that narrows it to the ones who
  * still owe money (A-31).
  *
- * The filter is a link that sets `?debt=1`, so the choice survives a refresh and
- * the back button and the screen stays a server component (T-02) — the same
- * pattern as the orders tabs. The count is not tappable: it reports the list, it
- * doesn't change it.
+ * The filter still sets `?debt=1`, so the choice survives a refresh and the back
+ * button — but it filters rows the browser already holds, so it does it without
+ * asking the server for them again (D-31). The count is not tappable: it reports
+ * the list, it doesn't change it.
  */
 export function CustomersFilterBar({
   count,
   debtOnly,
+  onToggle,
 }: {
   count: number;
   debtOnly: boolean;
+  onToggle: (debtOnly: boolean) => void;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 px-screen">
@@ -33,9 +34,10 @@ export function CustomersFilterBar({
         </span>
       </div>
 
-      <Link
-        href={debtOnly ? "/admin/customers" : "/admin/customers?debt=1"}
-        aria-current={debtOnly ? "page" : undefined}
+      <button
+        type="button"
+        aria-pressed={debtOnly}
+        onClick={() => onToggle(!debtOnly)}
         className={cn(
           PILL,
           debtOnly
@@ -45,7 +47,7 @@ export function CustomersFilterBar({
       >
         <Icon name="customers" size={14} className="shrink-0" />
         <span className="optical-center">الآجل</span>
-      </Link>
+      </button>
     </div>
   );
 }

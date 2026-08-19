@@ -109,6 +109,18 @@ export const ADMIN_ORDER_TABS: {
  */
 export const DEFAULT_ADMIN_ORDER_TAB: AdminOrderTabKey = "new";
 
+/**
+ * Turns whatever `?tab=` happens to say into a real tab. Lives here, beside the
+ * tabs themselves, because both sides of the app need it: the page resolves the
+ * incoming URL on the server, and the browser resolves it again on back/forward.
+ */
+export function resolveTab(value: string | null | undefined): AdminOrderTabKey {
+  return (
+    ADMIN_ORDER_TABS.find((tab) => tab.key === value)?.key ??
+    DEFAULT_ADMIN_ORDER_TAB
+  );
+}
+
 /** Manual expense categories (FR-18 / Phase 7 chips). */
 export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategory, string> = {
   feed: "علف",

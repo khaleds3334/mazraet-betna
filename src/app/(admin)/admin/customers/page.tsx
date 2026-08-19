@@ -39,7 +39,7 @@ export default async function AdminCustomersPage({
     // children so it can sit inside the one pinned block, together with the
     // filter pills and the search box that depend on the list's own state.
     <div className="flex flex-col">
-      <CustomersList customers={customers} debtOnly={debt === "1"}>
+      <CustomersList customers={customers} initialDebtOnly={debt === "1"}>
         <CustomersToolbar totalDebt={totalDebt} />
       </CustomersList>
     </div>

@@ -419,6 +419,9 @@ are a later pass — `ADMIN_ORDER_TABS` stays the live set until then.
 **Date:** 2026-08-18
 
 ### T-26 — The selected order tab lives in the URL, not in React state
+**Amended by D-31 (2026-08-19): still in the URL, but no longer a server round
+trip.** The reasoning below holds; only the mechanism changed.
+
 `?tab=new|active|done` drives A-50, so the whole screen stays a server component
 with no client-side state and no `"use client"` — the tabs are plain `<Link>`s.
 Refresh, the back button, and a shared link all land on the same tab. An unknown
@@ -578,6 +581,45 @@ two pounds away from the sum of what was actually weighed. The number the admin 
 out loud has to be the one the scale justifies.
 **Where:** `toPounds()` in `lib/calculations/invoice.ts`, so every screen that shows a
 total — the weighing sheet, the order card, the cycle's income — agrees by construction.
+**Date:** 2026-08-19
+
+### D-31 — A view of a loaded list is a filter, not a fetch
+**Covers the orders tabs and the customers screen's «الآجل» filter.** Both keep their
+place in the URL; neither goes back to the server for it. Shared mechanism: the
+`useUrlParam` hook.
+
+#### The orders tabs
+A-50 reads every order of the cycle in one query and renders all three tabs on the
+server. `OrdersBrowser` chooses which to show, and pushes `?tab=` with the browser's
+own history API rather than the router.
+**Why:** a tab used to cost a full trip — `auth.getUser` → `farm` → `cycle` →
+`getOrderTabCounts` → `listOrders`, five queries each waiting on the one before it —
+and none of it showed on screen, because `loading.tsx` only fires on a route change,
+not on a changed search param. Khaled measured one to five seconds of a screen that
+looked frozen (2026-08-19). Ordering the queries better would have reached four trips;
+it is the trip itself that had to go.
+**What this amends in T-26:** its two reasons survive. The tab still lives in the URL,
+so refresh, back, and a shared link all land on it. And its worry — counts going stale
+behind a client-side toggle — is now impossible by construction rather than by
+convention: `tallyOrderTabs` counts the very rows the panels render, from one read.
+`router.refresh()` after every write still brings both forward together.
+**What it costs:** the whole cycle's orders travel in the first payload instead of one
+tab's worth. On a flock's worth of orders that is the right trade — it is paid once,
+on a screen that already shows a skeleton, and it buys back every tab press after it.
+Should a cycle ever grow past what one payload should carry, the split is per cycle
+(D-22), not per tab.
+
+#### The «الآجل» filter
+The customers screen already filtered in the browser — `CustomersList` holds every
+customer and narrows them by search text *and* by debt. Only the debt half took the
+long way round: `?debt=1` re-ran the page through auth → farm → cycle → customers to
+fetch the identical rows, so that the browser could then apply a comparison it was
+already able to make. The pill took about a second to light up (Khaled, 2026-08-19).
+It is now state, still mirrored into the URL.
+**What T-32 and D-26 said, and what survives:** "a view worth keeping across a refresh
+belongs in the URL; a half-typed name does not." That holds exactly as written — the
+filter is still in the URL. What changed is that being in the URL no longer implies a
+trip to the server.
 **Date:** 2026-08-19
 
 ### D-29 — Registering and editing a customer are one sheet, not two

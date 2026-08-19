@@ -1,4 +1,5 @@
-import Link from "next/link";
+"use client";
+
 import { ADMIN_ORDER_TABS, type AdminOrderTabKey } from "@/lib/constants";
 import type { OrderTabCounts } from "@/lib/queries/orders";
 import { formatArabicNumber } from "@/lib/format";
@@ -17,9 +18,9 @@ const COUNT_TONE: Record<AdminOrderTabKey, string> = {
 
 /**
  * The tab bar on the orders screen (A-50): one chip per group of statuses
- * (FR-12) carrying how many orders sit in it. Tabs are plain links that set
- * `?tab=`, so the selection survives a refresh and the back button, and the
- * screen stays a server component with no client state (T-02).
+ * (FR-12) carrying how many orders sit in it. Buttons rather than links — the
+ * lists are already on the page, so `OrdersBrowser` swaps them without a server
+ * round trip and keeps `?tab=` in the URL itself (D-31).
  *
  * The row scrolls sideways rather than wrapping — the three chips are wider than
  * a 320px screen.
@@ -27,12 +28,15 @@ const COUNT_TONE: Record<AdminOrderTabKey, string> = {
 export function OrderTabs({
   active,
   counts,
+  onSelect,
 }: {
   active: AdminOrderTabKey;
   counts: OrderTabCounts;
+  onSelect: (tab: AdminOrderTabKey) => void;
 }) {
   return (
-    <nav
+    <div
+      role="tablist"
       aria-label="تصنيفات الطلبات"
       className="no-scrollbar flex items-center justify-between overflow-x-auto px-screen"
     >
@@ -40,10 +44,12 @@ export function OrderTabs({
         const selected = tab.key === active;
 
         return (
-          <Link
+          <button
             key={tab.key}
-            href={`/admin/orders?tab=${tab.key}`}
-            aria-current={selected ? "page" : undefined}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onSelect(tab.key)}
             className={cn(
               "flex min-h-11 shrink-0 items-center gap-1 rounded-xl border border-primary-hover px-2 text-sm text-foreground",
               selected ? "bg-primary" : "bg-transparent",
@@ -62,9 +68,9 @@ export function OrderTabs({
                 {formatArabicNumber(counts[tab.key])}
               </span>
             </span>
-          </Link>
+          </button>
         );
       })}
-    </nav>
+    </div>
   );
 }

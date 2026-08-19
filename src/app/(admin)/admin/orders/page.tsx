@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { SearchField } from "@/components/ui";
 import { OrdersToolbar } from "@/components/admin/orders/OrdersToolbar";
-import { OrderTabs } from "@/components/admin/orders/OrderTabs";
+import { OrdersBrowser } from "@/components/admin/orders/OrdersBrowser";
 import { OrdersEmptyState } from "@/components/admin/orders/OrdersEmptyState";
 import { OrderCard } from "@/components/admin/orders/card/OrderCard";
 import {
   ADMIN_ORDER_TABS,
-  DEFAULT_ADMIN_ORDER_TAB,
+  resolveTab,
   type AdminOrderTabKey,
 } from "@/lib/constants";
 import { getCurrentFarm } from "@/lib/queries/admin";
@@ -14,23 +14,48 @@ import { listFarmCustomers } from "@/lib/queries/customers";
 import { getDefaultOrdersCycle } from "@/lib/queries/cycles";
 import { getFarmSettings } from "@/lib/queries/settings";
 import {
-  EMPTY_ORDER_TAB_COUNTS,
-  getOrderTabCounts,
-  listOrders,
+  listCycleOrders,
+  tallyOrderTabs,
+  type OrderListItem,
 } from "@/lib/queries/orders";
 
-/** Keeps a hand-typed or stale `?tab=` from breaking the screen. */
-function resolveTab(value: string | undefined): AdminOrderTabKey {
-  const match = ADMIN_ORDER_TABS.find((tab) => tab.key === value);
-  return match?.key ?? DEFAULT_ADMIN_ORDER_TAB;
+/** One tab's worth of cards — or the reason it's empty. */
+function OrdersPanel({
+  orders,
+  tab,
+  salePrice,
+  cleaningPrice,
+}: {
+  orders: OrderListItem[];
+  tab: AdminOrderTabKey;
+  salePrice: number;
+  cleaningPrice: number;
+}) {
+  if (orders.length === 0) return <OrdersEmptyState tab={tab} />;
+
+  return (
+    <ul className="flex flex-col gap-3">
+      {orders.map((order) => (
+        <li key={order.id}>
+          <OrderCard
+            order={order}
+            salePrice={salePrice}
+            cleaningPrice={cleaningPrice}
+          />
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 /**
  * Admin orders list (A-50). The orders of one cycle — the running one, or the
  * last one to end — split across the three tabs of FR-12, each showing its count.
  *
- * This pass builds the screen's frame, its empty states, and the add-order sheet
- * (A-56); the order cards and the cycle picker behind the funnel come next.
+ * The cycle is read once, whole, and split into the three tabs here. Every tab
+ * is rendered on the server and handed to `OrdersBrowser` together, so choosing
+ * one is instant and costs nothing (D-31). `loading.tsx` covers the first read;
+ * after that there is nothing left to wait for.
  */
 export default async function AdminOrdersPage({
   searchParams,
@@ -46,20 +71,23 @@ export default async function AdminOrdersPage({
     listFarmCustomers(farm.farmId),
     getFarmSettings(farm.farmId),
   ]);
-  const activeTab = resolveTab(tab);
 
   // A farm with no cycle yet has no orders either — the same empty state, with
   // every count at zero.
-  const counts = cycle
-    ? await getOrderTabCounts(farm.farmId, cycle.cycleId)
-    : EMPTY_ORDER_TAB_COUNTS;
+  const orders = cycle ? await listCycleOrders(farm.farmId, cycle) : [];
 
-  const statuses =
-    ADMIN_ORDER_TABS.find((tab) => tab.key === activeTab)?.statuses ?? [];
-  const orders =
-    cycle && counts[activeTab] > 0
-      ? await listOrders(farm.farmId, cycle, statuses)
-      : [];
+  const panels = Object.fromEntries(
+    ADMIN_ORDER_TABS.map((group) => [
+      group.key,
+      <OrdersPanel
+        key={group.key}
+        tab={group.key}
+        orders={orders.filter((order) => group.statuses.includes(order.status))}
+        salePrice={settings.salePrice}
+        cleaningPrice={settings.cleaningPrice}
+      />,
+    ]),
+  ) as Record<AdminOrderTabKey, React.ReactNode>;
 
   return (
     // One scroll container, not two. The screen used to put a scrollable list
@@ -69,37 +97,24 @@ export default async function AdminOrdersPage({
     // <main>, and the header is held in place with `sticky` — the list moves
     // underneath it because there is nothing else that *can* move.
     <div className="flex flex-col">
-      <div className="sticky top-0 z-10 flex flex-col gap-4 bg-background pt-4 pb-3">
-        <OrdersToolbar
-          customers={customers}
-          weights={settings.availableWeights}
-          defaultCleaning={settings.defaultCleaning}
-        />
-        <div className="px-screen">
-          {/* Static until the list it would filter is wired — see SearchField. */}
-          <SearchField placeholder="ابحث باسم العميل او رقم الطلب" />
-        </div>
-        <OrderTabs active={activeTab} counts={counts} />
-      </div>
-
-      {/* The last card clears the tab bar through <main>'s bottom padding. */}
-      <div className="px-screen pb-4">
-        {orders.length === 0 ? (
-          <OrdersEmptyState tab={activeTab} />
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {orders.map((order) => (
-              <li key={order.id}>
-                <OrderCard
-                  order={order}
-                  salePrice={settings.salePrice}
-                  cleaningPrice={settings.cleaningPrice}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <OrdersBrowser
+        initialTab={resolveTab(tab)}
+        counts={tallyOrderTabs(orders)}
+        panels={panels}
+        header={
+          <>
+            <OrdersToolbar
+              customers={customers}
+              weights={settings.availableWeights}
+              defaultCleaning={settings.defaultCleaning}
+            />
+            <div className="px-screen">
+              {/* Static until the list it would filter is wired — see SearchField. */}
+              <SearchField placeholder="ابحث باسم العميل او رقم الطلب" />
+            </div>
+          </>
+        }
+      />
     </div>
   );
 }
