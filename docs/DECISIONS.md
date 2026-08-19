@@ -586,6 +586,28 @@ until the property was pinned down. Any future sheet opened from a similar layer
 now safe by default.
 **Date:** 2026-08-18
 
+### T-42 — A house order is a flag on the order, not a second kind of record
+Birds the family takes for its own house are an ordinary `orders` row with
+`is_house = true` and no customer (FR-36). Not a `withdrawal` table beside
+`mortality`.
+**Why:** the first instinct was a separate record, and reading the code changed
+it. `availableChickens()` is `chicks − (mortality + sold + requested)`, so an
+order **already** leaves the flock — a separate table would have meant editing
+that calculation and every screen that shows «الفراخ المتوفرة», to arrive at the
+same number. The flag changes only the money.
+It also matches how the user talks: Khaled asked for «الطلبات بتاعة البيت», and
+the act is identical to any other order — catch the birds, weigh them, clean
+them. A model that mirrors what the person already does needs no learning.
+**And it keeps the weight.** A withdrawal record would have been a bare count;
+as an order it goes through the same weighing, so «البيت أكل كام كيلو» becomes a
+real number instead of a thing nobody can answer.
+**No customer, deliberately:** `customer_id` stays null (FR-13 already allows
+it), which is what keeps a house order out of every per-customer debt tally
+without those queries having to learn the column exists.
+**Decided before A-52 is built,** so the weighing screen — the most important in
+the project — is written knowing this case, rather than reopened for it later.
+**Date:** 2026-08-19
+
 ### T-41 — Two installable apps from one origin, told apart by manifest `id`
 The site serves two manifests: `/manifest.webmanifest` (`id: "/"`, «مزرعة بيتنا»,
 starts at `/`) and `/admin.webmanifest` (`id: "/admin"`, «لوحة التحكم», starts at

@@ -54,7 +54,7 @@ export async function getSellingStats(
   const { data } = await supabase
     .from("orders")
     .select(
-      "status, unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
+      "status, is_house, unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
     )
     .eq("cycle_id", cycleId)
     .neq("status", "cancelled");
@@ -68,12 +68,17 @@ export async function getSellingStats(
   const sold = countLines(DELIVERED_STATUSES);
   const requested = countLines(RUNNING_STATUSES);
 
+  // Birds for the family house leave the flock like any other order — they are
+  // counted in `sold`/`requested` above — but they are not a sale, so they carry
+  // no revenue and no debt (FR-36). They are the only thing the money side drops.
   const money = sumInvoices(
-    orders.map((order) => ({
-      order,
-      lines: order.order_line ?? [],
-      payments: order.payment ?? [],
-    })),
+    orders
+      .filter((order) => !order.is_house)
+      .map((order) => ({
+        order,
+        lines: order.order_line ?? [],
+        payments: order.payment ?? [],
+      })),
   );
 
   // Only birds that actually went on the scale count towards the average.

@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui";
 import { ContactLinks } from "@/components/shared/ContactLinks";
 import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
 import type { OrderListItem } from "@/lib/queries/orders";
@@ -53,13 +54,24 @@ export function OrderCard({ order }: { order: OrderListItem }) {
             )}
           </p>
         </div>
-        <OrderStatusBadge status={order.status} />
+        <div className="flex shrink-0 items-center gap-1.5">
+          {/* Sits beside the status, not instead of it: a house order still moves
+              through pending → weighed → delivered like any other. */}
+          {order.isHouse && (
+            <Badge tone="accent" size="sm">
+              للبيت
+            </Badge>
+          )}
+          <OrderStatusBadge status={order.status} />
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-col gap-1 text-right">
           <p className="text-base text-primary-foreground">
-            {order.customer?.name ?? "طلب يتيم"}
+            {order.isHouse
+              ? "فراخ البيت"
+              : (order.customer?.name ?? "طلب يتيم")}
             {/* Whoever the birds are really for, right beside the name that
                 carries the money — the admin reads the pair as one line. */}
             {order.onBehalfOf && (

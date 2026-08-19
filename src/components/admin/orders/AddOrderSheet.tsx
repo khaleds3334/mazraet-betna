@@ -47,6 +47,7 @@ export function AddOrderSheet({
 
   const [customer, setCustomer] = useState<CustomerOption | null>(null);
   const [orphan, setOrphan] = useState(false);
+  const [isHouse, setIsHouse] = useState(false);
   const [forSomeoneElse, setForSomeoneElse] = useState(false);
   const [onBehalfOf, setOnBehalfOf] = useState("");
   const [count, setCount] = useState(1);
@@ -59,6 +60,7 @@ export function AddOrderSheet({
   function reset() {
     setCustomer(null);
     setOrphan(false);
+    setIsHouse(false);
     setForSomeoneElse(false);
     setOnBehalfOf("");
     setCount(1);
@@ -69,7 +71,7 @@ export function AddOrderSheet({
   }
 
   async function submit() {
-    if (!orphan && !customer) {
+    if (!isHouse && !orphan && !customer) {
       setError("اختار العميل، او علّم إن الطلب يتيم.");
       return;
     }
@@ -91,6 +93,7 @@ export function AddOrderSheet({
       weight,
       cleaning,
       notes,
+      isHouse,
     });
     setSaving(false);
 
@@ -120,6 +123,31 @@ export function AddOrderSheet({
           <CloseButton onClick={onClose} />
         </header>
 
+        {/* First, because it changes what the rest of the form means: a house
+            order belongs to nobody, so everything about "who" disappears. */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-base text-heading">الطلب ده للبيت</span>
+          <Toggle
+            checked={isHouse}
+            onChange={(checked) => {
+              setIsHouse(checked);
+              if (checked) {
+                setCustomer(null);
+                setOrphan(false);
+                setForSomeoneElse(false);
+                setOnBehalfOf("");
+              }
+            }}
+            label="الطلب ده للبيت"
+          />
+        </div>
+
+        {isHouse ? (
+          <p className="text-sm text-muted">
+            الفراخ دي هتتشال من المتاح زي أي طلب، بس مش هتتحسب في ايراد الدورة
+            ولا هتعمل آجل على حد.
+          </p>
+        ) : (
         <div className="flex flex-col gap-3">
           <CustomerPicker
             customers={customers}
@@ -146,6 +174,7 @@ export function AddOrderSheet({
             />
           </div>
         </div>
+        )}
 
         {forSomeoneElse && (
           <InputField

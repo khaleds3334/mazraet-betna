@@ -22,6 +22,11 @@ export type CreateOrderInput = {
   /** Cleaning included for the whole order. */
   cleaning: boolean;
   notes: string;
+  /**
+   * Birds for the family's own house (FR-36). They leave the flock like any
+   * other order, but they are not a sale: no revenue, no debt, no customer.
+   */
+  isHouse: boolean;
 };
 
 export type CreateOrderResult = { ok: false; error: string } | { ok: true };
@@ -67,7 +72,10 @@ export async function createOrder(
     .insert({
       farm_id: farm.farmId,
       cycle_id: cycle.id,
-      customer_id: input.customerId,
+      // A house order belongs to nobody — that is what keeps it out of every
+      // per-customer debt tally without those having to know about it.
+      customer_id: input.isHouse ? null : input.customerId,
+      is_house: input.isHouse,
       status: "pending",
       source: "admin",
       cleaning: input.cleaning,

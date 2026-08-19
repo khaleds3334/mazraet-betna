@@ -459,6 +459,7 @@ export type Database = {
           delivered_at: string | null
           farm_id: string
           id: string
+          is_house: boolean
           notes: string | null
           on_behalf_of: string | null
           pickup_date: string | null
@@ -481,6 +482,7 @@ export type Database = {
           delivered_at?: string | null
           farm_id: string
           id?: string
+          is_house?: boolean
           notes?: string | null
           on_behalf_of?: string | null
           pickup_date?: string | null
@@ -503,6 +505,7 @@ export type Database = {
           delivered_at?: string | null
           farm_id?: string
           id?: string
+          is_house?: boolean
           notes?: string | null
           on_behalf_of?: string | null
           pickup_date?: string | null

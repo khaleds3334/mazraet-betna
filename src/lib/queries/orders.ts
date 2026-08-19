@@ -121,6 +121,8 @@ export interface OrderListItem {
   approxWeight: number | null;
   /** Why it was cancelled — only ever set on a cancelled order (A-51). */
   cancelReason: string | null;
+  /** Birds taken for the family house — not a sale (FR-36). */
+  isHouse: boolean;
 }
 
 /**
@@ -136,7 +138,7 @@ export async function listOrders(
   const { data } = await supabase
     .from("orders")
     .select(
-      "id, seq, status, created_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, customer(name, phone), order_line(approx_weight)",
+      "id, seq, status, created_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, customer(name, phone), order_line(approx_weight)",
     )
     .eq("farm_id", farmId)
     .eq("cycle_id", cycle.cycleId)
@@ -164,6 +166,7 @@ export async function listOrders(
       approxWeight:
         weights.size === 1 ? (lines[0].approx_weight ?? null) : null,
       cancelReason: order.cancel_reason,
+      isHouse: order.is_house,
     };
   });
 }
