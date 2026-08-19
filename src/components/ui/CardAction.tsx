@@ -34,13 +34,21 @@ const VARIANT = {
     box: "border-error text-error",
     chip: "size-4 rounded-full bg-error text-white",
   },
+  /** The action you take by *not* doing the main one (لم يدفع). */
+  muted: {
+    box: "border-control-border bg-control-border text-foreground",
+    chip: "size-5",
+  },
 } as const;
 
 type CardActionProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: keyof typeof VARIANT;
-  icon: IconName;
+  /** Optional: some of these carry a word alone. */
+  icon?: IconName;
   /** Takes the leftover width; the other action on the row keeps its size. */
   grow?: boolean;
+  /** Spins in place of the icon while the action is in flight. */
+  isLoading?: boolean;
   /**
    * Renders the same shape as a plain box instead of a control — for an action
    * whose screen is designed but not built yet. Something that looks tappable
@@ -53,6 +61,7 @@ export function CardAction({
   variant = "primary",
   icon,
   grow = false,
+  isLoading = false,
   interactive = true,
   className,
   children,
@@ -70,9 +79,11 @@ export function CardAction({
 
   const content = (
     <>
-      <span className={cn("flex items-center justify-center", style.chip)}>
-        <Icon name={icon} size={14} />
-      </span>
+      {icon && (
+        <span className={cn("flex items-center justify-center", style.chip)}>
+          <Icon name={icon} size={14} />
+        </span>
+      )}
       <span className="optical-center">{children}</span>
     </>
   );
@@ -82,11 +93,30 @@ export function CardAction({
   return (
     <button
       type={type}
-      disabled={disabled}
-      className={cn(shape, "disabled:opacity-60")}
+      disabled={disabled || isLoading}
+      aria-busy={isLoading || undefined}
+      className={cn(shape, "relative disabled:opacity-60")}
       {...props}
     >
-      {content}
+      {/* While it saves, the label is hidden rather than removed and the spinner
+          floats over it. Two of these share a row and one is sized by its own
+          text, so swapping the content out would resize the button under the
+          finger that just pressed it. */}
+      <span
+        className={cn(
+          "flex items-center justify-center gap-1.5",
+          isLoading && "invisible",
+        )}
+      >
+        {content}
+      </span>
+
+      {isLoading && (
+        <span
+          aria-hidden
+          className="absolute size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+        />
+      )}
     </button>
   );
 }

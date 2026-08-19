@@ -135,6 +135,8 @@ export interface OrderListItem {
   isHouse: boolean;
   /** Everything the weighing sheet opens with (A-52). */
   weighing: OrderWeighing;
+  /** What has been paid so far — the card works its own remainder out (FR-17). */
+  payments: { amount: number }[];
 }
 
 /**
@@ -159,7 +161,7 @@ export async function listCycleOrders(
   const { data } = await supabase
     .from("orders")
     .select(
-      "id, seq, status, created_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, approx_weight, actual_weight, cleaning)",
+      "id, seq, status, created_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, approx_weight, actual_weight, cleaning), payment(amount)",
     )
     .eq("farm_id", farmId)
     .eq("cycle_id", cycle.cycleId)
@@ -187,6 +189,7 @@ export async function listCycleOrders(
         weights.size === 1 ? (lines[0].approx_weight ?? null) : null,
       cancelReason: order.cancel_reason,
       isHouse: order.is_house,
+      payments: order.payment ?? [],
       weighing: {
         notes: order.notes,
         cleaning: order.cleaning,

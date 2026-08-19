@@ -5,27 +5,29 @@ import { useRouter } from "next/navigation";
 import { CardAction } from "@/components/ui";
 import type { IconName } from "@/lib/icons";
 import { advanceOrder } from "@/lib/actions/orders";
+import { deliverOrder } from "@/lib/actions/payments";
 import { useToast } from "@/hooks/useToast";
+import { PaymentDialog } from "../PaymentDialog";
 
 /**
- * What a weighed order's card offers next (A-50). Weighing is behind it and the
- * invoice is settled, so both stages read the same: one button that hands the
+ * What a weighed order's card offers next (A-50): one button that hands the
  * order on, and the invoice beside it.
  *
- * The two stages differ only in wording and weight — lime while the birds are
+ * The two stages differ in wording and in weight — lime while the birds are
  * still being prepared, dark green for the last step, which is the one the admin
- * should not tap by mistake.
+ * should not tap by mistake. They differ in one more way that matters: handing
+ * the birds over is when the money is settled, so that step asks what was paid
+ * before it closes the order (FR-17). Unless nothing is owed — then the question
+ * has no answer to give, and the order simply closes.
  */
 const STAGE = {
   weighed: {
-    to: "ready",
     label: "جاهز للاستلام",
     icon: "checkDouble",
     done: "الطلب بقى جاهز للاستلام",
     variant: "primary",
   },
   ready: {
-    to: "delivered",
     label: "تم استلام الطلب",
     icon: "delivered",
     done: "الطلب اتسلّم",
@@ -33,40 +35,59 @@ const STAGE = {
   },
 } as const satisfies Record<
   string,
-  {
-    to: "ready" | "delivered";
-    label: string;
-    icon: IconName;
-    done: string;
-    variant: "primary" | "brand";
-  }
+  { label: string; icon: IconName; done: string; variant: "primary" | "brand" }
 >;
 
 export function OrderStageActions({
   orderId,
   stage,
+  amountDue,
 }: {
   orderId: string;
   stage: keyof typeof STAGE;
+  /** Still owed on this order — what the payment dialog opens on. */
+  amountDue: number;
 }) {
   const router = useRouter();
   const toast = useToast();
   const [saving, setSaving] = useState(false);
+  const [collecting, setCollecting] = useState(false);
   const step = STAGE[stage];
 
-  async function advance() {
+  async function markReady() {
     setSaving(true);
-    const result = await advanceOrder(orderId, step.to);
+    const result = await advanceOrder(orderId, "ready");
     setSaving(false);
 
     if (!result.ok) {
-      // Not a critical write — no money moved, and the card keeps showing the
-      // true state either way — so a toast carries the right weight (rule 11).
+      // Nothing about the money moved and the card still shows the true state,
+      // so a toast carries the right weight here (rule 11).
       toast.error(result.error);
       return;
     }
     toast.success(step.done);
     router.refresh();
+  }
+
+  async function deliver(amount: number) {
+    setSaving(true);
+    const result = await deliverOrder({ orderId, amount });
+    setSaving(false);
+
+    if (result.ok) {
+      toast.success(step.done);
+      router.refresh();
+    }
+    // A failure stays inside the dialog — money never fades away in a toast.
+    return result;
+  }
+
+  function onPrimary() {
+    if (stage === "weighed") return markReady();
+    // Nothing owed, so there is no question to ask — the order just closes. It
+    // still writes, so it still has to look like it is writing.
+    if (amountDue > 0) return setCollecting(true);
+    return void deliver(0);
   }
 
   return (
@@ -75,8 +96,8 @@ export function OrderStageActions({
         variant={step.variant}
         icon={step.icon}
         grow
-        onClick={advance}
-        disabled={saving}
+        onClick={onPrimary}
+        isLoading={saving}
       >
         {step.label}
       </CardAction>
@@ -85,6 +106,13 @@ export function OrderStageActions({
       <CardAction variant="outline" icon="invoice" interactive={false}>
         الفاتورة
       </CardAction>
+
+      <PaymentDialog
+        open={collecting}
+        onClose={() => setCollecting(false)}
+        amountDue={amountDue}
+        onConfirm={deliver}
+      />
     </div>
   );
 }

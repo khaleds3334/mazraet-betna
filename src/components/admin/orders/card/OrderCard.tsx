@@ -12,6 +12,7 @@ import { computeInvoice } from "@/lib/calculations/invoice";
 import { EditCancelReasonButton } from "./EditCancelReasonButton";
 import { InvoiceTotal } from "./InvoiceTotal";
 import { OrderCardActions } from "./OrderCardActions";
+import { DeliveredOrderActions } from "./DeliveredOrderActions";
 import { OrderStageActions } from "./OrderStageActions";
 
 /** One labelled figure in the card's middle row. */
@@ -66,7 +67,9 @@ export function OrderCard({
       actual_weight: line.actualWeight,
       cleaning: line.cleaning,
     })),
+    order.payments,
   );
+  const amountDue = Math.max(0, invoice.remaining);
 
   return (
     <article className="flex flex-col gap-[13px] rounded-xl border-2 border-border p-4 shadow-card">
@@ -80,7 +83,7 @@ export function OrderCard({
             )}
           </p>
         </div>
-        <OrderStatusBadge status={order.status} />
+        <OrderStatusBadge status={order.status} remaining={amountDue} />
       </div>
 
       <div className="flex items-center justify-between gap-2">
@@ -149,8 +152,8 @@ export function OrderCard({
             </div>
           )}
 
-          {/* Pending, weighed and ready are designed (A-50); a delivered card
-              gets its actions when that state is drawn. */}
+          {/* Every live status is drawn now (A-50); only a cancelled card takes
+              the other branch above, and it has no actions by design. */}
           {order.status === "pending" && (
             <OrderCardActions
               order={order}
@@ -159,7 +162,14 @@ export function OrderCard({
             />
           )}
           {(order.status === "weighed" || order.status === "ready") && (
-            <OrderStageActions orderId={order.id} stage={order.status} />
+            <OrderStageActions
+              orderId={order.id}
+              stage={order.status}
+              amountDue={amountDue}
+            />
+          )}
+          {order.status === "delivered" && (
+            <DeliveredOrderActions orderId={order.id} amountDue={amountDue} />
           )}
         </>
       )}
