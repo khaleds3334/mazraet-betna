@@ -17,3 +17,8 @@ export const FIELD_ACTIVE_SHADOW_WITHIN =
 // Red glow when a field is in error (#F87171 — Icons/error).
 export const FIELD_ERROR_SHADOW =
   "border-transparent shadow-[0px_4px_4px_0px_rgba(248,113,113,0.08),0px_0px_0px_4px_rgba(248,113,113,0.08),0px_0px_1px_1px_rgba(248,113,113,0.15),0px_0px_0px_1px_rgba(248,113,113,0.4),0px_0px_4px_0px_rgba(248,113,113,0.1)]";
+
+// Same glow as a `:focus` variant, for a field that *is* the focusable element
+// (e.g. TextareaField) rather than a box wrapping one.
+export const FIELD_ACTIVE_SHADOW_FOCUS =
+  "focus:border-transparent focus:shadow-[0px_0px_4px_0px_rgba(174,199,126,0.2),0px_0px_0px_1px_rgba(174,199,126,0.6),0px_0px_1px_1px_rgba(174,199,126,0.5),0px_0px_0px_4px_rgba(174,199,126,0.2)]";

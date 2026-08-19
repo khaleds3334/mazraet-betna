@@ -31,7 +31,7 @@ export function SearchField({
   return (
     <div
       className={cn(
-        "flex min-h-13 items-center gap-4 rounded-lg border border-border bg-surface px-4 transition-shadow",
+        "group flex min-h-13 items-center gap-4 rounded-lg border border-border bg-surface px-4 transition-shadow",
         // The same green glow every other field gets while it's being typed in.
         // Harmless on the static box — it holds no input, so it never focuses.
         FIELD_ACTIVE_SHADOW_WITHIN,
@@ -39,12 +39,12 @@ export function SearchField({
         className,
       )}
     >
-      {/* The live box carries the full-strength glyph; the static one is muted,
-          so a box that can't be typed into doesn't read as the primary action. */}
+      {/* The glyph sits back until the box is being typed in, then darkens with
+          it. The static box holds no input, so it never focuses and stays muted. */}
       <Icon
         name="search"
         size={32}
-        className={cn("shrink-0", onChange ? "text-foreground" : "text-muted")}
+        className="shrink-0 text-muted transition-colors group-focus-within:text-foreground"
       />
 
       {onChange ? (
