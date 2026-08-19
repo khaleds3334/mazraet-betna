@@ -1,6 +1,6 @@
 import { Button, InlineError } from "@/components/ui";
 import type { Invoice } from "@/lib/calculations/invoice";
-import { InvoiceTotal } from "../InvoiceTotal";
+import { InvoiceTotal } from "../card/InvoiceTotal";
 
 /**
  * The invoice foot of the weighing sheet (A-52) — the total, how it was reached,

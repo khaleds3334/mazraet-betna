@@ -169,12 +169,15 @@ mazraat-baytna/
 │   │   │   ├── OrderCard.tsx
 │   │   │   └── InvoiceView.tsx
 │   │   │
-│   │   ├── admin/
-│   │   │   ├── WeighingRow.tsx    # ⭐ Weight row
-│   │   │   ├── InvoiceSummary.tsx
-│   │   │   ├── FeedGrid.tsx       # 40-square feed grid
-│   │   │   ├── CycleCard.tsx
-│   │   │   └── ExpenseModal.tsx
+│   │   ├── admin/             # One folder per screen area; big areas split
+│   │   │   ├── orders/        #   again by the thing they build (see below)
+│   │   │   │   ├── card/      # ⭐ The order card and everything on it
+│   │   │   │   ├── add/       # The "انشاء طلب" sheet (A-56)
+│   │   │   │   ├── weighing/  # ⭐ The weighing sheet (A-52)
+│   │   │   │   └── OrderTabs · OrdersToolbar · OrdersEmptyState
+│   │   │   ├── home/
+│   │   │   ├── cycles/
+│   │   │   └── customers/
 │   │   │
 │   │   └── shared/
 │   │       ├── PWAInstallBanner.tsx
@@ -231,6 +234,8 @@ mazraat-baytna/
 | Rule | Why |
 |---|---|
 | **No component file over 200 lines** | If it grows, split it. Large files are hard to review |
+| **A screen area splits into sub-folders once it passes ~10 files** | Group by the thing being built (`card/`, `add/`, `weighing/`), not by kind (`buttons/`, `dialogs/`) — you look for "the order card", never for "a dialog" |
+| **A shape drawn by hand twice becomes a `/components/ui` component** | Two copies is a coincidence; the third is a bug waiting for the day one of them is changed |
 | **Calculations live in `/lib/calculations`, not in components** | One place to change, testable in isolation |
 | **Reads in `/lib/queries`, writes in `/lib/actions`** | Clear separation, predictable file locations |
 | **No `any` in TypeScript** | If you think you need it, ask first |

@@ -1,6 +1,6 @@
 import { Icon } from "@/components/ui";
 import type { CustomerOption } from "@/lib/queries/customers";
-import { AddOrderLauncher } from "./AddOrderLauncher";
+import { AddOrderLauncher } from "./add/AddOrderLauncher";
 
 /**
  * Top row of the orders screen (A-50): the "اضافة طلب" action on the right and

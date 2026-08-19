@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "@/components/ui";
+import { CardAction } from "@/components/ui";
 import type { OrderListItem } from "@/lib/queries/orders";
 import { CancelOrderButton } from "./CancelOrderButton";
-import { WeighingSheet } from "./weighing/WeighingSheet";
+import { WeighingSheet } from "../weighing/WeighingSheet";
 
 /**
  * The two actions on a pending order card: weigh it, or cancel it.
@@ -26,16 +26,9 @@ export function OrderCardActions({
 
   return (
     <div className="flex items-center gap-4">
-      <button
-        type="button"
-        onClick={() => setWeighing(true)}
-        className="flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-md border border-primary bg-primary px-3 text-base text-foreground"
-      >
-        <span className="flex size-5 items-center justify-center">
-          <Icon name="weight" size={14} />
-        </span>
-        <span className="optical-center">وزن الفراخ</span>
-      </button>
+      <CardAction icon="weight" grow onClick={() => setWeighing(true)}>
+        وزن الفراخ
+      </CardAction>
 
       <CancelOrderButton orderId={order.id} />
 

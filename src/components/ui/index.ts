@@ -6,6 +6,7 @@ export { BackButton } from "./BackButton";
 export { Badge } from "./Badge";
 export { BottomSheet } from "./BottomSheet";
 export { Button } from "./Button";
+export { CardAction } from "./CardAction";
 export { Checkbox } from "./Checkbox";
 export { Chip } from "./Chip";
 export { CloseButton } from "./CloseButton";

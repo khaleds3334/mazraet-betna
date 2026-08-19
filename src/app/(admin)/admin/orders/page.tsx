@@ -3,7 +3,7 @@ import { SearchField } from "@/components/ui";
 import { OrdersToolbar } from "@/components/admin/orders/OrdersToolbar";
 import { OrderTabs } from "@/components/admin/orders/OrderTabs";
 import { OrdersEmptyState } from "@/components/admin/orders/OrdersEmptyState";
-import { OrderCard } from "@/components/admin/orders/OrderCard";
+import { OrderCard } from "@/components/admin/orders/card/OrderCard";
 import {
   ADMIN_ORDER_TABS,
   DEFAULT_ADMIN_ORDER_TAB,

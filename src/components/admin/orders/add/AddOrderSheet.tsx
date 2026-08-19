@@ -5,10 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   BottomSheet,
   Button,
-  Checkbox,
   CloseButton,
   InlineError,
-  InputField,
   Stepper,
   TextareaField,
   Toggle,
@@ -17,7 +15,11 @@ import {
 import { createOrder } from "@/lib/actions/orders";
 import type { CustomerOption } from "@/lib/queries/customers";
 import { useToast } from "@/hooks/useToast";
-import { CustomerPicker } from "./CustomerPicker";
+import {
+  EMPTY_RECIPIENT,
+  OrderRecipient,
+  type Recipient,
+} from "./OrderRecipient";
 
 /**
  * "انشاء طلب باسم عميل" (A-56) — a sheet that fills the screen, so it reads as a
@@ -45,11 +47,7 @@ export function AddOrderSheet({
   const router = useRouter();
   const toast = useToast();
 
-  const [customer, setCustomer] = useState<CustomerOption | null>(null);
-  const [orphan, setOrphan] = useState(false);
-  const [isHouse, setIsHouse] = useState(false);
-  const [forSomeoneElse, setForSomeoneElse] = useState(false);
-  const [onBehalfOf, setOnBehalfOf] = useState("");
+  const [recipient, setRecipient] = useState<Recipient>(EMPTY_RECIPIENT);
   const [count, setCount] = useState(1);
   const [cleaning, setCleaning] = useState(defaultCleaning);
   const [weight, setWeight] = useState<number | null>(null);
@@ -58,11 +56,7 @@ export function AddOrderSheet({
   const [saving, setSaving] = useState(false);
 
   function reset() {
-    setCustomer(null);
-    setOrphan(false);
-    setIsHouse(false);
-    setForSomeoneElse(false);
-    setOnBehalfOf("");
+    setRecipient(EMPTY_RECIPIENT);
     setCount(1);
     setCleaning(defaultCleaning);
     setWeight(null);
@@ -71,6 +65,8 @@ export function AddOrderSheet({
   }
 
   async function submit() {
+    const { isHouse, orphan, customer, forSomeoneElse, onBehalfOf } = recipient;
+
     if (!isHouse && !orphan && !customer) {
       setError("اختار العميل، او علّم إن الطلب يتيم.");
       return;
@@ -123,70 +119,11 @@ export function AddOrderSheet({
           <CloseButton onClick={onClose} />
         </header>
 
-        <div className="flex flex-col gap-2.5">
-          {/* First, because it changes what the rest of the form means: a house
-              order belongs to nobody, so everything about "who" disappears. */}
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-base text-heading">الطلب ده للبيت</span>
-            <Toggle
-              checked={isHouse}
-              onChange={(checked) => {
-                setIsHouse(checked);
-                if (checked) {
-                  setCustomer(null);
-                  setOrphan(false);
-                  setForSomeoneElse(false);
-                  setOnBehalfOf("");
-                }
-              }}
-              label="الطلب ده للبيت"
-            />
-          </div>
-
-          {isHouse ? (
-            <p className="text-sm text-muted">
-              الفراخ دي هتتشال من المتاح زي أي طلب، بس مش هتتحسب في ايراد الدورة
-              ولا هتعمل آجل على حد.
-            </p>
-          ) : (
-            <div className="flex flex-col">
-              <CustomerPicker
-                customers={customers}
-                selected={customer}
-                onSelect={setCustomer}
-                disabled={orphan}
-              />
-
-              <div className="flex items-center justify-around gap-2">
-                <Checkbox
-                  label="لحد تبع العميل؟"
-                  checked={forSomeoneElse}
-                  onChange={setForSomeoneElse}
-                />
-                {/* An orphan order has no customer at all (FR-13) — ticking it
-                    clears and disables the picker so the two can never disagree. */}
-                <Checkbox
-                  label="طلب يتيم"
-                  checked={orphan}
-                  onChange={(checked) => {
-                    setOrphan(checked);
-                    if (checked) setCustomer(null);
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {forSomeoneElse && (
-          <InputField
-            id="on-behalf-of"
-            label="الطلب باسم مين؟"
-            value={onBehalfOf}
-            onChange={(event) => setOnBehalfOf(event.target.value)}
-            placeholder="اسم اللي الفراخ ليه"
-          />
-        )}
+        <OrderRecipient
+          value={recipient}
+          onChange={setRecipient}
+          customers={customers}
+        />
 
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between gap-2">
