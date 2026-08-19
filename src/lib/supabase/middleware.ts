@@ -92,7 +92,17 @@ export async function updateSession(request: NextRequest) {
   return response;
 }
 
-/** Redirect while preserving any auth cookies refreshed on `response`. */
+/**
+ * Redirect while preserving any auth cookies refreshed on `response`.
+ *
+ * `request.nextUrl`, never `request.url`: `request.url` carries the address the
+ * server was *bound* to — `http://0.0.0.0:3000` under `next dev` — and 0.0.0.0
+ * means "every interface", not a destination a browser can open. From a proxy,
+ * `NextResponse.redirect` of a same-origin URL is emitted as a relative
+ * `Location` anyway, so this stays correct on the phone and behind Vercel's
+ * proxy as well. A route handler does *not* get that treatment — see
+ * `/lib/redirect.ts` (T-38).
+ */
 function redirectTo(
   request: NextRequest,
   response: NextResponse,
