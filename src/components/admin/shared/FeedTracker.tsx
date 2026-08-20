@@ -32,7 +32,10 @@ export function FeedTracker({ feed }: { feed: CycleDashboard["feed"] }) {
 
       {/* Centered, at roughly the «تسجيل مصاريف» width — as the design places it. */}
       <div className="flex justify-center">
-        <RecordFeedWithdrawalButton className="w-2/3" />
+        <RecordFeedWithdrawalButton
+          available={feed.available}
+          className="w-2/3"
+        />
       </div>
     </div>
   );

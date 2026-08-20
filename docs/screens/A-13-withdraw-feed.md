@@ -52,6 +52,15 @@ toast is correct. Failure keeps the popup open with a toast.
 → to: refreshes A-11 (the consumption grid).
 
 ## Watch out
+- **A bag comes out of the store, so there has to be one in it.** With العلف
+  المتوفر at zero the popup shows `NO_FEED_IN_STORE` and حفظ is inert; the pill
+  itself stays live, because a dead button tells this admin nothing while the
+  sentence inside tells him to record a purchase first. `addFeedWithdrawal` checks
+  again on the server — the count the screen was rendered with can be minutes old,
+  and two taps on a slow connection would otherwise open the same last bag twice.
+  Without the guard the balance goes **negative**, and since `feedBagsAvailable`
+  clamps at zero the hole is invisible: the next bag he really buys is eaten by the
+  phantom one.
 - The day must be within the cycle; a day before start or in the future is rejected
   with an Arabic message.
 - The grid keys off `withdrawn_on − start_date`, and day 1 is the bottom-left cell.

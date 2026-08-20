@@ -125,6 +125,14 @@ export function resolveTab(value: string | null | undefined): AdminOrderTabKey {
   );
 }
 
+/**
+ * Why a bag can't be withdrawn. Lives here rather than beside the action because
+ * both sides need the exact same sentence: the popup says it before he taps, and
+ * the server says it if the store emptied while he was looking at the screen —
+ * and a "use server" module may only export functions.
+ */
+export const NO_FEED_IN_STORE = "مفيش علف متوفر في المخزن، سجّل شراء علف الأول.";
+
 export const FEED_PHASE_LABEL: Record<FeedPhase, string> = {
   badi: "بادي",
   nami: "نامي",

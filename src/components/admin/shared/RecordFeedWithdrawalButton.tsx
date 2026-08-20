@@ -2,9 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ActionButton, CloseButton, Modal, PickerField } from "@/components/ui";
+import {
+  ActionButton,
+  CloseButton,
+  InlineError,
+  Modal,
+  PickerField,
+} from "@/components/ui";
 import { useToast } from "@/hooks/useToast";
 import { addFeedWithdrawal } from "@/lib/actions/expenses";
+import { NO_FEED_IN_STORE } from "@/lib/constants";
 import { formatArabicDate, formatArabicTime } from "@/lib/format";
 
 /** Today as `yyyy-mm-dd` / now as `HH:mm`, so the admin can just tap حفظ. */
@@ -18,10 +25,19 @@ const nowHHMM = () => new Date().toTimeString().slice(0, 5);
  * المتوفر. Recording isn't a critical action, so success/failure use a toast and
  * the figures refresh on their own. Per D-17 the record is day-based; the time is
  * captured in the form but the grid keys off the day.
+ *
+ * **A bag comes out of the store, so there has to be one in it.** With `available`
+ * at zero the popup says so and حفظ is inert — the button itself stays live and
+ * openable, because a dead pill tells this admin nothing, while the sentence
+ * inside tells him to record a purchase first. The action checks again on the
+ * server; the count this was rendered with can be minutes old.
  */
 export function RecordFeedWithdrawalButton({
+  available,
   className,
 }: {
+  /** Bags still in the store — bought minus withdrawn. */
+  available: number;
   className?: string;
 }) {
   const router = useRouter();
@@ -32,6 +48,8 @@ export function RecordFeedWithdrawalButton({
   const [time, setTime] = useState(nowHHMM);
   const [submitting, setSubmitting] = useState(false);
 
+  const empty = available < 1;
+
   function close() {
     setOpen(false);
     setDay(todayISO());
@@ -39,6 +57,7 @@ export function RecordFeedWithdrawalButton({
   }
 
   async function save() {
+    if (empty) return;
     if (!day) {
       toast.error("اختار يوم فتح الشكارة الأول");
       return;
@@ -104,9 +123,12 @@ export function RecordFeedWithdrawalButton({
             />
           </div>
 
+          {empty && <InlineError message={NO_FEED_IN_STORE} />}
+
           <ActionButton
             variant="primary"
             onClick={save}
+            disabled={empty}
             isLoading={submitting}
             className="min-w-[152px] self-end px-8"
           >

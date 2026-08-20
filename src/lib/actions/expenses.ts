@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm, type CurrentFarm } from "@/lib/queries/admin";
 import type { ExpenseCategory } from "@/lib/constants";
+import { feedBagsAvailable } from "@/lib/calculations/feed";
+import { NO_FEED_IN_STORE } from "@/lib/constants";
 import type { ActionResult } from "./cycles";
 
 /**
@@ -243,6 +245,19 @@ export async function addFeedWithdrawal(input: {
   }
 
   const supabase = await createClient();
+
+  // A bag comes out of the store, so there has to be one in it. Checked here and
+  // not only in the popup: the count the screen was rendered with can be minutes
+  // old, and two taps on a slow connection would otherwise open the same last bag
+  // twice — which quietly puts العلف المتوفر into a hole nothing can climb out of.
+  const [{ data: purchases }, { data: withdrawals }] = await Promise.all([
+    supabase.from("feed").select("bags").eq("cycle_id", cycle.id),
+    supabase.from("feed_withdrawal").select("bags").eq("cycle_id", cycle.id),
+  ]);
+  if (feedBagsAvailable(purchases ?? [], withdrawals ?? []) < 1) {
+    return { ok: false, error: NO_FEED_IN_STORE };
+  }
+
   const { error } = await supabase.from("feed_withdrawal").insert({
     farm_id: farm.farmId,
     cycle_id: cycle.id,
