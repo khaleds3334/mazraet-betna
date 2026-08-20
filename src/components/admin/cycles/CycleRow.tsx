@@ -106,7 +106,10 @@ export function CycleRow({
             icon="income"
             label="ربح الدورة"
             value={formatArabicNumber(cycle.netProfit)}
-            tone="brand"
+            /* A cycle can end under water — sold short, or ended early. Green on
+               a loss would read as a win, so the tone follows the sign (Khaled,
+               2026-08-20); the label stays «ربح الدورة» either way. */
+            tone={cycle.netProfit < 0 ? "danger" : "brand"}
           />
         )}
         <CycleRowStat

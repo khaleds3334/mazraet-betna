@@ -10,10 +10,19 @@ import {
 } from "@/lib/constants";
 import { expectedFeedBags } from "@/lib/calculations/feed";
 
+/**
+ * Whole days between a past moment and today, never negative. The one place
+ * "how long ago" is computed — components must not read the clock themselves,
+ * or the number they render depends on when React happened to run.
+ */
+export function daysSince(moment: Date | string, today: Date = new Date()): number {
+  const then = typeof moment === "string" ? new Date(moment) : moment;
+  return Math.max(0, differenceInCalendarDays(today, then));
+}
+
 /** Age of the chicks in whole days since the cycle started (FR-7). */
 export function chickAgeDays(startDate: Date | string, today: Date = new Date()): number {
-  const start = typeof startDate === "string" ? new Date(startDate) : startDate;
-  return Math.max(0, differenceInCalendarDays(today, start));
+  return daysSince(startDate, today);
 }
 
 /** The date the birds are expected ready to sell: start + 30 days (FR-4). */

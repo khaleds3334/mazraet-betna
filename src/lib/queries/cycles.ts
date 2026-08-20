@@ -5,9 +5,11 @@
 import { differenceInCalendarDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import {
+  averageChickenWeight,
   chickAgeDays,
   cycleAccounting,
   cycleDurationDays,
+  daysSince,
   expectedSaleDate,
   type CycleEstimateBasis,
 } from "@/lib/calculations/cycle";
@@ -419,6 +421,8 @@ export interface CycleListItem {
   chickCount: number;
   /** Days the cycle ran — closed: start → end; running: start → today. */
   durationDays: number;
+  /** Days since it ended, or null while it is still running. */
+  daysSinceEnd: number | null;
   mortalityCount: number;
   /** Chicks + feed + everything else spent on it (FR-19). */
   expensesTotal: number;
@@ -426,6 +430,9 @@ export interface CycleListItem {
   netProfit: number;
   /** What customers still owe on this cycle's orders (FR-20). */
   debt: number;
+  /** Mean weight of every bird the cycle actually weighed, in kg. Zero before
+   *  anything was weighed. Not shown on the list — the idle home charts it. */
+  averageWeight: number;
 }
 
 /** Sum a set of rows into a per-cycle map, keyed by `cycle_id`. */
@@ -489,16 +496,22 @@ export async function listCycles(farmId: string): Promise<CycleListItem[]> {
     feedCost([{ bags: f.bags, bag_price: Number(f.bag_price) }]),
   );
 
-  // Orders grouped by cycle, then rolled into one money picture per cycle.
+  // Orders grouped by cycle, then rolled into one money picture per cycle. The
+  // same pass collects the weights that were actually put on the scale, since
+  // the lines are already in hand.
   const ordersByCycle = new Map<string, OrderInvoiceInput[]>();
+  const weightsByCycle = new Map<string, number[]>();
   for (const order of orderRes.data ?? []) {
+    const lines = order.order_line ?? [];
     const bucket = ordersByCycle.get(order.cycle_id) ?? [];
-    bucket.push({
-      order,
-      lines: order.order_line ?? [],
-      payments: order.payment ?? [],
-    });
+    bucket.push({ order, lines, payments: order.payment ?? [] });
     ordersByCycle.set(order.cycle_id, bucket);
+
+    const weights = weightsByCycle.get(order.cycle_id) ?? [];
+    for (const line of lines) {
+      if (line.actual_weight != null) weights.push(Number(line.actual_weight));
+    }
+    weightsByCycle.set(order.cycle_id, weights);
   }
 
   return cycles.map((cycle) => {
@@ -524,10 +537,12 @@ export async function listCycles(farmId: string): Promise<CycleListItem[]> {
       phase: ended ? "ended" : cycle.sale_open ? "selling" : "raising",
       chickCount: cycle.chick_count,
       durationDays: cycleDurationDays(cycle.start_date, cycle.ended_at),
+      daysSinceEnd: cycle.ended_at ? daysSince(cycle.ended_at) : null,
       mortalityCount: mortality.get(cycle.id) ?? 0,
       expensesTotal,
       netProfit,
       debt: money.debt,
+      averageWeight: averageChickenWeight(weightsByCycle.get(cycle.id) ?? []),
     };
   });
 }

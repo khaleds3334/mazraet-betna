@@ -28,6 +28,21 @@ export function toArabicDigits(input: string | number): string {
 }
 
 /**
+ * Lay a run of text out left-to-right inside our right-to-left pages, using a
+ * Unicode isolate (U+2066 … U+2069).
+ *
+ * Needed for one thing only: a **negative** number. The minus sign is a neutral
+ * character to the bidi algorithm, and Arabic-Indic digits are "Arabic numbers"
+ * rather than "European numbers", so the two never bind — inside an RTL
+ * paragraph the sign drifts to the far side and `-١٩١٥٩` renders as `١٩١٥٩-`,
+ * which reads as a number with a dash after it. The isolate pins the sign where
+ * it belongs without affecting anything around it.
+ */
+function ltrIsolate(text: string): string {
+  return `\u2066${text}\u2069`;
+}
+
+/**
  * The inverse of {@link toArabicDigits}, then keep digits only — turns typed
  * input (Arabic-Indic ٠١٢ or Latin 012) into a bare Latin digit string ready for
  * `Number(...)`. Use in any numeric field the user types into (e.g. NumberStepper).
@@ -50,7 +65,8 @@ export function formatArabicNumber(
 ): string {
   const fixed =
     options?.decimals != null ? value.toFixed(options.decimals) : String(value);
-  return toArabicDigits(fixed);
+  const digits = toArabicDigits(fixed);
+  return value < 0 ? ltrIsolate(digits) : digits;
 }
 
 /**
@@ -61,7 +77,9 @@ export function formatArabicNumber(
 export function formatCurrency(value: number): string {
   const rounded = Math.round(value * 100) / 100;
   const text = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
-  return `${toArabicDigits(text)} جنيه`;
+  // The unit stays outside the isolate — only the signed number is laid out LTR.
+  const digits = toArabicDigits(text);
+  return `${rounded < 0 ? ltrIsolate(digits) : digits} جنيه`;
 }
 
 /**

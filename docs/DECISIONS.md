@@ -1118,3 +1118,41 @@ neither.
 **Also extracted:** `ui/ConfirmActions` — the confirm/«الغاء» pair at the foot of
 a confirm dialog, drawn identically by A-23 and by the end-of-cycle dialog.
 **Date:** 2026-08-20
+
+### D-37 — Between cycles the home reports the last cycle, but the farm's debt
+The idle home (A-21) shows three figures: **ربح الدورة** and **اخر المصاريف** from
+the cycle that just closed, and **الديون** across the whole farm — every cycle, not
+just the last (Khaled, 2026-08-20).
+**Why:** with nothing running, the only money question left is *who still owes me*.
+Scoping it to the last cycle would hide a debt from two cycles ago behind a screen
+that looks like a summary of everything. The line above the tiles («تم الانتهاء من
+اخر دورة») is what tells him the other two are the last cycle's.
+**Date:** 2026-08-20
+
+### T-50 — Each series on the cycle chart is scaled against itself
+The comparison chart on A-21 plots average weight, profit and expenses side by side.
+Each series is measured against its own tallest bar, not against a shared maximum.
+**Why:** they are not the same kind of number. An average weight is ~٢ and a cycle's
+expenses are ~٢٢٠٠٠, so on one scale the weight bar is a fraction of a pixel —
+in the data and invisible on the screen. Per-series scaling makes every colour
+answer the question the chart exists for: *which cycle did better at this?* The
+trade-off is stated plainly: heights are comparable **down a colour**, never across
+colours, which is why the bars carry no printed numbers and A-22 (the tap-for-detail
+popup) is where the real figures will live.
+**Also:** the chart is hidden below two cycles — measured against itself, a lone
+cycle's every bar stands full height and reads as "everything was at its best".
+**And:** because the heights are relative, the real figures must be one tap away —
+the whole bar group opens A-22, the cycle's summary card.
+**Date:** 2026-08-20
+
+### T-51 — A negative number is wrapped in an LTR isolate
+`formatArabicNumber` and `formatCurrency` wrap a negative value in U+2066…U+2069.
+**Why:** the minus sign is bidi-neutral and Arabic-Indic digits are classed as
+"Arabic numbers" rather than "European numbers", so the two never bind. Inside an
+RTL paragraph the sign drifts to the far side and `-١٩١٥٩` renders as `١٩١٥٩-` —
+which reads as a number with a stray dash after it. The isolate pins the sign to the
+left of its digits without affecting the text around it.
+**Where it shows:** a cycle that ended under water (sold short, or ended early). The
+label stays «ربح الدورة» and the tone turns red — green on a loss reads as a win
+(Khaled, 2026-08-20).
+**Date:** 2026-08-20
