@@ -122,6 +122,37 @@ body {
 }
 
 /*
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  No text selection — this is an app, not a page.                     │
+  │  A long press on a phone used to highlight the word in blue and pop  │
+  │  the "copy / share / search the web" callout on top of the screen.   │
+  │  Our users press and hold by accident all the time (the admin taps   │
+  │  with wet hands while weighing), and that menu covers the button      │
+  │  they were aiming at.                                                │
+  │                                                                      │
+  │  Fields stay selectable — you can't edit text you can't put a caret  │
+  │  in. Anything else that must be copyable (a phone number, an order   │
+  │  number) opts back in with Tailwind's `select-text` utility.         │
+  └─────────────────────────────────────────────────────────────────────┘
+*/
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  /* iOS: kills the long-press callout even where selection is allowed. */
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"],
+.select-text {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/*
   Screen horizontal padding — the gutter on both sides of every screen.
   Shrinks on narrower phones so fixed-ish rows (e.g. the countdown boxes) keep
   fitting without overflow. One source of truth: use the `px-screen` utility,

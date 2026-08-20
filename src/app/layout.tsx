@@ -36,6 +36,11 @@ export const metadata: Metadata = {
   // number on screen here is a weight, a price, or an order number, and the
   // real phone numbers already have their own call buttons (ContactLinks).
   formatDetection: { telephone: false },
+  // The site is already Arabic. Chrome/Safari sometimes offer to "translate to
+  // Arabic" anyway and mangle the wording (a customer on auto-translate never
+  // even gets asked). This is the meta half of the block; the <html> attributes
+  // below are the other half.
+  other: { google: "notranslate" },
 };
 
 // عرض مناسب للموبايل، بدون تكبير يكسر التصميم (320→430px+).
@@ -58,7 +63,15 @@ export default function RootLayout({
     // viewport with it showing — on a phone the two disagree by the height of
     // that bar, which left the document itself scrollable by ~60px.
     // Letting <html> size to its content keeps the document exactly one screen tall.
-    <html lang="ar" dir="rtl" className={`${almarai.variable} antialiased`}>
+    // `translate="no"` + the `notranslate` class are what the browser translators
+    // actually read — together with the `google: notranslate` meta above they
+    // stop the page being re-translated into the language it's already in.
+    <html
+      lang="ar"
+      dir="rtl"
+      translate="no"
+      className={`notranslate ${almarai.variable} antialiased`}
+    >
       {/* `svh` matches the shells: a height that doesn't move when the browser
           shows or hides its address bar. `overscroll-none` stops pull-to-refresh
           and the rubber-band bounce, so this reads as an installed app. */}

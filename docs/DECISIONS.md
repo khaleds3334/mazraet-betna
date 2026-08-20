@@ -855,6 +855,27 @@ with one admin phone that costs nothing, and it is why the restore announces its
 with a toast — weights appearing on their own must not read as "the app saved it".
 **Date:** 2026-08-19
 
+### T-44 — The app doesn't let you select text, and refuses to be translated
+Two global rules in the root layout, both aimed at the phone.
+**No selection:** `body` carries `user-select: none` + `-webkit-touch-callout: none`.
+A long press used to paint the word blue and open the "copy / share / search the
+web" callout right on top of the button being aimed at. Both our users press and
+hold by accident — the admin taps with busy hands while weighing, the customer is
+elderly and slow to lift a finger — and neither has any use for copying a label.
+Inputs, textareas, selects and `[contenteditable]` opt back in (you can't edit text
+you can't put a caret in); anything else that must be copyable one day uses
+Tailwind's `select-text`.
+**Not the tap highlight:** `-webkit-tap-highlight-color` is deliberately left alone.
+It is the only free "I registered your tap" feedback on a slow connection, and rule
+11 says every action must be visibly acknowledged.
+**No translation:** `<html translate="no" class="notranslate">` plus
+`<meta name="google" content="notranslate">`. The interface is already Arabic, but a
+customer whose browser auto-translates every page into Arabic gets it re-translated
+anyway — machine Arabic over our Arabic, with farm words («دورة», «فرخة», «الآجل»)
+coming out as something else entirely, and no prompt to decline it. The three
+signals are all read by different browsers, so all three are set.
+**Date:** 2026-08-20
+
 ### T-35 — One scroll container per screen, sized in `svh`, header held by `sticky`
 The rule every list screen follows from now on: **`<main>` is the only thing that
 scrolls.** A screen never puts a second `overflow-y-auto` inside it. Anything
