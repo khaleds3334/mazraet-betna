@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { getFarmSettings } from "@/lib/queries/settings";
-import { SALE_NOT_OPEN } from "@/lib/constants";
+import { ORPHAN_MUST_BE_PAID, SALE_NOT_OPEN } from "@/lib/constants";
+import { orderRemaining } from "@/lib/calculations/invoice";
 
 /**
  * Order actions (admin only). Writes go through the RLS-bound client — the order
@@ -325,6 +326,13 @@ const STAGE_BEFORE = { ready: "weighed", delivered: "ready" } as const;
  *
  * The update names the stage the order must currently be in, so a double tap or
  * a stale card can never drag an order backwards or skip it past a step.
+ *
+ * **One exception: an orphan order must be paid before it is handed over**
+ * (D-42). An order with no customer belongs to nobody (FR-13), so nothing carries
+ * its debt afterwards — it is left out of every per-customer tally on purpose.
+ * Handing the birds over unpaid therefore doesn't create a debt, it deletes the
+ * money. A house order is the deliberate opposite: it is nobody's *because* it
+ * was never a sale, so it passes untouched.
  */
 export async function advanceOrder(
   orderId: string,
@@ -334,6 +342,27 @@ export async function advanceOrder(
   if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
 
   const supabase = await createClient();
+
+  if (to === "delivered") {
+    const { data: order } = await supabase
+      .from("orders")
+      .select(
+        "customer_id, is_house, unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
+      )
+      .eq("id", orderId)
+      .eq("farm_id", farm.farmId)
+      .maybeSingle();
+
+    if (order && !order.customer_id && !order.is_house) {
+      const remaining = orderRemaining(
+        order,
+        order.order_line ?? [],
+        order.payment ?? [],
+      );
+      if (remaining > 0) return { ok: false, error: ORPHAN_MUST_BE_PAID };
+    }
+  }
+
   const { error } = await supabase
     .from("orders")
     .update({

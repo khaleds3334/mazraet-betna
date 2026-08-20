@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CardAction, CloseButton, InlineError, Modal } from "@/components/ui";
 import { formatCurrency, toArabicDigits, toLatinDigits } from "@/lib/format";
+import { ORPHAN_MUST_BE_PAID } from "@/lib/constants";
 
 /**
  * "المبلغ اللي تم دفعه" (A-62) — what the customer handed over, taken at the
@@ -20,17 +21,24 @@ import { formatCurrency, toArabicDigits, toLatinDigits } from "@/lib/format";
  * `onConfirm` does the write and returns its result. Money is a critical action,
  * so a failure stays on screen as an inline error and the dialog keeps the
  * number the admin typed (rule 11) — never a toast that fades while he counts.
+ *
+ * `requireFull` is the one case where "he'll pay later" isn't available: an order
+ * with no customer on it has nobody to owe the money afterwards (D-42), so the
+ * dialog says so and both partial payment and «لم يدفع» are refused.
  */
 export function PaymentDialog({
   open,
   onClose,
   amountDue,
+  requireFull = false,
   onConfirm,
 }: {
   open: boolean;
   onClose: () => void;
   /** What is still owed on this order — the ceiling, and the opening value. */
   amountDue: number;
+  /** True for an orphan order: it can only be handed over paid in full. */
+  requireFull?: boolean;
   onConfirm: (amount: number) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const [amount, setAmount] = useState(amountDue);
@@ -96,6 +104,7 @@ export function PaymentDialog({
           />
         </div>
 
+        {requireFull && <InlineError message={ORPHAN_MUST_BE_PAID} />}
         {error && <InlineError message={error} />}
 
         {/* «دفع» first so it lands on the right, where the design puts it. */}
@@ -106,7 +115,7 @@ export function PaymentDialog({
             grow
             onClick={() => submit(amount)}
             isLoading={saving === "paid"}
-            disabled={saving !== null}
+            disabled={saving !== null || (requireFull && amount < amountDue)}
           >
             دفع
           </CardAction>
@@ -114,7 +123,7 @@ export function PaymentDialog({
             variant="muted"
             onClick={() => submit(0)}
             isLoading={saving === "unpaid"}
-            disabled={saving !== null}
+            disabled={saving !== null || requireFull}
           >
             لم يدفع
           </CardAction>

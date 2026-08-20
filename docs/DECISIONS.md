@@ -1231,3 +1231,22 @@ while the new page is fetched, instead of a dead tap on a slow connection.
 are not, and reaching for `useUrlParam` here would show the previous cycle's
 orders under the new cycle's name.
 **Date:** 2026-08-21
+
+### D-42 — An orphan order leaves paid, or it doesn't leave
+`deliverOrder` refuses to hand over an order with no customer on it unless the
+invoice is settled in full. The payment dialog says so before the tap, with both
+«لم يدفع» and any partial amount disabled.
+
+**Why:** an orphan order belongs to nobody (FR-13), and every per-customer debt
+tally leaves it out on purpose — there is no one to carry it. Handing the birds
+over unpaid therefore doesn't create a debt the app will chase, it **deletes the
+money**: the birds are gone, the invoice exists, and nothing anywhere is owed.
+Every other order can go out unpaid precisely because a customer's name is on it
+(FR-17).
+
+**A house order is the deliberate opposite** and passes untouched: it is nobody's
+*because* it was never a sale (FR-36), so there is nothing to collect.
+**Consequence:** «انشاء طلب باسم عميل» without picking a customer is now a choice
+with a price attached — the birds can't leave on credit. That is the right price;
+an anonymous debt is not a debt.
+**Date:** 2026-08-21

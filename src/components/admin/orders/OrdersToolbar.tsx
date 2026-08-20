@@ -8,18 +8,26 @@ import { OrderTabChip } from "./OrderTabChip";
  * Top row of the orders screen (A-50) — the cycle picker on the inline-end, and
  * on the inline-start whichever of two things the cycle calls for.
  *
- * **Selling:** «اضافة طلب». Orders are arriving, and one can be booked.
+ * **Selling:** «اضافة طلب», with the cycle's name beside it — the screen shows one
+ * cycle at a time and the funnel can move it, so it says which one either way.
  *
  * **Any other cycle:** the count of what it came to, beside its name. Nothing can
  * be added to a cycle that isn't selling (D-39), so the button would be a button
- * that refuses; and every order in a closed cycle is completed, so the three tabs
- * collapse into the only one that has anything in it (Khaled, 2026-08-20). The
- * chip is the same chip the tab bar draws, without the tapping.
+ * that refuses; and every order in a closed cycle is completed — `endCycle` won't
+ * close one over an open order — so the three tabs collapse into the only one that
+ * has anything in it (Khaled, 2026-08-20). The chip is the same chip the tab bar
+ * draws, without the tapping.
+ *
+ * `allDone` is false only for a cycle carrying orders from before that rule
+ * existed. The chip then says «الطلبات» rather than claiming they are finished:
+ * the list is showing them either way, and a label that lies about a pending order
+ * is worse than a plainer one.
  */
 export function OrdersToolbar({
   cycle,
   cycles,
   orderCount,
+  allDone,
   customers,
   weights,
   defaultCleaning,
@@ -29,27 +37,35 @@ export function OrdersToolbar({
   cycles: OrdersCycle[];
   /** Orders in that cycle — the archive chip's number. */
   orderCount: number;
+  /** Whether every one of them is delivered or cancelled. */
+  allDone: boolean;
   customers: CustomerOption[];
   weights: number[];
   defaultCleaning: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 px-screen">
-      {cycle.saleOpen ? (
-        <AddOrderLauncher
-          customers={customers}
-          weights={weights}
-          defaultCleaning={defaultCleaning}
-          saleOpen
-        />
-      ) : (
-        <div className="flex min-w-0 items-center gap-3">
-          <OrderTabChip tab="done" label="المكتملة" count={orderCount} selected />
-          <span className="truncate text-base font-bold text-heading">
-            {cycle.name ?? "دورة بدون اسم"}
-          </span>
-        </div>
-      )}
+      <div className="flex min-w-0 items-center gap-3">
+        {cycle.saleOpen ? (
+          <AddOrderLauncher
+            customers={customers}
+            weights={weights}
+            defaultCleaning={defaultCleaning}
+            saleOpen
+          />
+        ) : (
+          <OrderTabChip
+            tab="done"
+            label={allDone ? "المكتملة" : "الطلبات"}
+            count={orderCount}
+            selected
+          />
+        )}
+
+        <span className="truncate text-base font-bold text-heading">
+          {cycle.name ?? "دورة بدون اسم"}
+        </span>
+      </div>
 
       <CyclePickerButton cycles={cycles} selectedId={cycle.cycleId} />
     </div>

@@ -56,6 +56,8 @@ export function OrderStageActions({
 }) {
   const orderId = order.id;
   const amountDue = Math.max(0, invoice.remaining);
+  // Nobody to chase afterwards, so it leaves paid or it doesn't leave (D-42).
+  const orphan = !order.customer && !order.isHouse;
   const router = useRouter();
   const toast = useToast();
   const [saving, setSaving] = useState(false);
@@ -121,6 +123,7 @@ export function OrderStageActions({
         open={collecting}
         onClose={() => setCollecting(false)}
         amountDue={amountDue}
+        requireFull={orphan}
         onConfirm={deliver}
       />
     </div>

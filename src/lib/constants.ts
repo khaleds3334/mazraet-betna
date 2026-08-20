@@ -113,14 +113,36 @@ export const ADMIN_ORDER_TABS: {
  */
 export const DEFAULT_ADMIN_ORDER_TAB: AdminOrderTabKey = "new";
 
+/** The tab `?tab=` names, or null when it names nothing real. */
+export function parseTab(
+  value: string | null | undefined,
+): AdminOrderTabKey | null {
+  return ADMIN_ORDER_TABS.find((tab) => tab.key === value)?.key ?? null;
+}
+
 /**
  * Turns whatever `?tab=` happens to say into a real tab. Lives here, beside the
  * tabs themselves, because both sides of the app need it: the page resolves the
  * incoming URL on the server, and the browser resolves it again on back/forward.
  */
 export function resolveTab(value: string | null | undefined): AdminOrderTabKey {
+  return parseTab(value) ?? DEFAULT_ADMIN_ORDER_TAB;
+}
+
+/**
+ * Which tab to open on when the URL doesn't say: the first one that has anything
+ * in it, in the order the work moves — الجديدة → قيد التشغيل → المكتملة.
+ *
+ * Landing on an empty «الجديدة» while the work of the day sits one tab over reads
+ * as "no orders" and costs a tap to disprove (Khaled, 2026-08-21). A cycle where
+ * nothing has been ordered at all opens on «الجديدة» anyway — that is where the
+ * first order will appear.
+ */
+export function defaultOrdersTab(
+  counts: Record<AdminOrderTabKey, number>,
+): AdminOrderTabKey {
   return (
-    ADMIN_ORDER_TABS.find((tab) => tab.key === value)?.key ??
+    ADMIN_ORDER_TABS.find((tab) => counts[tab.key] > 0)?.key ??
     DEFAULT_ADMIN_ORDER_TAB
   );
 }
@@ -136,6 +158,13 @@ export function resolveTab(value: string | null | undefined): AdminOrderTabKey {
  * and on the server if the sale closed while it was open — and a `"use server"`
  * module may only export functions, so it lives here.
  */
+/**
+ * Why an orphan order can't be handed over yet. Said in the card before the tap
+ * and by the server on it — and a `"use server"` module may only export functions.
+ */
+export const ORPHAN_MUST_BE_PAID =
+  "الطلب ده مش مربوط بعميل، فلازم يتدفع بالكامل قبل ما يتسلّم.";
+
 export const SALE_NOT_OPEN =
   "البيع مش مفتوح دلوقتي، ابدأ مرحلة البيع الأول عشان تسجّل طلبات.";
 

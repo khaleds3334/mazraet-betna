@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { computeInvoice } from "@/lib/calculations/invoice";
+import { ORPHAN_MUST_BE_PAID } from "@/lib/constants";
 
 export type PaymentResult = { ok: false; error: string } | { ok: true };
 
@@ -32,7 +33,7 @@ export async function deliverOrder(input: {
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, status, unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
+      "id, status, customer_id, is_house, unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
     )
     .eq("id", input.orderId)
     .eq("farm_id", farm.farmId)
@@ -50,6 +51,15 @@ export async function deliverOrder(input: {
     order.payment ?? [],
   );
   const paid = Math.min(input.amount, Math.max(0, remaining));
+
+  // An orphan order belongs to nobody (FR-13), so nothing carries its debt once
+  // the birds are gone — it is left out of every per-customer tally on purpose.
+  // Handing it over unpaid doesn't create a debt, it deletes the money. A house
+  // order is the deliberate opposite: nobody's *because* it was never a sale
+  // (FR-36), so it passes untouched (D-42).
+  if (!order.customer_id && !order.is_house && remaining - paid > 0) {
+    return { ok: false, error: ORPHAN_MUST_BE_PAID };
+  }
 
   if (paid > 0) {
     const { error } = await supabase.from("payment").insert({

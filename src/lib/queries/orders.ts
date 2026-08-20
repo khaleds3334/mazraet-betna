@@ -173,6 +173,29 @@ export interface OrderListItem {
  * seconds for a filter, because a tab was a fresh trip through auth → farm →
  * cycle → count → list every time (D-31).
  */
+/**
+ * How many orders each cycle of the farm holds, keyed by cycle id.
+ *
+ * Only the ids come back — the funnel on the orders screen uses this to leave out
+ * the cycles there is nothing to look at in (a flock still being raised can have
+ * none at all, D-39), and a count is all that takes.
+ */
+export async function countOrdersByCycle(
+  farmId: string,
+): Promise<Map<string, number>> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("orders")
+    .select("cycle_id")
+    .eq("farm_id", farmId);
+
+  const counts = new Map<string, number>();
+  for (const order of data ?? []) {
+    counts.set(order.cycle_id, (counts.get(order.cycle_id) ?? 0) + 1);
+  }
+  return counts;
+}
+
 /** Everything an `OrderListItem` is built from — one place, so two lists can't drift. */
 const ORDER_COLUMNS =
   "id, seq, status, created_at, delivered_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, batch_no, approx_weight, actual_weight, cleaning), payment(amount)";

@@ -7,7 +7,8 @@ import { OrdersEmptyState } from "@/components/admin/orders/OrdersEmptyState";
 import { OrderCard } from "@/components/admin/orders/card/OrderCard";
 import {
   ADMIN_ORDER_TABS,
-  resolveTab,
+  defaultOrdersTab,
+  parseTab,
   type AdminOrderTabKey,
 } from "@/lib/constants";
 import { getCurrentFarm } from "@/lib/queries/admin";
@@ -15,6 +16,7 @@ import { listFarmCustomers } from "@/lib/queries/customers";
 import { listOrdersCycles, pickDefaultCycle } from "@/lib/queries/cycles";
 import { getFarmSettings } from "@/lib/queries/settings";
 import {
+  countOrdersByCycle,
   listCycleOrders,
   tallyOrderTabs,
   type OrderListItem,
@@ -72,9 +74,10 @@ export default async function AdminOrdersPage({
   const farm = await getCurrentFarm();
   if (!farm) redirect("/logout");
 
-  const [params, cycles, customers, settings] = await Promise.all([
+  const [params, cycles, orderCounts, customers, settings] = await Promise.all([
     searchParams,
     listOrdersCycles(farm.farmId),
+    countOrdersByCycle(farm.farmId),
     listFarmCustomers(farm.farmId),
     getFarmSettings(farm.farmId),
   ]);
@@ -96,13 +99,28 @@ export default async function AdminOrdersPage({
   }
 
   const orders = await listCycleOrders(farm.farmId, cycle);
+  const counts = tallyOrderTabs(orders);
+
+  // What the funnel is worth offering. A cycle with no orders opens on an empty
+  // screen, and a flock still being raised can never have any (D-39) — so the
+  // picker leaves them out. Two exceptions, both about not painting him into a
+  // corner: the selling cycle is always reachable, because that is where the next
+  // order lands even if none has yet; and the cycle he is looking at never
+  // vanishes from the list he chose it in.
+  const pickable = cycles.filter(
+    (option) =>
+      (orderCounts.get(option.cycleId) ?? 0) > 0 ||
+      option.saleOpen ||
+      option.cycleId === cycle.cycleId,
+  );
 
   const header = (
     <>
       <OrdersToolbar
         cycle={cycle}
-        cycles={cycles}
+        cycles={pickable}
         orderCount={orders.length}
+        allDone={counts.done === orders.length}
         customers={customers}
         weights={settings.availableWeights}
         defaultCleaning={settings.defaultCleaning}
@@ -147,8 +165,10 @@ export default async function AdminOrdersPage({
   return (
     <div className="flex flex-col">
       <OrdersBrowser
-        initialTab={resolveTab(params.tab)}
-        counts={tallyOrderTabs(orders)}
+        // `?tab=` wins when it names a real tab — he chose it. Otherwise open on
+        // the first tab that has anything in it.
+        initialTab={parseTab(params.tab) ?? defaultOrdersTab(counts)}
+        counts={counts}
         panels={panels}
         header={header}
       />
