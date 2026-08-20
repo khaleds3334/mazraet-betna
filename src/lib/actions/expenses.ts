@@ -127,8 +127,9 @@ export async function addUtilitiesExpense(input: {
 
 /**
  * Record a feed purchase — starter (بادي) and/or grower (نامي) bags, each with a
- * per-bag price. One `feed` row per non-empty phase; the بادي/نامي split is a UI
- * label (the table tracks bags + price only). Increases العلف المتوفر.
+ * per-bag price. One `feed` row per non-empty phase, each stamped with its phase
+ * (migration 013) so nothing downstream has to infer it back. Increases
+ * العلف المتوفر.
  */
 export async function addFeedPurchase(input: {
   badiBags: number;
@@ -142,14 +143,23 @@ export async function addFeedPurchase(input: {
 
   const rows = (
     [
-      { bags: Math.trunc(input.badiBags), price: Number(input.badiPrice) },
-      { bags: Math.trunc(input.namiBags), price: Number(input.namiPrice) },
+      {
+        phase: "badi",
+        bags: Math.trunc(input.badiBags),
+        price: Number(input.badiPrice),
+      },
+      {
+        phase: "nami",
+        bags: Math.trunc(input.namiBags),
+        price: Number(input.namiPrice),
+      },
     ] as const
   )
     .filter((r) => r.bags > 0)
     .map((r) => ({
       farm_id: farm.farmId,
       cycle_id: cycle.id,
+      phase: r.phase,
       bags: r.bags,
       bag_price: Number.isFinite(r.price) && r.price > 0 ? r.price : 0,
     }));

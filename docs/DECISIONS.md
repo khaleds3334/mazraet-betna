@@ -876,6 +876,24 @@ coming out as something else entirely, and no prompt to decline it. The three
 signals are all read by different browsers, so all three are set.
 **Date:** 2026-08-20
 
+### T-47 — The feed table records which feed it was
+`feed.phase` (`badi` | `nami`, migration 013). The purchase form always asked for
+the two separately and then threw the label away, writing one row per phase with
+nothing to say which was which — so the readers inferred it back: bags attributed
+بادي-first, on the reasoning that the flock eats بادي first so he buys it first.
+**Why change it:** the inference is right most of the time and wrong exactly when
+it matters — the cycle he happens to buy نامي early. The form is already asking
+him the question; storing the answer is cheaper than reconstructing it, and it is
+the pre-filled "what's still to buy" count on A-15 that gets it wrong (Khaled,
+2026-08-20).
+**Backfill, once:** existing rows get the old rule applied and frozen. Left
+nullable, and `purchasedBagsByPhase` still folds nulls in بادي-first, so a
+hand-imported row is never rejected for want of a phase.
+**Withdrawals keep the inference.** The admin opens a bag; he does not tell the
+app which kind, and asking him mid-cycle is the friction the app exists to remove.
+Purchases are a form he is already filling in — withdrawals are one tap.
+**Date:** 2026-08-20
+
 ### T-45 — Every overlay pins its title and its close button; only the body scrolls
 `BottomSheet` already took a `header` that stays put while the body scrolls under
 it. That is now the rule for **all** overlays, and `Modal` gained the same prop:

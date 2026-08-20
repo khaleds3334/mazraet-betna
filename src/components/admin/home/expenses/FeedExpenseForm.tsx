@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button, NumberStepper, StatItem } from "@/components/ui";
 import { useToast } from "@/hooks/useToast";
 import { addFeedPurchase } from "@/lib/actions/expenses";
+import { remainingFeedBags } from "@/lib/calculations/feed";
 import { ASSUMED_FEED_BAG_PRICE } from "@/lib/constants";
 import type { CycleDashboard } from "@/lib/queries/cycles";
 import { formatArabicNumber } from "@/lib/format";
@@ -42,7 +43,8 @@ function PhaseRow({
 /**
  * The feed-purchase form (العلف): the live feed figures, then starter (بادي) and
  * grower (نامي) bag counts + per-bag prices, saved to the `feed` table. Bag
- * counts pre-fill from what the cycle still needs; the price pre-fills with what
+ * counts pre-fill with what the cycle still needs — the requirement minus what he
+ * has already bought of that same phase; the price pre-fills with what
  * he paid for the last bag, since a price he already entered is a better guess
  * than a constant and usually needs no touching at all. Only the very first
  * purchase — nothing paid yet — falls back to `ASSUMED_FEED_BAG_PRICE`.
@@ -57,9 +59,15 @@ export function FeedExpenseForm({
 }) {
   const toast = useToast();
   const lastPrice = feed.lastBagPrice ?? ASSUMED_FEED_BAG_PRICE;
-  const [badiBags, setBadiBags] = useState(Math.round(feed.requiredBadi));
+  const remaining = remainingFeedBags({
+    requiredBadi: feed.requiredBadi,
+    requiredNami: feed.requiredNami,
+    purchasedBadi: feed.purchasedBadi,
+    purchasedNami: feed.purchasedNami,
+  });
+  const [badiBags, setBadiBags] = useState(remaining.badi);
   const [badiPrice, setBadiPrice] = useState(lastPrice);
-  const [namiBags, setNamiBags] = useState(Math.round(feed.requiredNami));
+  const [namiBags, setNamiBags] = useState(remaining.nami);
   const [namiPrice, setNamiPrice] = useState(lastPrice);
   const [submitting, setSubmitting] = useState(false);
 

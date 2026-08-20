@@ -3,7 +3,11 @@
  * consumption is ~0.75 kg (grower) + 2.75 kg (finisher) per chick.
  * Feed cost feeds into the cycle's final accounting (FR-19).
  */
-import { FEED_BAG_KG, FEED_PER_CHICK_KG } from "@/lib/constants";
+import {
+  FEED_BAG_KG,
+  FEED_PER_CHICK_KG,
+  type FeedPhase,
+} from "@/lib/constants";
 
 type FeedRow = { bags: number; bag_price: number };
 
@@ -61,6 +65,58 @@ export function expectedFeedBags(chickCount: number): {
   return {
     badi: bags(FEED_PER_CHICK_KG.grower),
     nami: bags(FEED_PER_CHICK_KG.finisher),
+  };
+}
+
+/**
+ * Bags bought so far, split into بادي and نامي. Since migration 013 the phase is
+ * recorded on the purchase, so this is a read, not a guess.
+ *
+ * Rows from before that migration whose phase couldn't be attributed are left
+ * null in the database; they're folded in بادي-first — the order the flock eats
+ * it in, and the rule the app used before the column existed. New data never
+ * reaches that branch.
+ */
+export function purchasedBagsByPhase(
+  purchases: { bags: number; phase: FeedPhase | null }[],
+  requiredBadi: number,
+): { badi: number; nami: number } {
+  let badi = 0;
+  let nami = 0;
+  let unattributed = 0;
+
+  for (const row of purchases) {
+    if (row.phase === "badi") badi += row.bags;
+    else if (row.phase === "nami") nami += row.bags;
+    else unattributed += row.bags;
+  }
+
+  if (unattributed > 0) {
+    const badiGap = Math.max(0, Math.round(requiredBadi) - badi);
+    const toBadi = Math.min(unattributed, badiGap);
+    badi += toBadi;
+    nami += unattributed - toBadi;
+  }
+
+  return { badi, nami };
+}
+
+/**
+ * Bags still to buy for each phase — what the purchase form (A-15) opens on, so
+ * the admin isn't asked again for feed he has already brought in.
+ *
+ * Never negative: once he has bought everything the cycle needs, both open at
+ * zero and he types whatever he is actually buying.
+ */
+export function remainingFeedBags(input: {
+  requiredBadi: number;
+  requiredNami: number;
+  purchasedBadi: number;
+  purchasedNami: number;
+}): { badi: number; nami: number } {
+  return {
+    badi: Math.max(0, Math.round(input.requiredBadi) - input.purchasedBadi),
+    nami: Math.max(0, Math.round(input.requiredNami) - input.purchasedNami),
   };
 }
 

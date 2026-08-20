@@ -8,6 +8,8 @@ import type { Enums } from "@/types/database";
 
 export type OrderStatus = Enums<"order_status">;
 export type ExpenseCategory = Enums<"expense_category">;
+/** Which feed a purchase was: بادي (starter) or نامي (grower) — migration 013. */
+export type FeedPhase = Enums<"feed_phase">;
 
 /** A raising cycle runs 30 days before the selling phase (FR-4). */
 export const RAISING_PERIOD_DAYS = 30;
@@ -122,6 +124,11 @@ export function resolveTab(value: string | null | undefined): AdminOrderTabKey {
     DEFAULT_ADMIN_ORDER_TAB
   );
 }
+
+export const FEED_PHASE_LABEL: Record<FeedPhase, string> = {
+  badi: "بادي",
+  nami: "نامي",
+};
 
 /** Manual expense categories (FR-18 / Phase 7 chips). */
 export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategory, string> = {

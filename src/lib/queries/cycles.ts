@@ -15,6 +15,7 @@ import {
   feedBagsAvailable,
   feedBagsWithdrawn,
   feedCost,
+  purchasedBagsByPhase,
 } from "@/lib/calculations/feed";
 import { CYCLE_TOTAL_DAYS, SALE_READY_MIN_DAY } from "@/lib/constants";
 import { getFarmSettings } from "@/lib/queries/settings";
@@ -120,6 +121,9 @@ export interface CycleDashboard {
     requiredNami: number;
     /** Bags still in the store (bought − withdrawn). */
     available: number;
+    /** Bags bought so far this cycle, per phase — what's already in the store. */
+    purchasedBadi: number;
+    purchasedNami: number;
     /** Bags withdrawn/consumed so far. */
     withdrawn: number;
     /** Price of the last bag bought — pre-fills the purchase form. Null = never bought. */
@@ -162,7 +166,10 @@ export async function getActiveCycleDashboard(
   ] = await Promise.all([
       supabase.from("mortality").select("count").eq("cycle_id", cycle.id),
       supabase.from("expense").select("amount").eq("cycle_id", cycle.id),
-      supabase.from("feed").select("bags, bag_price").eq("cycle_id", cycle.id),
+      supabase
+        .from("feed")
+        .select("bags, bag_price, phase")
+        .eq("cycle_id", cycle.id),
       supabase
         .from("feed_withdrawal")
         .select("bags, withdrawn_on, withdrawn_at, created_at")
@@ -197,6 +204,7 @@ export async function getActiveCycleDashboard(
   });
 
   const { badi, nami } = expectedFeedBags(cycle.chick_count);
+  const purchased = purchasedBagsByPhase(feed, badi);
 
   // Classify each opened bag: the first `badiBagCount` bags (chronologically) are
   // بادي, the rest نامي — Khaled's FIFO rule (بادي is opened until it runs out,
@@ -251,6 +259,8 @@ export async function getActiveCycleDashboard(
       requiredBadi: badi,
       requiredNami: nami,
       available: feedBagsAvailable(feed, withdrawals),
+      purchasedBadi: purchased.badi,
+      purchasedNami: purchased.nami,
       withdrawn: feedBagsWithdrawn(withdrawals),
       lastBagPrice,
       totalDays,

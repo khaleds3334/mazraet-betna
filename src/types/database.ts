@@ -214,6 +214,7 @@ export type Database = {
           cycle_id: string
           farm_id: string
           id: string
+          phase: Database["public"]["Enums"]["feed_phase"] | null
           purchased_on: string
         }
         Insert: {
@@ -223,6 +224,7 @@ export type Database = {
           cycle_id: string
           farm_id: string
           id?: string
+          phase?: Database["public"]["Enums"]["feed_phase"] | null
           purchased_on?: string
         }
         Update: {
@@ -232,6 +234,7 @@ export type Database = {
           cycle_id?: string
           farm_id?: string
           id?: string
+          phase?: Database["public"]["Enums"]["feed_phase"] | null
           purchased_on?: string
         }
         Relationships: [
@@ -642,6 +645,7 @@ export type Database = {
     }
     Enums: {
       expense_category: "feed" | "utilities" | "medicine" | "other"
+      feed_phase: "badi" | "nami"
       notification_audience: "customer" | "admin"
       order_source: "customer" | "admin"
       order_status: "pending" | "weighed" | "ready" | "delivered" | "cancelled"
@@ -773,6 +777,7 @@ export const Constants = {
   public: {
     Enums: {
       expense_category: ["feed", "utilities", "medicine", "other"],
+      feed_phase: ["badi", "nami"],
       notification_audience: ["customer", "admin"],
       order_source: ["customer", "admin"],
       order_status: ["pending", "weighed", "ready", "delivered", "cancelled"],

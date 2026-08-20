@@ -15,7 +15,7 @@ A bottom sheet to record a cycle expense. Category chips switch the form:
 All feed into the cycle's expenses total on read (FR-19).
 
 ## Data
-**Reads:** the active cycle's feed figures (passed in from the dashboard) for the العلف form's cards + pre-filled bag counts.
+**Reads:** the active cycle's feed figures (passed in from the dashboard) for the العلف form's cards + pre-filled bag counts and price.
 **Writes:** `addFeedPurchase` (→ `feed`) · `addExpense` (→ `expense`) in `lib/actions/expenses.ts`.
 
 ## Components
@@ -29,5 +29,16 @@ water bills) · `SimpleExpenseForm` (أدوية/أخرى — category-aware desc
 Success: `تم تسجيل العلف` / `تم تسجيل المصروف` (toast) — then the sheet closes and the dashboard refreshes. Amount validation is inline under the field.
 
 ## Watch out
-- The بادي/نامي split is UI-only; `feed` stores bags + price, not the phase.
+- `feed.phase` records which feed a purchase was (migration 013). It used to be a
+  UI-only label; rows from before are backfilled بادي-first and read as such.
+- Bag counts open on what is **still to buy** (`remainingFeedBags` = that phase's
+  requirement − already bought of that phase), not the whole requirement — he was
+  being asked again for feed already in the store. Both open at zero once the
+  cycle's feed is fully bought.
+- **Withdrawals** are still classified بادي-first (`getActiveCycleDashboard`): the
+  admin opens a bag without telling the app which kind, and that question doesn't
+  belong mid-cycle.
+- The per-bag price opens on the last price he actually paid
+  (`getLastFeedBagPrice`), falling back to `ASSUMED_FEED_BAG_PRICE` only before
+  the farm's first purchase (T-46).
 - Category chips are ordered feed-first so العلف lands on the right in RTL.
