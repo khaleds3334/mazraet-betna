@@ -21,7 +21,7 @@ Action: `verifyPin(phone, pin)` in `/lib/actions/auth.ts`; session plumbing in
 `/lib/auth/session.ts`.
 
 ## Components
-New: `PinInput` (shared — six boxes, one hidden input, Arabic-Indic digits)
+New: `PinInput` (shared — six boxes, each its own input, Arabic-Indic digits)
 Reused: `BackButton` · `Button`
 New token: `--text-h3` (28px, the PIN digits)
 
