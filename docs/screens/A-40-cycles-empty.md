@@ -9,14 +9,16 @@
 The cycles tab. When the farm has **never** registered a cycle (no active and no
 ended ones) it shows this empty state: the archive illustration, a short
 explainer, and the CTA that opens the create-cycle sheet (A-41) **in place**.
-Once any cycle exists it shows the list (A-42) — a placeholder today.
+Once any cycle exists it shows the list (A-42) instead.
 
 ## Data
-**Reads:** current farm (`getCurrentFarm`) · `hasAnyCycle` (active *or* ended —
-distinct from `hasActiveCycle`, which the home uses).
+**Reads:** current farm (`getCurrentFarm`) · `listCycles` — the same read the list
+uses, and an empty result *is* this state. (It replaced a `hasAnyCycle` count: two
+reads answering one question, where the second already implies the first.)
 **Writes:** none directly (the create sheet writes).
 
 ## Components
+`CyclesEmptyState` — this state lifted out of the page so the page stays the list.
 Reused: `EmptyCyclesIllustration` (same as A-10) · `CreateCycleLauncher` (opens
 A-41 in place) · the shared `AdminBottomNav` from the layout (الدورات tab active
 by pathname — no per-screen work).

@@ -1,7 +1,7 @@
 import { Badge, Icon } from "@/components/ui";
 import { SettingsGear } from "@/components/layout/SettingsGear";
 import { formatArabicDate, formatArabicNumber } from "@/lib/format";
-import { ChickIcon } from "./ChickIcon";
+import { ChickIcon } from "@/components/admin/shared/ChickIcon";
 
 /**
  * Top of the cycle dashboard (A-11): the settings gear on the inline-end, and

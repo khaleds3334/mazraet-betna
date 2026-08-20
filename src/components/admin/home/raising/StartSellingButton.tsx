@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ActionButton,
   Button,
   CloseButton,
-  Icon,
+  ConfirmActions,
   InlineError,
   Modal,
   Stepper,
@@ -115,35 +114,12 @@ export function StartSellingButton({
 
           {error && <InlineError message={error} />}
 
-          {/* Confirm on the right, cancel on the left — first child is the right
-              one in RTL, matching the design. */}
-          <div className="flex items-stretch gap-3">
-            <ActionButton
-              variant="primary"
-              onClick={submit}
-              isLoading={submitting}
-              className="flex-1"
-            >
-              بدء البيع
-            </ActionButton>
-            <ActionButton
-              variant="danger"
-              onClick={close}
-              disabled={submitting}
-              className="flex-1"
-            >
-              {/* Decorative badge from the design — a filled red disc with a
-                  white ✕, sitting to the right of the label in RTL. Not a
-                  control; the whole pill is the control. */}
-              <span
-                aria-hidden
-                className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-error text-white"
-              >
-                <Icon name="cancel" size={13} />
-              </span>
-              الغاء
-            </ActionButton>
-          </div>
+          <ConfirmActions
+            confirmLabel="بدء البيع"
+            onConfirm={submit}
+            onCancel={close}
+            isLoading={submitting}
+          />
         </div>
       </Modal>
     </>

@@ -16,6 +16,22 @@ import {
 /** Statuses that count as an in-progress order (everything but delivered/cancelled). */
 const ACTIVE_STATUSES: OrderStatus[] = ["pending", "weighed", "ready"];
 
+/**
+ * How many of a cycle's orders are still open — waiting, weighed, or ready, but
+ * not yet handed over. Ending a cycle is refused while any of them are (D-36):
+ * a cycle that closes over an unfinished order strands it in history, where the
+ * orders screen no longer looks.
+ */
+export async function countOpenCycleOrders(cycleId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("cycle_id", cycleId)
+    .in("status", ACTIVE_STATUSES);
+  return count ?? 0;
+}
+
 // ─────────────────────────── Customer app ───────────────────────────
 
 /**

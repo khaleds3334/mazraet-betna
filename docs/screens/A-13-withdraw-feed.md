@@ -37,7 +37,7 @@ adds `withdrawn_at` (time) so the detail popup can show the exact time. The grid
 still lights per day; each lit day maps to its (first) bag for the detail popup.
 
 ## Components
-New (admin/home): `RecordFeedWithdrawalButton` (record launcher + popup) ·
+New (`admin/shared` since T-49): `RecordFeedWithdrawalButton` (launcher + popup) ·
 `FeedWithdrawalDetail` (bag-detail popup). `FeedGrid` is now a client component —
 lit cells are buttons that open the detail popup. Reused: `Modal` · `CloseButton` ·
 `PickerField` (date + time) · `ActionButton` (حفظ, primary) · `Icon`.

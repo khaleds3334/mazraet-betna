@@ -1,16 +1,14 @@
-import { StatItem } from "@/components/ui";
 import type { CycleDashboard } from "@/lib/queries/cycles";
 import {
   formatArabicNumber,
   pluralizeChicken,
   pluralizeDay,
 } from "@/lib/format";
+import { FeedTracker } from "@/components/admin/shared/FeedTracker";
+import { RecordActions } from "@/components/admin/shared/RecordActions";
 import { CycleHeader } from "../shared/CycleHeader";
 import { CycleStatCard } from "../shared/CycleStatCard";
 import { StatSection } from "../shared/StatSection";
-import { RecordExpenseButton } from "../expenses/RecordExpenseButton";
-import { RecordMortalityButton } from "./RecordMortalityButton";
-import { RecordFeedWithdrawalButton } from "./RecordFeedWithdrawalButton";
 import { FeedGrid } from "./FeedGrid";
 import { StartSellingButton } from "./StartSellingButton";
 
@@ -56,36 +54,10 @@ export function RaisingDashboard({ data }: { data: CycleDashboard }) {
           />
         </div>
 
-        {/* Record actions — expenses (wide) on the right, mortality on the left. */}
-        <div className="flex items-stretch justify-between gap-3">
-          <RecordExpenseButton feed={feed} className="flex-1" />
-          <RecordMortalityButton className="shrink-0" />
-        </div>
+        <RecordActions feed={feed} />
       </div>
 
-      {/* Feed section — required · withdrawn · available (right→left). */}
-      <div className="flex flex-col gap-3">
-        <div className="grid grid-cols-3 gap-3">
-          <StatItem
-            label={"العلف\nالمطلوب"}
-            value={`${formatArabicNumber(Math.round(feed.requiredBadi))} / ${formatArabicNumber(Math.round(feed.requiredNami))}`}
-          />
-          <StatItem
-            label={"العلف\nالمسحوب"}
-            value={formatArabicNumber(feed.withdrawn)}
-            valueClassName="text-accent-tan"
-          />
-          <StatItem
-            label={"العلف\nالمتوفر"}
-            value={formatArabicNumber(feed.available)}
-          />
-        </div>
-
-        {/* Withdraw-bag button — centered, at roughly the تسجيل مصاريف width. */}
-        <div className="flex justify-center">
-          <RecordFeedWithdrawalButton className="w-2/3" />
-        </div>
-      </div>
+      <FeedTracker feed={feed} />
 
       {/* Feed consumption tracker — one square per cycle day. */}
       <StatSection title="تتبع استهلاك العلف">

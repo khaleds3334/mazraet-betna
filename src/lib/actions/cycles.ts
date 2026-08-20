@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { hasActiveCycle } from "@/lib/queries/cycles";
+import { countOpenCycleOrders } from "@/lib/queries/orders";
+import { pluralizeOrder } from "@/lib/format";
 
 /**
  * Cycle actions (admin only). Writes go through the RLS-bound client — the
@@ -154,5 +156,59 @@ export async function startSelling(salePrice: number): Promise<ActionResult> {
 
   revalidatePath("/admin");
   revalidatePath("/"); // opening the sale changes the customer home too
+  return { ok: true };
+}
+
+/**
+ * End the active cycle — «انتهاء فترة البيع» on the running cycle's row (A-44).
+ * The flock is sold, so the cycle closes for good: the sale shuts, the cycle
+ * stops being the farm's active one, and `ended_at` records when. From here it is
+ * history — a row in the list with its final profit — and the farm is free to
+ * register the next one (FR-4).
+ *
+ * **Refused while any order is still open** (D-36). An order that has been
+ * weighed but not handed over belongs to a cycle the admin can still act on; once
+ * the cycle closes, the orders screen looks at the *next* one and that order is
+ * stranded. So he finishes them first, and the message says how many.
+ *
+ * There is no undo. The confirm dialog is where that is made clear.
+ */
+export async function endCycle(): Promise<ActionResult> {
+  const farm = await getCurrentFarm();
+  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  const supabase = await createClient();
+  const { data: cycle } = await supabase
+    .from("cycle")
+    .select("id")
+    .eq("farm_id", farm.farmId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!cycle) return { ok: false, error: "مفيش دورة شغالة دلوقتي." };
+
+  // Checked again here, never only in the dialog: the count the screen was
+  // rendered with can be minutes old, and a customer can order in between.
+  const openOrders = await countOpenCycleOrders(cycle.id);
+  if (openOrders > 0) {
+    return {
+      ok: false,
+      error: `فيه ${pluralizeOrder(openOrders)} لسه مفتوحة في الدورة، خلّصها الأول.`,
+    };
+  }
+
+  const { error } = await supabase
+    .from("cycle")
+    .update({
+      is_active: false,
+      sale_open: false,
+      ended_at: new Date().toISOString(),
+    })
+    .eq("id", cycle.id);
+
+  if (error) return { ok: false, error: "مقدرناش ننهي الدورة، حاول تاني." };
+
+  revalidatePath("/admin/cycles");
+  revalidatePath("/admin");
+  revalidatePath("/"); // the customer home stops offering a sale that ended
   return { ok: true };
 }

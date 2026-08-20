@@ -203,3 +203,16 @@ export function cycleAccounting(input: {
     netProfit: round2(salesTotal - expensesTotal),
   };
 }
+
+/**
+ * How many days a cycle ran — the figure next to the calendar on each row of the
+ * cycles list (A-42). A closed cycle counts start → the day it ended; a running
+ * one counts start → today, so the number keeps climbing while it lives.
+ */
+export function cycleDurationDays(
+  startDate: Date | string,
+  endedAt: Date | string | null,
+  today: Date = new Date(),
+): number {
+  return chickAgeDays(startDate, endedAt ? new Date(endedAt) : today);
+}

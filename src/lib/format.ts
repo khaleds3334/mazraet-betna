@@ -190,3 +190,17 @@ export function formatOrderNumber(cycleSeq: number, orderSeq: number): string {
 export function formatPhone(phone: string): string {
   return phone;
 }
+
+/**
+ * Arabic chick pluralization for a flock size, same shape as
+ * {@link pluralizeChicken}: `١ كتكوت` · `٢ كتكوتين` · `٣–١٠ كتاكيت` · `١١+ كتكوت`.
+ * A chick (كتكوت) is a bird still being raised; a فرخة is one ready to sell —
+ * the two are never interchangeable to this admin.
+ */
+export function pluralizeChick(count: number): string {
+  const n = toArabicDigits(count);
+  if (count === 1) return `${n} كتكوت`;
+  if (count === 2) return `${n} كتكوتين`;
+  if (count >= 3 && count <= 10) return `${n} كتاكيت`;
+  return `${n} كتكوت`; // 0 and 11+
+}

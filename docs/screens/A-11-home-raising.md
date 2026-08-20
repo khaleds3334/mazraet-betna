@@ -26,9 +26,12 @@ The dashboard the admin sees while a cycle is still growing (before selling). Sh
 ## Components
 Admin components live under `components/admin/home/` (the dashboard) and
 `components/admin/cycles/` (create/empty). Dashboard: `RaisingDashboard`
-(composer) · `CycleHeader` · `CycleStatCard` (hero tile) · `FeedGrid` · `ChickIcon`
-· `RecordMortalityButton` (A-14 popup) · `RecordExpenseButton` (A-15 sheet) ·
-`RecordFeedWithdrawalButton` (A-13 popup) · `StartSellingButton`.
+(composer) · `CycleHeader` · `CycleStatCard` (hero tile) · `FeedGrid` ·
+`StartSellingButton`. Everything the cycles list needs too now lives in
+`components/admin/shared` (T-49): `ChickIcon` · `RecordActions` (the تسجيل مصاريف /
+تسجيل نافق pair) · `FeedTracker` (the feed tiles + سحب شكارة) ·
+`RecordMortalityButton` (A-14 popup) · `RecordExpenseButton` (A-15 sheet) ·
+`RecordFeedWithdrawalButton` (A-13 popup).
 New (ui): `Modal` (centered popup) · `ActionButton` (the reusable compact pill —
 danger/outline — for record actions). Reused: `StatItem` · `NumberStepper` (new
 `tone="danger"`) · `Button` · `BottomSheet` · `Icon`.

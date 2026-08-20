@@ -7,9 +7,14 @@ import { createClient } from "@/lib/supabase/server";
 import {
   chickAgeDays,
   cycleAccounting,
+  cycleDurationDays,
   expectedSaleDate,
   type CycleEstimateBasis,
 } from "@/lib/calculations/cycle";
+import {
+  sumInvoices,
+  type OrderInvoiceInput,
+} from "@/lib/calculations/invoice";
 import {
   expectedFeedBags,
   feedBagsAvailable,
@@ -400,16 +405,129 @@ export async function getCycleEstimateBasis(
   };
 }
 
+
+/** One row of the cycles list (A-42/A-43) — a whole cycle reduced to six figures. */
+export interface CycleListItem {
+  cycleId: string;
+  /** The cycle's own number on this farm (١، ٢، ٣ …) — what the row is titled by. */
+  seq: number;
+  name: string | null;
+  startDate: string;
+  /** ISO instant the cycle was closed, or null while it is still running. */
+  endedAt: string | null;
+  phase: CyclePhase;
+  chickCount: number;
+  /** Days the cycle ran — closed: start → end; running: start → today. */
+  durationDays: number;
+  mortalityCount: number;
+  /** Chicks + feed + everything else spent on it (FR-19). */
+  expensesTotal: number;
+  /** Sales minus every cost. Only settled once the cycle has ended. */
+  netProfit: number;
+  /** What customers still owe on this cycle's orders (FR-20). */
+  debt: number;
+}
+
+/** Sum a set of rows into a per-cycle map, keyed by `cycle_id`. */
+function tallyByCycle<T extends { cycle_id: string }>(
+  rows: T[],
+  value: (row: T) => number,
+): Map<string, number> {
+  const totals = new Map<string, number>();
+  for (const row of rows) {
+    totals.set(row.cycle_id, (totals.get(row.cycle_id) ?? 0) + value(row));
+  }
+  return totals;
+}
+
 /**
- * Whether the farm has ever registered a cycle (active or ended). The cycles
- * screen shows the empty state (A-40) only when there's none at all — once any
- * cycle exists it shows the list (A-42).
+ * Every cycle the farm has ever run, newest first — the cycles list (A-42). Each
+ * row carries what that cycle cost, what it earned, what it lost, and what is
+ * still owed on it.
+ *
+ * Read as five flat queries scoped to the farm and joined in memory rather than
+ * one query per cycle: a farm accumulates a handful of cycles a year, so the
+ * whole history is a few hundred rows, and this way the page costs the same
+ * whether there are two cycles or twenty.
+ *
+ * Nothing here is stored pre-totalled (D-05) — money is recomputed from the
+ * orders' own lines and payments every time, so a correction to a weight shows up
+ * in the profit immediately.
  */
-export async function hasAnyCycle(farmId: string): Promise<boolean> {
+export async function listCycles(farmId: string): Promise<CycleListItem[]> {
   const supabase = await createClient();
-  const { count } = await supabase
+
+  const { data: cycles } = await supabase
     .from("cycle")
-    .select("id", { count: "exact", head: true })
-    .eq("farm_id", farmId);
-  return (count ?? 0) > 0;
+    .select(
+      "id, seq, name, chick_count, chick_price, start_date, is_active, sale_open, ended_at",
+    )
+    .eq("farm_id", farmId)
+    .order("seq", { ascending: false });
+  if (!cycles?.length) return [];
+
+  const [mortalityRes, expenseRes, feedRes, orderRes] = await Promise.all([
+    supabase.from("mortality").select("cycle_id, count").eq("farm_id", farmId),
+    supabase.from("expense").select("cycle_id, amount").eq("farm_id", farmId),
+    supabase
+      .from("feed")
+      .select("cycle_id, bags, bag_price")
+      .eq("farm_id", farmId),
+    supabase
+      .from("orders")
+      .select(
+        "cycle_id, unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
+      )
+      .eq("farm_id", farmId)
+      // A cancelled order was never sold and was never owed (FR-15).
+      .neq("status", "cancelled"),
+  ]);
+
+  const mortality = tallyByCycle(mortalityRes.data ?? [], (m) => m.count);
+  const expenses = tallyByCycle(expenseRes.data ?? [], (e) => Number(e.amount));
+  const feedSpend = tallyByCycle(feedRes.data ?? [], (f) =>
+    feedCost([{ bags: f.bags, bag_price: Number(f.bag_price) }]),
+  );
+
+  // Orders grouped by cycle, then rolled into one money picture per cycle.
+  const ordersByCycle = new Map<string, OrderInvoiceInput[]>();
+  for (const order of orderRes.data ?? []) {
+    const bucket = ordersByCycle.get(order.cycle_id) ?? [];
+    bucket.push({
+      order,
+      lines: order.order_line ?? [],
+      payments: order.payment ?? [],
+    });
+    ordersByCycle.set(order.cycle_id, bucket);
+  }
+
+  return cycles.map((cycle) => {
+    const money = sumInvoices(ordersByCycle.get(cycle.id) ?? []);
+    const { expensesTotal, netProfit } = cycleAccounting({
+      salesTotal: money.income,
+      chickCount: cycle.chick_count,
+      chickPrice: Number(cycle.chick_price),
+      feedCost: feedSpend.get(cycle.id) ?? 0,
+      otherExpenses: expenses.get(cycle.id) ?? 0,
+    });
+
+    // A cycle is finished the moment it stops being the farm's active one — the
+    // timestamp is the record of when, not the thing that decides it.
+    const ended = !cycle.is_active || Boolean(cycle.ended_at);
+
+    return {
+      cycleId: cycle.id,
+      seq: cycle.seq ?? 0,
+      name: cycle.name,
+      startDate: cycle.start_date,
+      endedAt: cycle.ended_at,
+      phase: ended ? "ended" : cycle.sale_open ? "selling" : "raising",
+      chickCount: cycle.chick_count,
+      durationDays: cycleDurationDays(cycle.start_date, cycle.ended_at),
+      mortalityCount: mortality.get(cycle.id) ?? 0,
+      expensesTotal,
+      netProfit,
+      debt: money.debt,
+    };
+  });
 }

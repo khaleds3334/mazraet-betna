@@ -31,6 +31,7 @@ import {
   MinusSignIcon,
   ArrowRight01Icon,
   ArrowLeft01Icon,
+  ArrowLeft02Icon, // figma: line-md:arrow-up, rotated — the long "open this" arrow
   ArrowDown01Icon,
   Link01Icon, // figma: link-01 — FAQ link in the sidebar
   // ── Feedback (toasts / status) ──
@@ -74,7 +75,7 @@ import {
   KnivesIcon, // figma: knives — الطلبات قيد التشغيل
 } from "@hugeicons/core-free-icons";
 // The chick glyph ("عدد الكتاكيت") isn't in the Hugeicons free pack — it's a
-// bespoke design SVG in components/admin/home/ChickIcon (T-19 rationale).
+// bespoke design SVG in components/admin/shared/ChickIcon (T-19 rationale).
 
 export const icons = {
   // Navigation & shell
@@ -96,14 +97,20 @@ export const icons = {
   search: Search02Icon,
   check: Tick02Icon,
   filter: FilterIcon,
-  // Both add buttons use Figma's layer-add glyph (A-50 «اضافة طلب» and A-30
-  // «اضافة عميل»); two names keep each screen reading semantically.
+  // Every "add" button in the admin app uses Figma's layer-add glyph (A-50
+  // «اضافة طلب», A-30 «اضافة عميل», A-42 «انشاء دورة جديدة»); a name per screen
+  // keeps each one reading semantically.
   addOrder: LayerAddIcon,
   addCustomer: LayerAddIcon,
+  addCycle: LayerAddIcon,
   plus: PlusSignIcon,
   minus: MinusSignIcon,
   arrowRight: ArrowRight01Icon,
   arrowLeft: ArrowLeft01Icon,
+  // The long straight arrow at the end of a cycle row (A-42): a shaft, not the
+  // chevron `arrowLeft` draws. It points inline-end because in RTL that is
+  // "onwards" — into the cycle.
+  openDetails: ArrowLeft02Icon,
   arrowDown: ArrowDown01Icon,
   link: Link01Icon,
 

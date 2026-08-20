@@ -1039,3 +1039,82 @@ admin — it reads as "this customer isn't registered", and he adds them a secon
 Duplicate customers split one person's debt across two rows, which is the expensive
 failure. False positives cost him one glance.
 **Date:** 2026-08-18
+
+### D-34 — A running cycle's row leads to the home dashboard, not to a cycle page
+On the cycles list (A-42), a **finished** cycle opens its own page
+(`/admin/cycles/[cycleId]`, A-45). A **running** one goes to `/admin`.
+**Why:** the home dashboard already *is* the running cycle's page — its age, its
+feed, its mortality, its expenses, its sale. A second page for the same cycle would
+be a copy to keep in sync, and the admin would have two places to look for one
+answer. History gets a page; the present already has one.
+**Consequence:** the row's actions («تسجيل نافق» / «تسجيل مصاريف») are the
+dashboard's own components, not new ones — one form per thing recorded, reachable
+from either screen.
+**Date:** 2026-08-20
+
+### D-35 — «انشاء دورة جديدة» only exists while no cycle is running
+The toolbar at the top of the cycles list appears when the farm has no active cycle,
+and is absent otherwise — which is how the design draws A-42 against A-43.
+**Why:** a farm raises one flock at a time (FR-4), enforced in the database by a
+unique index. A button that is always visible would be a button the app refuses half
+the time, and a refusal this user did nothing to earn reads as a broken app. The
+create-cycle path stays exactly where it already was: the home CTA (A-10) and the
+empty state (A-40), both of which only exist in the same "nothing is running" state.
+**Date:** 2026-08-20
+
+### T-48 — Cycle history is read as five flat queries, joined in memory
+`listCycles` reads cycles, mortality, expenses, feed and orders as five queries
+scoped to the farm, then groups them by `cycle_id` in JS — not one query per cycle,
+and not a database view.
+**Why:** a farm runs a handful of cycles a year, so its whole history is a few
+hundred rows. Five reads cost the same whether there are two cycles or twenty, where
+per-cycle queries grow with the list. A view would have to pre-aggregate money, and
+money on this project is never stored pre-totalled (D-05) — the profit on a row is
+recomputed from the orders' own lines and payments every time, so correcting a
+weight moves it on the next read.
+**Date:** 2026-08-20
+
+### D-36 — «انتهاء فترة البيع» ends the cycle, asks first, and is refused over open orders
+The button at the foot of the selling cycle's row (A-44) closes the cycle for
+good: the sale shuts, the cycle stops being the farm's active one, and `ended_at`
+records when. It answers the question that had been open since A-20 was
+built — *who ends a cycle?* — the answer being: the admin, from the cycles list,
+not from the dashboard (Khaled, 2026-08-20).
+
+Three rules around it:
+- **It asks first.** The design draws no dialog, so it borrows the shape of the
+  one that opens the sale (A-23) — the same question in the other direction. The
+  button is full-width and easy to hit while standing over a scale, and there is
+  no undo.
+- **Open orders block it.** While any order is `pending`, `weighed`, or `ready`,
+  ending is refused and the dialog says how many. A cycle that closes over an
+  unfinished order strands it: the orders screen then looks at the *next* cycle,
+  and that order is only reachable through history. He finishes them first.
+- **Failure is an inline error, never a toast** (T-09). A toast that
+  auto-dismisses unseen would leave him believing the cycle closed.
+
+The count is checked twice — once for the dialog, once inside the action — because
+the number the screen rendered with can be minutes old and a customer can order in
+between.
+**Date:** 2026-08-20
+
+### T-49 — `components/admin/shared` — a piece used by two admin screens moves up
+Extends T-23's rule one level. Anything used by two *screens* (not two faces of
+one screen) leaves the folder it was born in and moves to
+`components/admin/shared`: `ChickIcon`, `RecordActions` (the تسجيل مصاريف /
+تسجيل نافق pair), `RecordMortalityButton`, `RecordFeedWithdrawalButton`,
+`FeedTracker` (the three feed tiles + سحب شكارة), and the whole `expenses/` sheet
+family. `home/shared/` keeps only what the two dashboards share with each other
+(`CycleHeader`, `CycleStatCard`, `StatSection`).
+**Why:** the cycles list (A-43/A-44) needs the same record actions and the same
+feed store the raising dashboard has. Importing them out of `home/raising/` would
+have made one screen reach into another screen's private folder — which is how a
+folder stops meaning anything. A component that two screens use belongs to
+neither.
+**The rule, stated once:** one user → live in that screen's folder (so
+`EndSellingButton` sits in `cycles/`, and `StartSellingButton` stays in
+`home/raising/`); two or more → `components/admin/shared`; used by both apps →
+`components/shared`; part of the design system → `components/ui`.
+**Also extracted:** `ui/ConfirmActions` — the confirm/«الغاء» pair at the foot of
+a confirm dialog, drawn identically by A-23 and by the end-of-cycle dialog.
+**Date:** 2026-08-20

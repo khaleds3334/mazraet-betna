@@ -9,6 +9,7 @@ export { Button } from "./Button";
 export { CardAction } from "./CardAction";
 export { Checkbox } from "./Checkbox";
 export { Chip } from "./Chip";
+export { ConfirmActions } from "./ConfirmActions";
 export { CloseButton } from "./CloseButton";
 export { ComingSoon } from "./ComingSoon";
 export { EmptyState } from "./EmptyState";

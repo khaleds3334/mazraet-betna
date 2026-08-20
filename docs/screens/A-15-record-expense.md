@@ -19,7 +19,8 @@ All feed into the cycle's expenses total on read (FR-19).
 **Writes:** `addFeedPurchase` (→ `feed`) · `addExpense` (→ `expense`) in `lib/actions/expenses.ts`.
 
 ## Components
-New (ui): `Chip` (reusable selectable pill). New (admin/home): `ExpenseSheet`
+New (ui): `Chip` (reusable selectable pill). New (`admin/shared/expenses`
+since T-49 — the cycles list opens the same sheet): `ExpenseSheet`
 (chips + form routing) · `FeedExpenseForm` · `UtilitiesExpenseForm` (electricity +
 water bills) · `SimpleExpenseForm` (أدوية/أخرى — category-aware description label) ·
 `RecordExpenseButton` (launcher). Reused: `BottomSheet` · `CloseButton` ·
