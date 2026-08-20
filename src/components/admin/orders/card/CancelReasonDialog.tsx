@@ -50,13 +50,18 @@ export function CancelReasonDialog({
   }
 
   return (
-    <Modal open={open} onClose={onClose} label={question}>
-      <div className="flex flex-col gap-4">
+    <Modal
+      open={open}
+      onClose={onClose}
+      label={question}
+      header={
         <div className="flex items-center justify-between gap-2">
           <p className="text-base text-accent-brown">{question}</p>
           <CloseButton onClick={onClose} size="sm" />
         </div>
-
+      }
+    >
+      <div className="flex flex-col gap-4 pt-4">
         <div className="flex flex-col gap-2">
           <label htmlFor={fieldId} className="text-h6 font-bold text-error">
             سبب الغاء الطلب

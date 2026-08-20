@@ -67,14 +67,19 @@ export function RecordFeedWithdrawalButton({
         سحب شكارة
       </ActionButton>
 
-      <Modal open={open} onClose={close} label="امتي فتحت الشكارة؟">
-        <div className="flex flex-col gap-5">
-          {/* Title on the right, close on the left (app convention). */}
+      <Modal
+        open={open}
+        onClose={close}
+        label="امتي فتحت الشكارة؟"
+        header={
+          /* Title on the right, close on the left (app convention). */
           <div className="flex items-center justify-between">
             <p className="text-accent-brown">امتي فتحت الشكارة؟</p>
             <CloseButton onClick={close} size="sm" />
           </div>
-
+        }
+      >
+        <div className="flex flex-col gap-5 pt-5">
           {/* Day on the right, time on the left — matches the design. */}
           <div className="grid grid-cols-2 gap-3">
             <PickerField

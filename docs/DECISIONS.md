@@ -876,6 +876,26 @@ coming out as something else entirely, and no prompt to decline it. The three
 signals are all read by different browsers, so all three are set.
 **Date:** 2026-08-20
 
+### T-45 — Every overlay pins its title and its close button; only the body scrolls
+`BottomSheet` already took a `header` that stays put while the body scrolls under
+it. That is now the rule for **all** overlays, and `Modal` gained the same prop:
+the card is capped at `85svh`, the header sits above the scroller, and the body
+scrolls inside.
+**Why:** the way out must never scroll away. The admin opens «انشاء دورة جديدة»,
+scrolls to the chick count, changes his mind — and the ✕ is somewhere above the
+top of the sheet. The paper notebook you just close; a sheet with the close
+control off-screen reads as stuck, and the recovery he reaches for is the browser
+back button, which leaves the screen behind it (Khaled, 2026-08-20).
+**Why `Modal` needed a height cap too:** it had none at all. A dialog taller than
+the viewport — the split dialog with several bags, any dialog with the keyboard up
+— simply ran off both ends of the screen with nothing to scroll.
+**Where the side padding lives:** on the scroller, not the card. A scroll
+container clips whatever touches its edge, and the fields inside these dialogs
+have a focus glow that reaches ~4px past their box.
+**Not converted:** the logout sheet and the feed-withdrawal detail card — short,
+and neither has a ✕ that could scroll away.
+**Date:** 2026-08-20
+
 ### T-35 — One scroll container per screen, sized in `svh`, header held by `sticky`
 The rule every list screen follows from now on: **`<main>` is the only thing that
 scrolls.** A screen never puts a second `overflow-y-auto` inside it. Anything

@@ -11,6 +11,12 @@ import { cn } from "@/lib/utils";
  * that slides up from the bottom. The page behind stays mounted; tapping the
  * scrim or pressing Escape dismisses. The caller renders the card's contents.
  *
+ * `header` is pinned to the top of the card while the body scrolls under it —
+ * same contract as `BottomSheet`. The close button belongs there: a dialog whose
+ * only way out has scrolled off the card is a dialog with no way out. The card
+ * never grows past 85svh, so on a short phone (or with the keyboard up) the
+ * content scrolls inside it instead of running off the screen.
+ *
  * Sits on the dialog tier (z-55) of the layer ladder in globals.css — above the
  * sheets, below the toasts. Above the sheets because a dialog is opened *from*
  * one: the split dialog comes out of the weighing sheet and has to be answerable
@@ -21,11 +27,14 @@ export function Modal({
   open,
   onClose,
   label,
+  header,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   label: string;
+  /** Stays put while the body scrolls. Padding is supplied by the Modal. */
+  header?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const hydrated = useIsHydrated();
@@ -66,11 +75,24 @@ export function Modal({
         aria-modal="true"
         aria-label={label}
         className={cn(
-          "relative w-full max-w-[360px] rounded-xl border border-border bg-white p-4 shadow-modal transition-all duration-200",
+          "relative flex max-h-[85svh] w-full max-w-[360px] flex-col overflow-hidden rounded-xl border border-border bg-white shadow-modal transition-all duration-200",
           open ? "scale-100 opacity-100" : "scale-95 opacity-0",
         )}
       >
-        {children}
+        {header && <div className="shrink-0 px-4 pt-4">{header}</div>}
+        {/* The card's side padding lives on the scroller, not on the card, so a
+            focused field's glow has room inside it — a scroll container clips
+            anything that reaches its edge. */}
+        <div
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto px-4 pb-4",
+            // With a header the caller owns the gap under it; without one the
+            // body is the top of the card and needs the card's own padding.
+            !header && "pt-4",
+          )}
+        >
+          {children}
+        </div>
       </div>
     </div>,
     document.body,

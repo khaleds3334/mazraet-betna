@@ -74,13 +74,18 @@ export function CustomerSheet({
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} label={title}>
-      <div className="flex flex-col px-screen pt-6">
-        <div className="flex items-center justify-between gap-3">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      label={title}
+      header={
+        <div className="flex items-center justify-between gap-3 px-screen pt-6">
           <h2 className="text-h6 font-bold text-heading">{title}</h2>
           <CloseButton onClick={onClose} />
         </div>
-
+      }
+    >
+      <div className="flex flex-col px-screen">
         {/* The design leaves a deliberate gap under the header before the form. */}
         <div className="flex flex-col gap-4 pt-15">
           <InputField

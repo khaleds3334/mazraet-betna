@@ -49,14 +49,19 @@ export function RecordMortalityButton({ className }: { className?: string }) {
         تسجيل نافق
       </ActionButton>
 
-      <Modal open={open} onClose={close} label="تسجيل نافق">
-        <div className="flex flex-col gap-4">
-          {/* Title on the right, close on the left (app convention). */}
+      <Modal
+        open={open}
+        onClose={close}
+        label="تسجيل نافق"
+        header={
+          /* Title on the right, close on the left (app convention). */
           <div className="flex items-center justify-between">
             <p className="text-accent-brown">هل انت متأكد من تسجيل نافق؟</p>
             <CloseButton onClick={close} size="sm" />
           </div>
-
+        }
+      >
+        <div className="flex flex-col gap-4 pt-4">
           <div className="flex flex-col items-center gap-3">
             <p className="w-full text-right text-h6 font-bold text-error">
               عدد الكتاكيت النافق

@@ -62,15 +62,20 @@ export function PaymentDialog({
   }
 
   return (
-    <Modal open={open} onClose={onClose} label="تسجيل الدفع">
-      <div className="flex flex-col gap-4">
+    <Modal
+      open={open}
+      onClose={onClose}
+      label="تسجيل الدفع"
+      header={
         <div className="flex items-center justify-between gap-2">
           <p className="text-base text-accent-brown">
             المبلغ المطلوب: {formatCurrency(amountDue)}
           </p>
           <CloseButton onClick={onClose} size="sm" />
         </div>
-
+      }
+    >
+      <div className="flex flex-col gap-4 pt-4">
         <div className="flex flex-col items-center gap-2">
           <label
             htmlFor="paid-amount"

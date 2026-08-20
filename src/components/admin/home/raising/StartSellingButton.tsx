@@ -91,14 +91,19 @@ export function StartSellingButton({
     <>
       <Button onClick={() => setOpen(true)}>{LABEL}</Button>
 
-      <Modal open={open} onClose={close} label="تأكيد بدء البيع">
-        <div className="flex flex-col gap-5">
-          {/* Title on the right, close on the left (app convention). */}
+      <Modal
+        open={open}
+        onClose={close}
+        label="تأكيد بدء البيع"
+        header={
+          /* Title on the right, close on the left (app convention). */
           <div className="flex items-center justify-between">
             <p className="text-accent-brown">هل انت متأكد من بدء البيع ؟</p>
             <CloseButton onClick={close} size="sm" />
           </div>
-
+        }
+      >
+        <div className="flex flex-col gap-5 pt-5">
           <div className="flex flex-col gap-5">
             <p className="w-full text-right text-heading">سعر كيلو الفراخ؟</p>
             <Stepper

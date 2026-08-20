@@ -36,13 +36,18 @@ export function ExpenseSheet({
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} label="تحديد نوع المصاريف">
-      <div className="flex flex-col gap-6 px-screen pt-6">
-        <div className="flex items-center justify-between">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      label="تحديد نوع المصاريف"
+      header={
+        <div className="flex items-center justify-between px-screen pt-6 pb-6">
           <h2 className="text-h6 font-bold text-heading">تحديد نوع المصاريف</h2>
           <CloseButton onClick={onClose} />
         </div>
-
+      }
+    >
+      <div className="flex flex-col gap-6 px-screen">
         {/* Category chips — horizontally scrollable, feed-first (right in RTL). */}
         <div className="no-scrollbar flex gap-2.5 overflow-x-auto pb-1">
           {CATEGORIES.map((c) => (

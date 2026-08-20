@@ -97,13 +97,18 @@ export function CreateCycleSheet({
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} label="انشاء دورة جديدة">
-      <div className="flex flex-col gap-6 px-screen pt-6">
-        <div className="flex items-center justify-between">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      label="انشاء دورة جديدة"
+      header={
+        <div className="flex items-center justify-between px-screen pt-6 pb-6">
           <h2 className="text-h6 font-bold text-heading">انشاء دورة جديدة</h2>
           <CloseButton onClick={onClose} />
         </div>
-
+      }
+    >
+      <div className="flex flex-col gap-6 px-screen">
         <InputField
           id="cycle-name"
           label="اسم الدورة"

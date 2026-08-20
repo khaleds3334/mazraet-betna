@@ -84,15 +84,20 @@ export function SplitOrderDialog({
   }
 
   return (
-    <Modal open={open} onClose={onClose} label="تقسيم الفراخ وزنات مختلفة">
-      <div className="flex flex-col gap-4">
+    <Modal
+      open={open}
+      onClose={onClose}
+      label="تقسيم الفراخ وزنات مختلفة"
+      header={
         <div className="flex items-center justify-between gap-2">
           <p className="text-base text-accent-brown">
             تقسيم الفراخ وزنات مختلفة
           </p>
           <CloseButton onClick={onClose} size="sm" />
         </div>
-
+      }
+    >
+      <div className="flex flex-col gap-4 pt-4">
         <div className="flex flex-col gap-3">
           {batches.map((batch, index) => (
             <SplitBatchRow
