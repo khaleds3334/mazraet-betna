@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm, type CurrentFarm } from "@/lib/queries/admin";
 import type { ExpenseCategory } from "@/lib/constants";
-import { toArabicDigits } from "@/lib/format";
 import type { ActionResult } from "./cycles";
 
 /**
@@ -31,19 +30,33 @@ async function activeCycle(): Promise<{
   return { farm, cycle: data ?? null };
 }
 
-/** Record a manual expense (utilities / medicine / other). */
+/**
+ * Record a manual expense (utilities / medicine / other).
+ *
+ * `quantity` is how many were bought — three bottles of medicine, one water bill.
+ * It defaults to one, and the amount is then **derived**: quantity × unit price.
+ * Storing the breakdown rather than only the total is what lets the itemised
+ * table (A-47) fill its العدد and السعر columns with something the admin actually
+ * typed, instead of guessing it back from a single number.
+ */
 export async function addExpense(input: {
   category: ExpenseCategory;
   description: string;
-  amount: number;
+  /** Price of one. With `quantity` = 1 this is simply the amount. */
+  unitPrice: number;
+  quantity?: number;
 }): Promise<ActionResult> {
   const { farm, cycle } = await activeCycle();
   if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
   if (!cycle) return { ok: false, error: "مفيش دورة شغالة دلوقتي." };
 
-  const amount = Number(input.amount);
-  if (!Number.isFinite(amount) || amount <= 0) {
+  const unitPrice = Number(input.unitPrice);
+  const quantity = Number(input.quantity ?? 1);
+  if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
     return { ok: false, error: "اكتب قيمة المصروف صح." };
+  }
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    return { ok: false, error: "اكتب العدد صح." };
   }
 
   const supabase = await createClient();
@@ -52,7 +65,9 @@ export async function addExpense(input: {
     cycle_id: cycle.id,
     category: input.category,
     description: input.description.trim() || null,
-    amount,
+    quantity,
+    unit_price: unitPrice,
+    amount: Math.round(quantity * unitPrice * 100) / 100,
   });
 
   if (error) return { ok: false, error: "مقدرناش نسجّل المصروف، حاول تاني." };
@@ -89,6 +104,8 @@ export async function addUtilitiesExpense(input: {
     cycle_id: string;
     category: ExpenseCategory;
     description: string;
+    quantity: number | null;
+    unit_price: number;
     amount: number;
   }[] = [];
 
@@ -96,22 +113,38 @@ export async function addUtilitiesExpense(input: {
     const start = Number(input.elecStart);
     const end = Number(input.elecEnd);
     const hasReading = start > 0 && end > 0;
+    // The meter reading IS the quantity — he already types it, so the itemised
+    // table (A-47) gets its العدد for free, and the price per kilowatt-hour falls
+    // out of the bill he actually paid. No extra field to fill while standing in
+    // the shed.
+    //
+    // The description stays the plain word «كهرباء»: it is the الصنف column of
+    // that table, and a whole sentence about meter readings does not belong in a
+    // column ~110px wide (Khaled, 2026-08-20). The consumption it used to spell
+    // out is the `quantity` beside it now.
+    const kilowattHours = hasReading ? end - start : null;
     rows.push({
       farm_id: farm.farmId,
       cycle_id: cycle.id,
       category: "utilities",
-      description: hasReading
-        ? `كهرباء — العداد من ${toArabicDigits(start)} لـ ${toArabicDigits(end)} كيلو وات`
-        : "كهرباء",
+      description: "كهرباء",
+      quantity: kilowattHours,
+      unit_price:
+        kilowattHours && kilowattHours > 0
+          ? Math.round((elecBill / kilowattHours) * 100) / 100
+          : elecBill,
       amount: elecBill,
     });
   }
   if (waterBill > 0) {
+    // A water bill is one bill — there is nothing to count.
     rows.push({
       farm_id: farm.farmId,
       cycle_id: cycle.id,
       category: "utilities",
       description: "مياه",
+      quantity: 1,
+      unit_price: waterBill,
       amount: waterBill,
     });
   }

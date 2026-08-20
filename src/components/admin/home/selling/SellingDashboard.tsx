@@ -1,4 +1,6 @@
+import { CycleExpensesCard } from "@/components/admin/shared/expenses/CycleExpensesCard";
 import type { CycleDashboard } from "@/lib/queries/cycles";
+import type { CycleExpenses } from "@/lib/queries/expenses";
 import type { SellingStats } from "@/lib/queries/selling";
 import { formatArabicNumber, formatWeight } from "@/lib/format";
 import { CycleStatCard } from "../shared/CycleStatCard";
@@ -17,9 +19,11 @@ import { RevealableStatCard } from "./RevealableStatCard";
 export function SellingDashboard({
   cycle,
   stats,
+  expenses,
 }: {
   cycle: CycleDashboard;
   stats: SellingStats;
+  expenses: CycleExpenses;
 }) {
   const { flock, money, orders } = stats;
 
@@ -67,11 +71,9 @@ export function SellingDashboard({
               value={formatArabicNumber(money.income)}
               tone="brand"
             />
-            <CycleStatCard
-              icon="payment"
-              label="مصاريف الدورة"
-              value={formatArabicNumber(cycle.expensesTotal)}
-              tone="danger"
+            <CycleExpensesCard
+              total={cycle.expensesTotal}
+              expenses={expenses}
             />
             <CycleStatCard
               icon="debt"

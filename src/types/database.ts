@@ -140,7 +140,9 @@ export type Database = {
           description: string | null
           farm_id: string
           id: string
+          quantity: number | null
           spent_on: string
+          unit_price: number | null
         }
         Insert: {
           amount: number
@@ -150,7 +152,9 @@ export type Database = {
           description?: string | null
           farm_id: string
           id?: string
+          quantity?: number | null
           spent_on?: string
+          unit_price?: number | null
         }
         Update: {
           amount?: number
@@ -160,7 +164,9 @@ export type Database = {
           description?: string | null
           farm_id?: string
           id?: string
+          quantity?: number | null
           spent_on?: string
+          unit_price?: number | null
         }
         Relationships: [
           {

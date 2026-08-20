@@ -9,6 +9,7 @@ import {
   getCycleEstimateBasis,
   listCycles,
 } from "@/lib/queries/cycles";
+import { getCycleExpenses } from "@/lib/queries/expenses";
 import { getSellingStats } from "@/lib/queries/selling";
 
 /**
@@ -26,15 +27,28 @@ export default async function AdminHomePage() {
   const dashboard = await getActiveCycleDashboard(farm.farmId);
 
   if (dashboard?.phase === "raising") {
-    return <RaisingDashboard data={dashboard} />;
+    // The itemised spend travels with the page so the «مصاريف الدورة» tile opens
+    // instantly (A-47) — it is a few dozen rows, and this screen is used with
+    // both hands busy.
+    const expenses = await getCycleExpenses(dashboard.cycleId);
+    return <RaisingDashboard data={dashboard} expenses={expenses} />;
   }
 
   if (dashboard?.phase === "selling") {
-    const stats = await getSellingStats(farm.farmId, dashboard.cycleId, {
-      chickCount: dashboard.chickCount,
-      mortalityCount: dashboard.mortalityCount,
-    });
-    return <SellingDashboard cycle={dashboard} stats={stats} />;
+    const [stats, expenses] = await Promise.all([
+      getSellingStats(farm.farmId, dashboard.cycleId, {
+        chickCount: dashboard.chickCount,
+        mortalityCount: dashboard.mortalityCount,
+      }),
+      getCycleExpenses(dashboard.cycleId),
+    ]);
+    return (
+      <SellingDashboard
+        cycle={dashboard}
+        stats={stats}
+        expenses={expenses}
+      />
+    );
   }
 
   // Nothing is running. Both remaining faces need the create-cycle forecast, and
@@ -51,6 +65,15 @@ export default async function AdminHomePage() {
   // Debt is the farm's, not the last cycle's: with nothing running, the question
   // is who still owes him — clamped per cycle already, so this only adds up.
   const farmDebt = cycles.reduce((total, cycle) => total + cycle.debt, 0);
+  // «اخر المصاريف» belongs to the cycle that just closed, so its breakdown does too.
+  const expenses = await getCycleExpenses(cycles[0].cycleId);
 
-  return <IdleDashboard cycles={cycles} farmDebt={farmDebt} basis={basis} />;
+  return (
+    <IdleDashboard
+      cycles={cycles}
+      farmDebt={farmDebt}
+      expenses={expenses}
+      basis={basis}
+    />
+  );
 }

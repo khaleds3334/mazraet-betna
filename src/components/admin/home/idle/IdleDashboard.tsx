@@ -4,6 +4,8 @@ import { CreateCycleLauncher } from "@/components/admin/cycles/CreateCycleLaunch
 import { formatArabicNumber, pluralizeDay } from "@/lib/format";
 import type { CycleEstimateBasis } from "@/lib/calculations/cycle";
 import type { CycleListItem } from "@/lib/queries/cycles";
+import type { CycleExpenses } from "@/lib/queries/expenses";
+import { CycleExpensesCard } from "@/components/admin/shared/expenses/CycleExpensesCard";
 import { CycleStatCard } from "../shared/CycleStatCard";
 import { CycleComparisonChart } from "./CycleComparisonChart";
 
@@ -36,12 +38,15 @@ function endedWhen(days: number): string {
 export function IdleDashboard({
   cycles,
   farmDebt,
+  expenses,
   basis,
 }: {
   /** Every cycle the farm has run, newest first. Never empty — A-10 covers that. */
   cycles: CycleListItem[];
   /** Everything customers still owe, across every cycle (FR-20). */
   farmDebt: number;
+  /** The last cycle's spending, itemised — behind its tile (A-47). */
+  expenses: CycleExpenses;
   basis: CycleEstimateBasis;
 }) {
   const last = cycles[0];
@@ -71,11 +76,10 @@ export function IdleDashboard({
           /* Red when the cycle ended under water — see `CycleRow`. */
           tone={last.netProfit < 0 ? "danger" : "brand"}
         />
-        <CycleStatCard
-          icon="payment"
+        <CycleExpensesCard
+          total={last.expensesTotal}
+          expenses={expenses}
           label="اخر المصاريف"
-          value={formatArabicNumber(last.expensesTotal)}
-          tone="danger"
         />
         <CycleStatCard
           icon="debt"

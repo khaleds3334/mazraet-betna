@@ -1,11 +1,9 @@
 import type { CycleDashboard } from "@/lib/queries/cycles";
-import {
-  formatArabicNumber,
-  pluralizeChicken,
-  pluralizeDay,
-} from "@/lib/format";
+import type { CycleExpenses } from "@/lib/queries/expenses";
+import { pluralizeChicken, pluralizeDay } from "@/lib/format";
 import { FeedTracker } from "@/components/admin/shared/FeedTracker";
 import { RecordActions } from "@/components/admin/shared/RecordActions";
+import { CycleExpensesCard } from "@/components/admin/shared/expenses/CycleExpensesCard";
 import { CycleHeader } from "../shared/CycleHeader";
 import { CycleStatCard } from "../shared/CycleStatCard";
 import { StatSection } from "../shared/StatSection";
@@ -19,7 +17,13 @@ import { StartSellingButton } from "./StartSellingButton";
  * consumption grid), and the "start selling" button — disabled until the flock
  * reaches selling age. Pure view: every number comes pre-computed on `data`.
  */
-export function RaisingDashboard({ data }: { data: CycleDashboard }) {
+export function RaisingDashboard({
+  data,
+  expenses,
+}: {
+  data: CycleDashboard;
+  expenses: CycleExpenses;
+}) {
   const { feed } = data;
 
   return (
@@ -40,12 +44,7 @@ export function RaisingDashboard({ data }: { data: CycleDashboard }) {
             value={pluralizeDay(data.ageDays)}
             tone="brand"
           />
-          <CycleStatCard
-            icon="payment"
-            label="مصاريف الدورة"
-            value={formatArabicNumber(data.expensesTotal)}
-            tone="danger"
-          />
+          <CycleExpensesCard total={data.expensesTotal} expenses={expenses} />
           <CycleStatCard
             icon="mortality"
             label="عدد النافق"
