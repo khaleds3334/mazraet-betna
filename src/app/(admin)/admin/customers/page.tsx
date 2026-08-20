@@ -4,6 +4,7 @@ import { CustomersList } from "@/components/admin/customers/CustomersList";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { listCustomerSummaries } from "@/lib/queries/customers";
 import { getDefaultOrdersCycle } from "@/lib/queries/cycles";
+import { getFarmSettings } from "@/lib/queries/settings";
 
 /**
  * Admin customers list (A-30, FR-8) — the farm's permanent customer base with
@@ -18,11 +19,13 @@ export default async function AdminCustomersPage({
   const farm = await getCurrentFarm();
   if (!farm) redirect("/logout");
 
-  const [{ debt }, cycle] = await Promise.all([
+  const [{ debt }, cycle, settings] = await Promise.all([
     searchParams,
     // The same cycle the orders screen defaults to — the running one, or the last
     // to end — so "طلبات الدورة" on a row means the same on both screens.
     getDefaultOrdersCycle(farm.farmId),
+    // Handed down to the order cards inside a row's history sheet (A-32).
+    getFarmSettings(farm.farmId),
   ]);
   const customers = await listCustomerSummaries(
     farm.farmId,
@@ -39,7 +42,13 @@ export default async function AdminCustomersPage({
     // children so it can sit inside the one pinned block, together with the
     // filter pills and the search box that depend on the list's own state.
     <div className="flex flex-col">
-      <CustomersList customers={customers} initialDebtOnly={debt === "1"}>
+      <CustomersList
+        customers={customers}
+        initialDebtOnly={debt === "1"}
+        salePrice={settings.salePrice}
+        cleaningPrice={settings.cleaningPrice}
+        weights={settings.availableWeights}
+      >
         <CustomersToolbar totalDebt={totalDebt} />
       </CustomersList>
     </div>

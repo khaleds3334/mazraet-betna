@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
+import { getDefaultOrdersCycle } from "@/lib/queries/cycles";
+import {
+  listCustomerOrders,
+  type CustomerOrder,
+} from "@/lib/queries/orders";
 import type { ActionResult } from "./cycles";
 
 /**
@@ -129,4 +134,35 @@ export async function updateCustomer(
   revalidatePath("/admin/customers");
   revalidatePath("/admin/orders");
   return { ok: true };
+}
+
+/**
+ * A customer's whole order history, for the sheet behind their row (A-32).
+ *
+ * A server *action* only because a client component cannot call a query itself —
+ * the read lives where every read lives, in `/lib/queries`, and this is the wire
+ * it travels on. It writes nothing.
+ *
+ * On demand, not with the screen: the customers list would otherwise ship every
+ * customer's history to open one of them.
+ */
+export async function fetchCustomerOrders(
+  customerId: string,
+): Promise<
+  { ok: true; orders: CustomerOrder[] } | { ok: false; error: string }
+> {
+  const farm = await getCurrentFarm();
+  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  try {
+    const cycle = await getDefaultOrdersCycle(farm.farmId);
+    const orders = await listCustomerOrders(
+      farm.farmId,
+      customerId,
+      cycle?.cycleId ?? null,
+    );
+    return { ok: true, orders };
+  } catch {
+    return { ok: false, error: "مقدرناش نجيب الطلبات، حاول تاني." };
+  }
 }

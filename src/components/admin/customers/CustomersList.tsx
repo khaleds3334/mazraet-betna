@@ -28,11 +28,18 @@ const writeDebtOnly = (debtOnly: boolean) => (debtOnly ? "1" : null);
 export function CustomersList({
   customers,
   initialDebtOnly,
+  salePrice,
+  cleaningPrice,
+  weights,
   children,
 }: {
   customers: CustomerSummary[];
   /** Whatever `?debt=` said when the page was opened or shared. */
   initialDebtOnly: boolean;
+  /** Live settings, on their way to the order cards in a row's history sheet. */
+  salePrice: number;
+  cleaningPrice: number;
+  weights: number[];
   /** The screen's toolbar, so it can live inside the one pinned header block. */
   children: React.ReactNode;
 }) {
@@ -104,7 +111,13 @@ export function CustomersList({
           <ul className="divide-y-2 divide-border">
             {visible.map((customer, position) => (
               <li key={customer.id}>
-                <CustomerRow index={position + 1} customer={customer} />
+                <CustomerRow
+                  index={position + 1}
+                  customer={customer}
+                  salePrice={salePrice}
+                  cleaningPrice={cleaningPrice}
+                  weights={weights}
+                />
               </li>
             ))}
           </ul>

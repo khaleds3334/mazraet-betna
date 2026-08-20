@@ -173,6 +173,91 @@ export interface OrderListItem {
  * seconds for a filter, because a tab was a fresh trip through auth → farm →
  * cycle → count → list every time (D-31).
  */
+/** Everything an `OrderListItem` is built from — one place, so two lists can't drift. */
+const ORDER_COLUMNS =
+  "id, seq, status, created_at, delivered_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, batch_no, approx_weight, actual_weight, cleaning), payment(amount)";
+
+/** The shape {@link ORDER_COLUMNS} comes back as. */
+interface OrderRow {
+  id: string;
+  seq: number | null;
+  status: OrderStatus;
+  created_at: string;
+  delivered_at: string | null;
+  on_behalf_of: string | null;
+  pickup_date: string | null;
+  pickup_time: string | null;
+  cancel_reason: string | null;
+  is_house: boolean;
+  notes: string | null;
+  cleaning: boolean;
+  unit_price: number | null;
+  cleaning_price: number | null;
+  customer: { name: string; phone: string } | null;
+  order_line: {
+    id: string;
+    position: number;
+    batch_no: number;
+    approx_weight: number | null;
+    actual_weight: number | null;
+    cleaning: boolean;
+  }[];
+  payment: { amount: number }[];
+}
+
+/**
+ * One order row as the card reads it. `cycleSeq` is the first digit of the
+ * displayed order number, so it comes from whichever cycle the order belongs to —
+ * the orders screen knows it once for the whole list, a customer's history has a
+ * different one per order.
+ */
+function toOrderListItem(order: OrderRow, cycleSeq: number): OrderListItem {
+  const lines = order.order_line ?? [];
+  // The card shows one "الوزن المطلوب". An order booked from A-56 always has a
+  // single weight; a customer order may mix them, and then there is no single
+  // number to show.
+  const weights = new Set(lines.map((line) => line.approx_weight));
+
+  return {
+    id: order.id,
+    number: formatOrderNumber(cycleSeq, order.seq ?? 0),
+    status: order.status,
+    createdAt: order.created_at,
+    deliveredAt: order.delivered_at,
+    customer: order.customer
+      ? { name: order.customer.name, phone: order.customer.phone }
+      : null,
+    onBehalfOf: order.on_behalf_of,
+    pickupDate: order.pickup_date,
+    pickupTime: order.pickup_time,
+    chickenCount: lines.length,
+    approxWeight: weights.size === 1 ? (lines[0].approx_weight ?? null) : null,
+    cancelReason: order.cancel_reason,
+    isHouse: order.is_house,
+    payments: order.payment ?? [],
+    weighing: {
+      notes: order.notes,
+      cleaning: order.cleaning,
+      unitPrice: order.unit_price,
+      cleaningPrice: order.cleaning_price,
+      lines: [...lines]
+        .sort((a, b) => a.position - b.position)
+        .map((line) => ({
+          id: line.id,
+          position: line.position,
+          batchNo: line.batch_no,
+          approxWeight: line.approx_weight,
+          actualWeight: line.actual_weight,
+          cleaning: line.cleaning,
+        })),
+    },
+  };
+}
+
+/**
+ * Every order of one cycle, newest first — the admin orders screen (A-50). The
+ * screen splits them into its three tabs itself (D-31).
+ */
 export async function listCycleOrders(
   farmId: string,
   cycle: { cycleId: string; seq: number },
@@ -180,53 +265,44 @@ export async function listCycleOrders(
   const supabase = await createClient();
   const { data } = await supabase
     .from("orders")
-    .select(
-      "id, seq, status, created_at, delivered_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, batch_no, approx_weight, actual_weight, cleaning), payment(amount)",
-    )
+    .select(ORDER_COLUMNS)
     .eq("farm_id", farmId)
     .eq("cycle_id", cycle.cycleId)
     .order("created_at", { ascending: false });
 
-  return (data ?? []).map((order) => {
-    const lines = order.order_line ?? [];
-    // The card shows one "الوزن المطلوب". An order booked from A-56 always has a
-    // single weight; a customer order may mix them, and then there is no single
-    // number to show.
-    const weights = new Set(lines.map((line) => line.approx_weight));
-    return {
-      id: order.id,
-      number: formatOrderNumber(cycle.seq, order.seq),
-      status: order.status,
-      createdAt: order.created_at,
-      deliveredAt: order.delivered_at,
-      customer: order.customer
-        ? { name: order.customer.name, phone: order.customer.phone }
-        : null,
-      onBehalfOf: order.on_behalf_of,
-      pickupDate: order.pickup_date,
-      pickupTime: order.pickup_time,
-      chickenCount: lines.length,
-      approxWeight:
-        weights.size === 1 ? (lines[0].approx_weight ?? null) : null,
-      cancelReason: order.cancel_reason,
-      isHouse: order.is_house,
-      payments: order.payment ?? [],
-      weighing: {
-        notes: order.notes,
-        cleaning: order.cleaning,
-        unitPrice: order.unit_price,
-        cleaningPrice: order.cleaning_price,
-        lines: [...lines]
-          .sort((a, b) => a.position - b.position)
-          .map((line) => ({
-            id: line.id,
-            position: line.position,
-            batchNo: line.batch_no,
-            approxWeight: line.approx_weight,
-            actualWeight: line.actual_weight,
-            cleaning: line.cleaning,
-          })),
-      },
-    };
-  });
+  return (data ?? []).map((order) => toOrderListItem(order, cycle.seq));
+}
+
+/** An order in a customer's history, tagged with the cycle it belongs to. */
+export interface CustomerOrder extends OrderListItem {
+  /** True when the order is on the cycle the admin is currently working. */
+  inCurrentCycle: boolean;
+}
+
+/**
+ * Everything one customer has ever ordered, newest first — the history behind
+ * their row (A-32). Cancelled orders are included: "why did I never get it?" is
+ * exactly the question this list is opened to answer.
+ *
+ * Read on demand rather than with the customers screen: this is one customer's
+ * whole history, and shipping every customer's up front would send a list the
+ * admin opens one row of.
+ */
+export async function listCustomerOrders(
+  farmId: string,
+  customerId: string,
+  currentCycleId: string | null,
+): Promise<CustomerOrder[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("orders")
+    .select(`${ORDER_COLUMNS}, cycle_id, cycle(seq)`)
+    .eq("farm_id", farmId)
+    .eq("customer_id", customerId)
+    .order("created_at", { ascending: false });
+
+  return (data ?? []).map((order) => ({
+    ...toOrderListItem(order, order.cycle?.seq ?? 0),
+    inCurrentCycle: order.cycle_id === currentCycleId,
+  }));
 }

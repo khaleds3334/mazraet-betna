@@ -20,9 +20,16 @@ import { EditCustomerButton } from "./EditCustomerButton";
 export function CustomerRow({
   index,
   customer,
+  salePrice,
+  cleaningPrice,
+  weights,
 }: {
   index: number;
   customer: CustomerSummary;
+  /** Live settings, handed on to the order cards in the history sheet (T-15). */
+  salePrice: number;
+  cleaningPrice: number;
+  weights: number[];
 }) {
   const [open, setOpen] = useState(false);
   const detailsId = useId();
@@ -83,7 +90,16 @@ export function CustomerRow({
         </div>
       </div>
 
-      {open && <CustomerRowDetails id={detailsId} customer={customer} />}
+      {open && (
+        <CustomerRowDetails
+          id={detailsId}
+          index={index}
+          customer={customer}
+          salePrice={salePrice}
+          cleaningPrice={cleaningPrice}
+          weights={weights}
+        />
+      )}
     </div>
   );
 }
