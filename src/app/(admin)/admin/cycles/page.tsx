@@ -57,7 +57,12 @@ export default async function AdminCyclesPage() {
 
       <ul className="flex flex-col gap-2">
         {cycles.map((cycle) => (
-          <li key={cycle.cycleId}>
+          // The divider lives here rather than on the row: the last cycle has
+          // nothing under it to be divided from.
+          <li
+            key={cycle.cycleId}
+            className="border-b-2 border-primary last:border-b-0"
+          >
             <CycleRow cycle={cycle} href={rowHref(cycle)}>
               {cycle.cycleId === running?.cycleId && dashboard && (
                 <RunningCycleControls

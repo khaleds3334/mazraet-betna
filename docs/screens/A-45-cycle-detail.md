@@ -14,11 +14,17 @@ birds it lost, the feed it ate day by day, and the spread of weights it came in 
 *done* to a cycle lives on the running one's row in the list (A-44).
 
 ## Data
-**Reads:** `getCycleDetail(farmId, cycleId)` — six parallel reads scoped to the one
-cycle, then all the arithmetic through `/lib/calculations`, so these figures and
-the cycles list's are the same numbers by construction. Returns null when the id is
-not this farm's, and the page turns that into a 404 rather than an empty screen
-that implies the cycle exists. `getCycleExpenses` backs the tappable expenses tile.
+**Reads:** `getCycleDetail(farmId, cycleId)` — one read, six queries in parallel,
+then all the arithmetic through `/lib/calculations`, so these figures and the cycles
+list's are the same numbers by construction. Returns null when the id is not this
+farm's, and the page turns that into a 404 rather than an empty screen that implies
+the cycle exists.
+
+The expenses breakdown behind the tile is built **here**, from rows this read
+already holds — calling `getCycleExpenses` would fetch the cycle, its feed and its
+expenses a second time. That is why the grouping lives in
+`calculations/expenses.ts` as a pure function: two callers reach it, one that has
+to read the rows and one that already has them.
 **Writes:** none.
 
 ## Calculations
@@ -66,6 +72,10 @@ Reused: `BackButton` · `Badge` · `CycleStatCard` · `StatSection` · `StatItem
   copies of it would eventually disagree; it lives in `queries/cycles.ts` and both
   callers pass their own rows in.
 - A cycle that ended under water shows «صافي الربح» in red, same rule as the list.
+- **The header is `sticky`** — it is the only thing on the screen that says *which*
+  cycle all these figures belong to; scroll it away and the page is a wall of
+  numbers about nothing in particular. It sticks against `<main>`, the admin
+  shell's one scroll container (T-35).
 
 ## Connected screens
 ← from: the cycles list (A-42), a finished row

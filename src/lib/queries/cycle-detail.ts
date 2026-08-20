@@ -14,6 +14,10 @@ import {
   weightDistribution,
   type WeightBand,
 } from "@/lib/calculations/cycle";
+import {
+  groupCycleExpenses,
+  type CycleExpenses,
+} from "@/lib/calculations/expenses";
 import { feedCost } from "@/lib/calculations/feed";
 import { sumInvoices } from "@/lib/calculations/invoice";
 import {
@@ -22,6 +26,7 @@ import {
   type CycleDashboard,
   type CyclePhase,
 } from "@/lib/queries/cycles";
+import { EXPENSE_COLUMNS } from "@/lib/queries/expenses";
 
 export interface CycleDetail {
   cycleId: string;
@@ -47,6 +52,10 @@ export interface CycleDetail {
   feed: CycleDashboard["feed"];
   /** The flock sorted into the four weight bands (FR-24). */
   weights: WeightBand[];
+  /** The spend itemised, for the sheet behind the expenses tile (A-47). It is
+   *  built from rows this read already has — asking `getCycleExpenses` for it
+   *  would fetch the cycle, its feed and its expenses a second time. */
+  expenses: CycleExpenses;
 }
 
 /**
@@ -76,7 +85,11 @@ export async function getCycleDetail(
   const [mortalityRes, expenseRes, feedRes, withdrawalRes, orderRes, lastBagPrice] =
     await Promise.all([
       supabase.from("mortality").select("count").eq("cycle_id", cycleId),
-      supabase.from("expense").select("amount").eq("cycle_id", cycleId),
+      supabase
+        .from("expense")
+        .select(EXPENSE_COLUMNS)
+        .eq("cycle_id", cycleId)
+        .order("spent_on", { ascending: true }),
       supabase
         .from("feed")
         .select("bags, bag_price, phase")
@@ -102,6 +115,12 @@ export async function getCycleDetail(
     ...row,
     bag_price: Number(row.bag_price),
   }));
+  const expenses = (expenseRes.data ?? []).map((row) => ({
+    ...row,
+    amount: Number(row.amount),
+    quantity: row.quantity != null ? Number(row.quantity) : null,
+    unit_price: row.unit_price != null ? Number(row.unit_price) : null,
+  }));
   const orders = orderRes.data ?? [];
 
   const money = sumInvoices(
@@ -117,10 +136,7 @@ export async function getCycleDetail(
     chickCount: cycle.chick_count,
     chickPrice: Number(cycle.chick_price),
     feedCost: feedCost(feed),
-    otherExpenses: (expenseRes.data ?? []).reduce(
-      (sum, row) => sum + Number(row.amount),
-      0,
-    ),
+    otherExpenses: expenses.reduce((sum, row) => sum + row.amount, 0),
   });
 
   // Every weight that actually went on the scale, once — the average and the
@@ -162,5 +178,11 @@ export async function getCycleDetail(
       lastBagPrice,
     }),
     weights: weightDistribution(weighed),
+    expenses: groupCycleExpenses({
+      chickCount: cycle.chick_count,
+      chickPrice: Number(cycle.chick_price),
+      feed,
+      expenses,
+    }),
   };
 }

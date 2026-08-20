@@ -8,7 +8,6 @@ import {
   formatCurrency,
   pluralizeChick,
   pluralizeChicken,
-  pluralizeDay,
 } from "@/lib/format";
 import type { CycleListItem } from "@/lib/queries/cycles";
 import { CycleRowStat } from "./CycleRowStat";
@@ -50,35 +49,35 @@ export function CycleRow({
   const ended = cycle.phase === "ended";
 
   return (
-    <article className="relative flex flex-col gap-2 border-b-2 border-primary bg-surface-page px-screen py-4">
+    // The divider between rows belongs to the list, not to a row — the last one
+    // has nothing under it to be divided from.
+    <article className="relative flex flex-col gap-2 bg-surface-page px-screen py-4">
       {href && (
-        <Link href={href} className="absolute inset-0">
+        // `prefetch` in full, not just to the loading boundary: a farm has a
+        // handful of cycles, they are all on screen at once, and the page behind
+        // a row is six database reads the server can just as well do while he is
+        // still looking at the list. Only in production — Next never prefetches
+        // from a dev server.
+        <Link href={href} prefetch className="absolute inset-0">
           <span className="sr-only">تفاصيل {title}</span>
         </Link>
       )}
 
-      {/* Identity: the cycle's number and name with its phase pill, and how many
-          days it ran on the inline-end. */}
-      <div className="pointer-events-none relative flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-3.5">
-          <h2 className="flex min-w-0 items-baseline gap-1">
-            <span className="text-h5 font-bold text-foreground">
-              {formatArabicNumber(cycle.seq)}-
-            </span>
-            <span className="truncate text-h6 font-bold text-heading">
-              {title}
-            </span>
-          </h2>
-          <Badge tone={phase.tone} size="sm">
-            {phase.label}
-          </Badge>
-        </div>
-
-        <p className="flex shrink-0 items-center gap-1 text-h6 font-bold text-accent-brown">
-          <Icon name="calendar" size={24} aria-hidden />
-          <span className="sr-only">مدة الدورة</span>
-          {pluralizeDay(cycle.durationDays)}
-        </p>
+      {/* Identity: the cycle's number and name, with its phase pill.
+          How long it ran used to sit at the inline-end and was dropped — it is a
+          number nobody acts on from a list, and it says the same thing the row's
+          own start/end dates already do (Khaled, 2026-08-20). It is still on the
+          cycle's page, where the reader came to read numbers. */}
+      <div className="pointer-events-none relative flex items-center gap-3.5">
+        <h2 className="flex min-w-0 items-baseline gap-1">
+          <span className="text-h5 font-bold text-foreground">
+            {formatArabicNumber(cycle.seq)}-
+          </span>
+          <span className="truncate text-h6 font-bold text-heading">{title}</span>
+        </h2>
+        <Badge tone={phase.tone} size="sm">
+          {phase.label}
+        </Badge>
       </div>
 
       {/* When it ran, and on how many birds. */}

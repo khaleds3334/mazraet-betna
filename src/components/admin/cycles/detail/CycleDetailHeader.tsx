@@ -7,12 +7,14 @@ import type { CycleDetail } from "@/lib/queries/cycle-detail";
  * Top of a cycle's page (A-45): the way back on the inline-start, then the cycle's
  * name with its phase pill, and under them when it ran and on how many chicks.
  *
- * It stays put while the figures scroll under it — this is the only thing on the
- * screen that says *which* cycle all those numbers belong to.
+ * `sticky` because it is the only thing on the screen that says *which* cycle all
+ * those numbers belong to — scroll it away and the page becomes a wall of figures
+ * about nothing in particular. It sticks against <main>, the admin shell's one
+ * scroll container (T-35).
  */
 export function CycleDetailHeader({ cycle }: { cycle: CycleDetail }) {
   return (
-    <header className="flex flex-col gap-2 bg-background px-screen pb-3 pt-4">
+    <header className="sticky top-0 z-10 flex flex-col gap-2 bg-background px-screen pb-3 pt-4">
       <div className="flex items-center gap-3">
         <BackButton href="/admin/cycles" className="shrink-0" />
 

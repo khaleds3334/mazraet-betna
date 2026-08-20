@@ -77,6 +77,12 @@ cycle in **البيع** leads nowhere: everything it can be asked is on the row
 - **«انشاء دورة جديدة» appears only while nothing is running.** A farm raises one
   flock at a time (FR-4), so offering a second mid-cycle offers something the app
   must then refuse. The design leaves the whole toolbar out on A-43.
+- **The divider belongs to the list, not the row.** It sits on the `<li>` with
+  `last:border-b-0` — the last cycle has nothing under it to be divided from.
+- **The row's link is `prefetch`ed in full**, not just to the loading boundary: a
+  farm has a handful of cycles, they are all on screen at once, and the page behind
+  a row is six reads the server can do while he is still looking at the list. This
+  does nothing in `pnpm dev` — Next never prefetches from a dev server.
 - **The row is a stretched link, not a wrapper** — the running row holds buttons,
   and a link may not contain them. Content layers are `pointer-events-none`;
   `RunningCycleControls` takes its taps back with `relative`. Same pattern as
@@ -84,9 +90,11 @@ cycle in **البيع** leads nowhere: everything it can be asked is on the row
 - **«ربح الدورة» only exists on a finished cycle.** While a cycle is running its
   sales are still arriving, and a half-earned number reads as the final one — so
   the running row shows two figures, not three, exactly as the design draws it.
-- The number beside the calendar is the cycle's **duration in days** (Khaled,
-  2026-08-20), not the flock's age. It carries an `sr-only` label because the
-  design gives it no visible one.
+- **The duration badge was removed** (Khaled, 2026-08-20). The design puts «٣٩
+  يوم» beside a calendar at the end of the identity line; it is a number nobody
+  acts on from a list, it repeats what the row's own start/end dates say, and it
+  crowded a line that already carries a name and a phase pill. It is still on the
+  cycle's page, where the reader came to read numbers.
 - Row figures are bare numbers, no «جنيه» — same call as the dashboard tiles
   (D-20); the label above each one already says what kind of number it is. The
   debt line, which has room, uses `formatCurrency` in full.

@@ -8,7 +8,6 @@ import { FeedGrid } from "@/components/admin/shared/FeedGrid";
 import { CycleExpensesCard } from "@/components/admin/shared/expenses/CycleExpensesCard";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { getCycleDetail } from "@/lib/queries/cycle-detail";
-import { getCycleExpenses } from "@/lib/queries/expenses";
 import {
   formatArabicNumber,
   formatCurrency,
@@ -36,7 +35,6 @@ export default async function AdminCycleDetailPage({
   const cycle = await getCycleDetail(farm.farmId, cycleId);
   if (!cycle) notFound();
 
-  const expenses = await getCycleExpenses(cycle.cycleId);
   const { feed } = cycle;
 
   return (
@@ -64,7 +62,7 @@ export default async function AdminCycleDetailPage({
               />
               <CycleExpensesCard
                 total={cycle.expensesTotal}
-                expenses={expenses}
+                expenses={cycle.expenses}
               />
               <CycleStatCard
                 icon="cash"
