@@ -13,30 +13,38 @@ import {
   PickerField,
   StatItem,
 } from "@/components/ui";
+import { ExpectedExpensesCard } from "./ExpectedExpensesCard";
 import { useToast } from "@/hooks/useToast";
 import { createCycle } from "@/lib/actions/cycles";
 import { expectedFeedBags } from "@/lib/calculations/feed";
-import { estimatedCycleExpenses } from "@/lib/calculations/cycle";
+import {
+  estimatedCycleExpenses,
+  type CycleEstimateBasis,
+} from "@/lib/calculations/cycle";
 import {
   formatArabicDate,
   formatArabicNumber,
   formatArabicTime,
-  formatCurrency,
 } from "@/lib/format";
 
 /**
  * "إنشاء دورة جديدة" (A-41) — the bottom sheet that registers a cycle (FR-4):
  * name (optional), start day + time, chick count and price. The feed and
- * expected-expenses cards update live from the count/price (both provisional —
- * see the calculations). Success shows a toast and closes; failure keeps the
- * sheet open with an inline error so the message doesn't vanish.
+ * expected-expenses cards update live from the count/price. `basis` carries the
+ * last cycle's real feed price and expenses so the forecast is this farm's own
+ * history rather than a constant (see `estimatedCycleExpenses`). Success shows a
+ * toast and closes; failure keeps the sheet open with an inline error so the
+ * message doesn't vanish.
  */
 export function CreateCycleSheet({
   open,
   onClose,
+  basis,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Last cycle's real numbers. Absent on the very first cycle. */
+  basis?: CycleEstimateBasis;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -69,7 +77,7 @@ export function CreateCycleSheet({
   }
 
   const { badi, nami } = expectedFeedBags(chickCount);
-  const expenses = estimatedCycleExpenses(chickCount, chickPrice);
+  const expenses = estimatedCycleExpenses(chickCount, chickPrice, basis);
   // Bags round to the nearest half (see expectedFeedBags) — show one decimal
   // only when there actually is a half-bag, so "٤" stays "٤" and not "٤.٠".
   const formatBags = (n: number) =>
@@ -166,10 +174,12 @@ export function CreateCycleSheet({
             label="العلف المطلوب"
             value={`${formatBags(badi)} بادي / ${formatBags(nami)} نامي`}
           />
-          <StatItem
-            label="المصاريف المتوقعة"
-            value={formatCurrency(expenses)}
-            valueClassName="text-error"
+
+          <ExpectedExpensesCard
+            expenses={expenses}
+            chickCount={chickCount}
+            chickPrice={chickPrice}
+            basis={basis}
           />
         </div>
 

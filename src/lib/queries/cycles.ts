@@ -8,6 +8,7 @@ import {
   chickAgeDays,
   cycleAccounting,
   expectedSaleDate,
+  type CycleEstimateBasis,
 } from "@/lib/calculations/cycle";
 import {
   expectedFeedBags,
@@ -121,6 +122,8 @@ export interface CycleDashboard {
     available: number;
     /** Bags withdrawn/consumed so far. */
     withdrawn: number;
+    /** Price of the last bag bought — pre-fills the purchase form. Null = never bought. */
+    lastBagPrice: number | null;
     /** Cells in the consumption grid — one per cycle day (~40). */
     totalDays: number;
     /** Full detail per opened bag, chronological — lights the grid + feeds the popup. */
@@ -149,8 +152,14 @@ export async function getActiveCycleDashboard(
     .maybeSingle();
   if (!cycle) return null;
 
-  const [mortalityRes, expenseRes, feedRes, withdrawalRes, settings] =
-    await Promise.all([
+  const [
+    mortalityRes,
+    expenseRes,
+    feedRes,
+    withdrawalRes,
+    settings,
+    lastBagPrice,
+  ] = await Promise.all([
       supabase.from("mortality").select("count").eq("cycle_id", cycle.id),
       supabase.from("expense").select("amount").eq("cycle_id", cycle.id),
       supabase.from("feed").select("bags, bag_price").eq("cycle_id", cycle.id),
@@ -162,6 +171,7 @@ export async function getActiveCycleDashboard(
         .order("withdrawn_at", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: true }),
       getFarmSettings(farmId),
+      getLastFeedBagPrice(farmId),
     ]);
 
   const ageDays = chickAgeDays(cycle.start_date);
@@ -242,6 +252,7 @@ export async function getActiveCycleDashboard(
       requiredNami: nami,
       available: feedBagsAvailable(feed, withdrawals),
       withdrawn: feedBagsWithdrawn(withdrawals),
+      lastBagPrice,
       totalDays,
       withdrawals: withdrawalDetails,
     },
@@ -288,6 +299,94 @@ export async function getDefaultOrdersCycle(
     name: data.name,
     startDate: data.start_date,
     isActive: data.is_active,
+  };
+}
+
+/**
+ * What the farm last paid for one 50kg bag, or null if it never bought one.
+ * Farm-wide and newest-first, so it survives a cycle that bought no feed.
+ *
+ * Two screens want it and both want it for the same reason — the admin should
+ * never have to retype a price the app already knows: it pre-fills the price
+ * field when he records a purchase (A-15), and it prices the feed line of the
+ * next cycle's forecast (A-41, T-46).
+ *
+ * `bag_price` is 0 when bags were recorded without a price; that's an absent
+ * price, not a free bag, so those rows are skipped.
+ */
+export async function getLastFeedBagPrice(
+  farmId: string,
+): Promise<number | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("feed")
+    .select("bag_price")
+    .eq("farm_id", farmId)
+    .gt("bag_price", 0)
+    .order("purchased_on", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return data ? Number(data.bag_price) : null;
+}
+
+/**
+ * The last cycle's real numbers, so the create-cycle sheet can forecast the next
+ * one from this farm rather than from a constant (A-41, "المصاريف المتوقعة" —
+ * see {@link estimatedCycleExpenses}). Two independent reads:
+ *
+ *   • the price of the most recent 50kg bag bought ({@link getLastFeedBagPrice});
+ *   • the last cycle's non-feed, non-chick expenses, with the flock they were
+ *     spent on so the caller can scale them.
+ *
+ * Feed lives in its own table, so summing `expense` here can't double-count it.
+ * Returns nulls rather than defaults — deciding what to do without history is the
+ * calculation's job, not the query's.
+ */
+export async function getCycleEstimateBasis(
+  farmId: string,
+): Promise<CycleEstimateBasis> {
+  const supabase = await createClient();
+
+  // A cycle can only be created while none is active, so the newest cycle on
+  // record is "the last one" by the time this is read.
+  const lastCycle = supabase
+    .from("cycle")
+    .select("id, chick_count")
+    .eq("farm_id", farmId)
+    .order("start_date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const [feedBagPrice, cycleResult] = await Promise.all([
+    getLastFeedBagPrice(farmId),
+    lastCycle,
+  ]);
+
+  if (!cycleResult.data) return { feedBagPrice, previous: null };
+
+  const { data: expenses } = await supabase
+    .from("expense")
+    .select("amount")
+    .eq("cycle_id", cycleResult.data.id)
+    // Feed is forecast from bags × bag price above. The UI files feed purchases
+    // in the `feed` table, but the category exists on `expense` too — excluding
+    // it here means a stray row can't be counted twice.
+    .neq("category", "feed");
+
+  const otherExpenses = (expenses ?? []).reduce(
+    (sum, row) => sum + Number(row.amount),
+    0,
+  );
+
+  return {
+    feedBagPrice,
+    previous: {
+      otherExpenses,
+      chickCount: cycleResult.data.chick_count,
+    },
   };
 }
 

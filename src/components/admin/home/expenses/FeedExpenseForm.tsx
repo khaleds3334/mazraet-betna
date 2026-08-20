@@ -42,8 +42,11 @@ function PhaseRow({
 /**
  * The feed-purchase form (العلف): the live feed figures, then starter (بادي) and
  * grower (نامي) bag counts + per-bag prices, saved to the `feed` table. Bag
- * counts pre-fill from what the cycle still needs; price defaults to the assumed
- * bag price. Calls `onDone` after a successful save.
+ * counts pre-fill from what the cycle still needs; the price pre-fills with what
+ * he paid for the last bag, since a price he already entered is a better guess
+ * than a constant and usually needs no touching at all. Only the very first
+ * purchase — nothing paid yet — falls back to `ASSUMED_FEED_BAG_PRICE`.
+ * Calls `onDone` after a successful save.
  */
 export function FeedExpenseForm({
   feed,
@@ -53,10 +56,11 @@ export function FeedExpenseForm({
   onDone: () => void;
 }) {
   const toast = useToast();
+  const lastPrice = feed.lastBagPrice ?? ASSUMED_FEED_BAG_PRICE;
   const [badiBags, setBadiBags] = useState(Math.round(feed.requiredBadi));
-  const [badiPrice, setBadiPrice] = useState(ASSUMED_FEED_BAG_PRICE);
+  const [badiPrice, setBadiPrice] = useState(lastPrice);
   const [namiBags, setNamiBags] = useState(Math.round(feed.requiredNami));
-  const [namiPrice, setNamiPrice] = useState(ASSUMED_FEED_BAG_PRICE);
+  const [namiPrice, setNamiPrice] = useState(lastPrice);
   const [submitting, setSubmitting] = useState(false);
 
   async function save() {

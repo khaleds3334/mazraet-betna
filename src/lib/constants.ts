@@ -41,10 +41,12 @@ export const FEED_PER_CHICK_KG = {
 } as const;
 
 /**
- * ⚠️ PROVISIONAL — review with Khaled. Assumed price of one 50kg feed bag, used
- * only to *estimate* a cycle's expected expenses on the create-cycle sheet (A-41)
- * before any real feed is purchased. Real feed cost comes from the `feed` table
- * once bags are actually bought (FR-22). Tune this to a realistic 2026 price.
+ * Fallback price of one 50kg feed bag — used **only on the very first cycle**,
+ * when the farm has never bought a bag and there is no real price to read. From
+ * the second cycle on, the create-cycle forecast (A-41) uses the price of the
+ * last bag actually purchased, because bag prices move every few weeks and a
+ * constant would be stale immediately (see `getCycleEstimateBasis`). Real feed
+ * cost always comes from the `feed` table (FR-22).
  */
 export const ASSUMED_FEED_BAG_PRICE = 1200;
 

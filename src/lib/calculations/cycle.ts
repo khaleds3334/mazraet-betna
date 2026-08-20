@@ -91,20 +91,81 @@ export function averageChickenWeight(weights: number[]): number {
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 /**
- * Estimated total expenses of a cycle at creation time, shown on the create-cycle
- * sheet (A-41, "المصاريف المتوقعة"). ⚠️ Provisional: a forecast, not the real
- * total — chick cost (count × price) plus an estimate of feed cost (expected bags
- * × the assumed bag price, since no feed is bought yet). Real expenses come from
- * the feed/expense tables during the cycle.
+ * What the last cycle actually cost, used to forecast the next one (see
+ * {@link estimatedCycleExpenses}). Both halves are independently optional: a farm
+ * can have bought feed without recording any other expense, and vice versa.
+ */
+export interface CycleEstimateBasis {
+  /** Price of the most recently purchased 50kg bag. Null = none ever recorded. */
+  feedBagPrice: number | null;
+  /** Everything that wasn't chicks or feed on the last cycle, and the flock it fed. */
+  previous: { otherExpenses: number; chickCount: number } | null;
+}
+
+export interface EstimatedCycleExpenses {
+  /** Real: the two numbers the admin just typed. */
+  chicks: number;
+  /** Estimated: expected bags × the last bag price paid. */
+  feed: number;
+  /** Estimated: the last cycle's other expenses, scaled to this flock. */
+  other: number;
+  total: number;
+  /** Total bags (بادي + نامي) the feed line was priced on. */
+  bags: number;
+  /** The per-bag price used — so the sheet can show what it multiplied by. */
+  bagPrice: number;
+  /** False when `bagPrice` is the fallback constant, not a bag he really bought. */
+  bagPriceFromHistory: boolean;
+}
+
+/**
+ * Forecast of what a cycle will cost, shown on the create-cycle sheet (A-41,
+ * "المصاريف المتوقعة"). Only the chick cost is real — count × price, both typed
+ * by the admin. The other two lines are read off the **last cycle**, because a
+ * number from his own farm last month beats any constant we could pick:
+ *
+ *   • **Feed** — expected bags (FEED_PER_CHICK_KG) × the price of the last bag he
+ *     actually bought. Bag prices move every few weeks, so a fixed price would be
+ *     stale by the second cycle. Falls back to {@link ASSUMED_FEED_BAG_PRICE}
+ *     only on the very first cycle, when there's no purchase to read.
+ *   • **Everything else** (water, electricity, medicine…) — last cycle's total,
+ *     scaled by flock size: `previous.otherExpenses × chickCount ÷ previous.chickCount`.
+ *     Straight-line scaling treats every pound as if it were per-bird, which the
+ *     electricity bill isn't; it still lands far closer than the 0 this line used
+ *     to contribute. Zero until there's a finished cycle to read.
+ *
+ * Real expenses come from the feed/expense tables during the cycle — this never
+ * feeds the profit accounting (see {@link cycleAccounting}).
  */
 export function estimatedCycleExpenses(
   chickCount: number,
   chickPrice: number,
-): number {
-  const chickCost = chickCount * chickPrice;
+  basis?: CycleEstimateBasis,
+): EstimatedCycleExpenses {
+  const chicks = chickCount * chickPrice;
+
   const { badi, nami } = expectedFeedBags(chickCount);
-  const feedCostEstimate = (badi + nami) * ASSUMED_FEED_BAG_PRICE;
-  return round2(chickCost + feedCostEstimate);
+  const bags = badi + nami;
+  const bagPrice = basis?.feedBagPrice ?? ASSUMED_FEED_BAG_PRICE;
+  const feed = bags * bagPrice;
+
+  // Guard the divisor: a previous cycle registered with 0 chicks would otherwise
+  // scale to Infinity, and the sheet would show a number the size of the farm.
+  const previous = basis?.previous;
+  const other =
+    previous && previous.chickCount > 0
+      ? (previous.otherExpenses * chickCount) / previous.chickCount
+      : 0;
+
+  return {
+    chicks: round2(chicks),
+    feed: round2(feed),
+    other: round2(other),
+    total: round2(chicks + feed + other),
+    bags,
+    bagPrice,
+    bagPriceFromHistory: basis?.feedBagPrice != null,
+  };
 }
 
 export interface CycleAccounting {

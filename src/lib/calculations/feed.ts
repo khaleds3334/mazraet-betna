@@ -49,8 +49,8 @@ export function expectedFeedKg(chickCount: number): number {
  * (A-41, "العلف المطلوب"). Two values — بادي (starter) and نامي (grower) — each
  * rounded to the nearest **half** 50kg bag (e.g. `3.5`) rather than a whole bag,
  * so the estimate stays reasonably precise instead of always rounding up.
- * ⚠️ Provisional: the per-chick amounts and phase labels are pending review with
- * Khaled.
+ * Per-chick amounts confirmed by Khaled (2026-08-20): ٠.٧٥ كجم بادي +
+ * ٢.٧٥ كجم نامي.
  */
 export function expectedFeedBags(chickCount: number): {
   badi: number;

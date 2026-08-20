@@ -5,7 +5,10 @@ import { RaisingDashboard } from "@/components/admin/home/raising/RaisingDashboa
 import { SellingDashboard } from "@/components/admin/home/selling/SellingDashboard";
 import { SettingsGear } from "@/components/layout/SettingsGear";
 import { getCurrentFarm } from "@/lib/queries/admin";
-import { getActiveCycleDashboard } from "@/lib/queries/cycles";
+import {
+  getActiveCycleDashboard,
+  getCycleEstimateBasis,
+} from "@/lib/queries/cycles";
 import { getSellingStats } from "@/lib/queries/selling";
 
 /**
@@ -44,7 +47,10 @@ export default async function AdminHomePage() {
     );
   }
 
-  // No active cycle — the first-time empty state (A-10).
+  // No active cycle — the first-time empty state (A-10). "First-time" by screen,
+  // not by history: a farm whose last cycle was closed lands here too, so the
+  // create sheet still gets that cycle's real costs to forecast from.
+  const basis = await getCycleEstimateBasis(farm.farmId);
   const greeting = farm.ownerName
     ? `أهلا بيك ${farm.ownerName} 👋`
     : "أهلا بيك 👋";
@@ -67,7 +73,7 @@ export default async function AdminHomePage() {
       </div>
 
       <div className="mb-4">
-        <CreateCycleLauncher label="ابدأ سجل اول دورة" />
+        <CreateCycleLauncher label="ابدأ سجل اول دورة" basis={basis} />
       </div>
     </div>
   );

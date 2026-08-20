@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { EmptyCyclesIllustration } from "@/components/admin/cycles/EmptyCyclesIllustration";
 import { CreateCycleLauncher } from "@/components/admin/cycles/CreateCycleLauncher";
 import { getCurrentFarm } from "@/lib/queries/admin";
-import { hasAnyCycle } from "@/lib/queries/cycles";
+import { getCycleEstimateBasis, hasAnyCycle } from "@/lib/queries/cycles";
 
 /**
  * Admin cycles (A-40 → A-47). With no cycle ever registered it shows the empty
@@ -15,6 +15,11 @@ export default async function AdminCyclesPage() {
   if (!farm) redirect("/logout");
 
   const anyCycle = await hasAnyCycle(farm.farmId);
+  // What the last cycle really cost — the create-cycle sheet forecasts the next
+  // one from it. Only worth reading once there *is* a last cycle.
+  const basis = anyCycle
+    ? await getCycleEstimateBasis(farm.farmId)
+    : undefined;
 
   if (anyCycle) {
     return (
@@ -24,7 +29,7 @@ export default async function AdminCyclesPage() {
           <p className="text-muted">قائمة الدورات قيد الإنشاء…</p>
         </div>
         <div className="mb-4">
-          <CreateCycleLauncher />
+          <CreateCycleLauncher basis={basis} />
         </div>
       </main>
     );

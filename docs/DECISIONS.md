@@ -896,6 +896,36 @@ have a focus glow that reaches ~4px past their box.
 and neither has a ✕ that could scroll away.
 **Date:** 2026-08-20
 
+### T-46 — The expenses forecast reads the last cycle, not a constant
+On the create-cycle sheet (A-41) only the chick cost is real — count × price, both
+typed by the admin. The other two lines are read off the farm's own history:
+**feed** = expected bags × the price of the last 50kg bag actually bought;
+**everything else** (water, electricity, medicine) = the last cycle's total for
+those, scaled by flock size (`prev.otherExpenses × count ÷ prev.chickCount`).
+**Why:** a feed bag doesn't cost what it cost last season, and «١٢٠٠ جنيه» hard-coded
+in the source is a number nobody on the farm can correct. His own last invoice is
+both fresher and answerable — if it looks wrong he knows why (Khaled, 2026-08-20).
+**Why the whole cycle before, not an average of several:** the last cycle is the
+one he remembers. An average across three cycles is a better statistic and a worse
+explanation, and this number's job is to be sanity-checked at a glance.
+**Straight-line scaling, accepted:** it treats every pound as per-bird, and the
+electricity bill isn't. Still far closer than the `0` this line used to contribute.
+**Fallbacks:** no bag ever bought → `ASSUMED_FEED_BAG_PRICE` (first cycle only);
+no previous cycle → other expenses contribute nothing rather than a guess.
+**Feed kg per chick confirmed** the same day: ٠.٧٥ بادي + ٢.٧٥ نامي — no longer
+provisional.
+**Still a forecast.** `cycleAccounting` (FR-19) never reads it; real money comes
+from the `feed` and `expense` tables.
+**The card opens (`ExpectedExpensesCard`).** Closed it is the stat tile the design
+draws — caption, total in red. Tapped, it shows the three lines with the sum
+behind each: «٣٥ شكارة × ١٤٥٠ جنيه», and which flock the other expenses came from.
+Only the total belongs on screen every time; the workings matter on the first
+cycle after a price change, when the question is «هو بيحسب الشكارة بكام؟» — and a
+number he can check is a number he can trust (Khaled, 2026-08-20).
+**Same price pre-fills the purchase form** (A-15): one read,
+`getLastFeedBagPrice`, serving both screens, so they can't drift apart.
+**Date:** 2026-08-20
+
 ### T-35 — One scroll container per screen, sized in `svh`, header held by `sticky`
 The rule every list screen follows from now on: **`<main>` is the only thing that
 scrolls.** A screen never puts a second `overflow-y-auto` inside it. Anything
