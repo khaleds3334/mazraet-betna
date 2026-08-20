@@ -310,17 +310,52 @@ export async function getActiveCycleDashboard(
   };
 }
 
-/** The cycle the orders screen is scoped to — the header of that screen's data. */
+/** A cycle as the orders screen names it — its header, and its picker's rows. */
 export interface OrdersCycle {
   cycleId: string;
   /** The cycle's own number (1, 2, 3 …) — the first digit of every order number. */
   seq: number;
   name: string | null;
   startDate: string;
+  endedAt: string | null;
   /** True while this is the farm's running cycle (nothing has ended it yet). */
   isActive: boolean;
   /** True only while customers can order on it — the gate on booking (FR-11). */
   saleOpen: boolean;
+  phase: CyclePhase;
+}
+
+/**
+ * Every cycle the farm has run, newest first, reduced to what the orders screen
+ * needs: the funnel picks one of these, and the chosen one scopes the list.
+ *
+ * Deliberately not `listCycles` — that one computes each cycle's money, and a
+ * picker only needs their names.
+ */
+export async function listOrdersCycles(
+  farmId: string,
+): Promise<OrdersCycle[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("cycle")
+    .select("id, seq, name, start_date, is_active, sale_open, ended_at")
+    .eq("farm_id", farmId)
+    .order("start_date", { ascending: false });
+
+  return (data ?? []).map((cycle) => ({
+    cycleId: cycle.id,
+    seq: cycle.seq ?? 0,
+    name: cycle.name,
+    startDate: cycle.start_date,
+    endedAt: cycle.ended_at,
+    isActive: cycle.is_active,
+    saleOpen: cycle.is_active && cycle.sale_open,
+    phase: (!cycle.is_active || cycle.ended_at
+      ? "ended"
+      : cycle.sale_open
+        ? "selling"
+        : "raising") as CyclePhase,
+  }));
 }
 
 /**
@@ -341,34 +376,23 @@ export interface OrdersCycle {
  * every customer, on the very day the previous cycle's debts still needed
  * chasing.
  *
- * One read: a farm has a handful of cycles, so they are ranked here rather than
- * in three queries with two fallbacks.
+ * Pure, so a screen that has already read the cycles for its picker doesn't read
+ * them twice.
  */
+export function pickDefaultCycle(cycles: OrdersCycle[]): OrdersCycle | null {
+  return (
+    cycles.find((cycle) => cycle.saleOpen) ??
+    cycles.find((cycle) => cycle.endedAt) ??
+    cycles.at(0) ??
+    null
+  );
+}
+
+/** {@link pickDefaultCycle} for a caller that only wants the one cycle. */
 export async function getDefaultOrdersCycle(
   farmId: string,
 ): Promise<OrdersCycle | null> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("cycle")
-    .select("id, seq, name, start_date, is_active, sale_open, ended_at")
-    .eq("farm_id", farmId)
-    .order("start_date", { ascending: false });
-
-  const cycles = data ?? [];
-  const chosen =
-    cycles.find((cycle) => cycle.is_active && cycle.sale_open) ??
-    cycles.filter((cycle) => cycle.ended_at).at(0) ??
-    cycles.at(0);
-  if (!chosen) return null;
-
-  return {
-    cycleId: chosen.id,
-    seq: chosen.seq,
-    name: chosen.name,
-    startDate: chosen.start_date,
-    isActive: chosen.is_active,
-    saleOpen: chosen.is_active && chosen.sale_open,
-  };
+  return pickDefaultCycle(await listOrdersCycles(farmId));
 }
 
 /**

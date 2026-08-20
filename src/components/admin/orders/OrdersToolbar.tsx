@@ -1,44 +1,57 @@
-import { Icon } from "@/components/ui";
 import type { CustomerOption } from "@/lib/queries/customers";
+import type { OrdersCycle } from "@/lib/queries/cycles";
 import { AddOrderLauncher } from "./add/AddOrderLauncher";
+import { CyclePickerButton } from "./CyclePickerButton";
+import { OrderTabChip } from "./OrderTabChip";
 
 /**
- * Top row of the orders screen (A-50): the "اضافة طلب" action on the right and
- * the cycle filter on the left. DOM order is right-to-left, the way the row reads.
+ * Top row of the orders screen (A-50) — the cycle picker on the inline-end, and
+ * on the inline-start whichever of two things the cycle calls for.
  *
- * The funnel is drawn but inert for now — it will open a cycle picker, and that
- * picker has no design yet (Khaled, 2026-08-18). It stays a plain glyph rather
- * than a button, so nothing is tappable that does nothing.
+ * **Selling:** «اضافة طلب». Orders are arriving, and one can be booked.
+ *
+ * **Any other cycle:** the count of what it came to, beside its name. Nothing can
+ * be added to a cycle that isn't selling (D-39), so the button would be a button
+ * that refuses; and every order in a closed cycle is completed, so the three tabs
+ * collapse into the only one that has anything in it (Khaled, 2026-08-20). The
+ * chip is the same chip the tab bar draws, without the tapping.
  */
 export function OrdersToolbar({
+  cycle,
+  cycles,
+  orderCount,
   customers,
   weights,
   defaultCleaning,
-  saleOpen,
 }: {
+  /** The cycle being shown — the picker marks it, and the archive names it. */
+  cycle: OrdersCycle;
+  cycles: OrdersCycle[];
+  /** Orders in that cycle — the archive chip's number. */
+  orderCount: number;
   customers: CustomerOption[];
   weights: number[];
   defaultCleaning: boolean;
-  saleOpen: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 px-screen">
-      <AddOrderLauncher
-        customers={customers}
-        weights={weights}
-        defaultCleaning={defaultCleaning}
-        saleOpen={saleOpen}
-      />
+      {cycle.saleOpen ? (
+        <AddOrderLauncher
+          customers={customers}
+          weights={weights}
+          defaultCleaning={defaultCleaning}
+          saleOpen
+        />
+      ) : (
+        <div className="flex min-w-0 items-center gap-3">
+          <OrderTabChip tab="done" label="المكتملة" count={orderCount} selected />
+          <span className="truncate text-base font-bold text-heading">
+            {cycle.name ?? "دورة بدون اسم"}
+          </span>
+        </div>
+      )}
 
-      {/* 2px is the weight Figma draws it at. The icon's own stroke scales with
-          `size`, so at 38px it would render ~2.4px and read heavy. */}
-      <Icon
-        name="filter"
-        size={38}
-        strokeWidth={2}
-        absoluteStrokeWidth
-        className="shrink-0 text-foreground"
-      />
+      <CyclePickerButton cycles={cycles} selectedId={cycle.cycleId} />
     </div>
   );
 }

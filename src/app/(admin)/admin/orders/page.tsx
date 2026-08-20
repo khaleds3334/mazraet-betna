@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { SearchField } from "@/components/ui";
 import { OrdersToolbar } from "@/components/admin/orders/OrdersToolbar";
 import { OrdersBrowser } from "@/components/admin/orders/OrdersBrowser";
+import { OrdersShell } from "@/components/admin/orders/OrdersShell";
 import { OrdersEmptyState } from "@/components/admin/orders/OrdersEmptyState";
 import { OrderCard } from "@/components/admin/orders/card/OrderCard";
 import {
@@ -11,7 +12,7 @@ import {
 } from "@/lib/constants";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { listFarmCustomers } from "@/lib/queries/customers";
-import { getDefaultOrdersCycle } from "@/lib/queries/cycles";
+import { listOrdersCycles, pickDefaultCycle } from "@/lib/queries/cycles";
 import { getFarmSettings } from "@/lib/queries/settings";
 import {
   listCycleOrders,
@@ -52,32 +53,82 @@ function OrdersPanel({
 }
 
 /**
- * Admin orders list (A-50). The orders of one cycle — the running one, or the
- * last one to end — split across the three tabs of FR-12, each showing its count.
+ * Admin orders list (A-50). One cycle's orders — the one selling now by default,
+ * or whichever the funnel picked — and the screen has two faces depending on
+ * which that is:
  *
- * The cycle is read once, whole, and split into the three tabs here. Every tab
- * is rendered on the server and handed to `OrdersBrowser` together, so choosing
- * one is instant and costs nothing (D-31). `loading.tsx` covers the first read;
- * after that there is nothing left to wait for.
+ * **A cycle that is selling** gets the working screen: «اضافة طلب», and the three
+ * tabs of FR-12 each showing its count. Every tab is rendered on the server and
+ * handed to `OrdersBrowser` together, so choosing one is instant (D-31).
+ *
+ * **Any other cycle** is an archive: nothing can be added to it (D-39) and every
+ * order in it is finished, so there is one list, labelled with what it came to.
  */
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; cycle?: string }>;
 }) {
   const farm = await getCurrentFarm();
   if (!farm) redirect("/logout");
 
-  const [{ tab }, cycle, customers, settings] = await Promise.all([
+  const [params, cycles, customers, settings] = await Promise.all([
     searchParams,
-    getDefaultOrdersCycle(farm.farmId),
+    listOrdersCycles(farm.farmId),
     listFarmCustomers(farm.farmId),
     getFarmSettings(farm.farmId),
   ]);
 
-  // A farm with no cycle yet has no orders either — the same empty state, with
-  // every count at zero.
-  const orders = cycle ? await listCycleOrders(farm.farmId, cycle) : [];
+  // Whatever the funnel put in the URL, falling back to «الدورة الحالية» (D-38).
+  // An id that isn't this farm's simply doesn't match, and the default stands.
+  const cycle =
+    cycles.find((option) => option.cycleId === params.cycle) ??
+    pickDefaultCycle(cycles);
+
+  // A farm with no cycle yet has no orders and nothing to pick between: no
+  // toolbar, no tabs, just the sentence saying so.
+  if (!cycle) {
+    return (
+      <div className="flex flex-col px-screen pt-4">
+        <OrdersEmptyState tab="new" />
+      </div>
+    );
+  }
+
+  const orders = await listCycleOrders(farm.farmId, cycle);
+
+  const header = (
+    <>
+      <OrdersToolbar
+        cycle={cycle}
+        cycles={cycles}
+        orderCount={orders.length}
+        customers={customers}
+        weights={settings.availableWeights}
+        defaultCleaning={settings.defaultCleaning}
+      />
+      <div className="px-screen">
+        {/* Static until the list it would filter is wired — see SearchField. */}
+        <SearchField placeholder="ابحث باسم العميل او رقم الطلب" />
+      </div>
+    </>
+  );
+
+  if (!cycle.saleOpen) {
+    return (
+      <div className="flex flex-col">
+        <OrdersShell header={header}>
+          <OrdersPanel
+            orders={orders}
+            tab="done"
+            salePrice={settings.salePrice}
+            cleaningPrice={settings.cleaningPrice}
+            weights={settings.availableWeights}
+          />
+        </OrdersShell>
+      </div>
+    );
+  }
 
   const panels = Object.fromEntries(
     ADMIN_ORDER_TABS.map((group) => [
@@ -94,31 +145,12 @@ export default async function AdminOrdersPage({
   ) as Record<AdminOrderTabKey, React.ReactNode>;
 
   return (
-    // One scroll container, not two. The screen used to put a scrollable list
-    // inside the already-scrollable <main>, and nesting two of them is what made
-    // the header drift: a swipe can move either box, and whichever the browser
-    // picks, the other still has slack left to give. So the cards simply flow in
-    // <main>, and the header is held in place with `sticky` — the list moves
-    // underneath it because there is nothing else that *can* move.
     <div className="flex flex-col">
       <OrdersBrowser
-        initialTab={resolveTab(tab)}
+        initialTab={resolveTab(params.tab)}
         counts={tallyOrderTabs(orders)}
         panels={panels}
-        header={
-          <>
-            <OrdersToolbar
-              customers={customers}
-              weights={settings.availableWeights}
-              defaultCleaning={settings.defaultCleaning}
-              saleOpen={cycle?.saleOpen ?? false}
-            />
-            <div className="px-screen">
-              {/* Static until the list it would filter is wired — see SearchField. */}
-              <SearchField placeholder="ابحث باسم العميل او رقم الطلب" />
-            </div>
-          </>
-        }
+        header={header}
       />
     </div>
   );

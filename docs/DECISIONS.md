@@ -1198,3 +1198,36 @@ collected for this week, and barely moves when a payment lands on it (Khaled,
 2026-08-20). Both numbers are real; they answer different questions, so each is
 shown where its question is being asked.
 **Date:** 2026-08-20
+
+### D-41 — The orders screen has a working face and an archive face
+The funnel picks the cycle; what the cycle is doing picks the screen.
+
+**Selling** → «اضافة طلب» and the three tabs of FR-12.
+**Anything else** → no add button, no tabs. The toolbar instead carries the
+«المكتملة» chip with the cycle's order count and the cycle's name, and the body is
+one list of everything in it.
+
+**Why:** an order can't be booked outside the sale (D-39), so the button would be a
+button that refuses. And `endCycle` won't close a cycle over an open order, so a
+closed cycle holds nothing but completed ones — «الجديدة» and «قيد التشغيل» are two
+tabs guaranteed to be empty, and a tab bar where two of three are always zero
+teaches the admin to stop reading it (Khaled, 2026-08-20).
+
+The archive chip is the tab bar's own `OrderTabChip` rendered without a handler,
+so the two can never drift apart visually.
+**Date:** 2026-08-21
+
+### T-52 — The cycle picker goes through the router; the tabs never do
+Two filters on one screen, deliberately built on different mechanisms.
+
+**Tabs** — `useUrlParam`, `history.pushState`, no server round trip. The three
+lists are already on the page (D-31).
+**Cycle** — `router.push(?cycle=…)`, a full server render. Another cycle is
+another list; there is nothing on the page to filter.
+
+`useTransition` covers the gap: the dialog stays open and the chosen row dims
+while the new page is fetched, instead of a dead tap on a slow connection.
+**Why it's worth writing down:** the two look like the same kind of control and
+are not, and reaching for `useUrlParam` here would show the previous cycle's
+orders under the new cycle's name.
+**Date:** 2026-08-21

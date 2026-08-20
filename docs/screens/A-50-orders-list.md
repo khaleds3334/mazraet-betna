@@ -74,6 +74,35 @@ padded to three digits (Khaled, 2026-08-18). Both counters are database columns
 assigned by a trigger (migration 009/010), so a number never shifts once given,
 and `formatOrderNumber` in `/lib/format.ts` is the only place it is composed.
 
+## Two faces — read this before changing the toolbar
+The screen shows **one cycle's** orders. Which one is «الدورة الحالية» by default
+(D-38), or whatever the funnel put in `?cycle=`.
+
+| | a cycle that is **selling** | any other cycle |
+|---|---|---|
+| Inline-start of the toolbar | «اضافة طلب» | «المكتملة» + its count, then the cycle's name |
+| Tabs | the three of FR-12 | none |
+| Body | the selected tab | every order in the cycle |
+
+Nothing can be added to a cycle that isn't selling (D-39), so the button there
+would be a button that refuses; and a closed cycle has only completed orders —
+`endCycle` won't close one over an open order — so three tabs collapse into the
+only one with anything in it (Khaled, 2026-08-20).
+
+The archive chip is the tab bar's own chip (`OrderTabChip`) rendered without a
+handler, so the two can't drift apart visually.
+
+## The funnel is a cycle picker
+`CyclePickerButton` — a dialog listing every cycle with its phase pill, the
+current one marked. The choice goes through the **router**, not the history API
+the tabs use: the tabs are three views of a list already on the page, while
+another cycle is another list the server has to read. `useTransition` keeps the
+dialog open and the row dimmed while that happens, so a tap on a slow connection
+doesn't look ignored.
+
+An id in the URL that isn't this farm's simply doesn't match, and the default
+stands — no error, no leak.
+
 ## Watch out
 - The tab row scrolls sideways: the three chips are wider than a 320px screen.
 - Counts are per **cycle**, not per farm — an old cycle's numbers must not leak

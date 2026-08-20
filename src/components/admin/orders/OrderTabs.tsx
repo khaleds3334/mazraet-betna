@@ -2,19 +2,7 @@
 
 import { ADMIN_ORDER_TABS, type AdminOrderTabKey } from "@/lib/constants";
 import type { OrderTabCounts } from "@/lib/queries/orders";
-import { formatArabicNumber } from "@/lib/format";
-import { cn } from "@/lib/utils";
-
-/**
- * The count bubble's fill per tab — the design gives each group its own colour so
- * the admin reads the row by shape, not by text: waiting = warm, running = blue,
- * done = solid green.
- */
-const COUNT_TONE: Record<AdminOrderTabKey, string> = {
-  new: "bg-warning-surface text-foreground",
-  active: "bg-info-surface text-foreground",
-  done: "bg-brand text-white",
-};
+import { OrderTabChip } from "./OrderTabChip";
 
 /**
  * The tab bar on the orders screen (A-50): one chip per group of statuses
@@ -40,37 +28,16 @@ export function OrderTabs({
       aria-label="تصنيفات الطلبات"
       className="no-scrollbar flex items-center justify-between overflow-x-auto px-screen"
     >
-      {ADMIN_ORDER_TABS.map((tab) => {
-        const selected = tab.key === active;
-
-        return (
-          <button
-            key={tab.key}
-            type="button"
-            role="tab"
-            aria-selected={selected}
-            onClick={() => onSelect(tab.key)}
-            className={cn(
-              "flex min-h-11 shrink-0 items-center gap-1 rounded-xl border border-primary-hover px-2 text-sm text-foreground",
-              selected ? "bg-primary" : "bg-transparent",
-            )}
-          >
-            <span className="optical-center whitespace-nowrap">
-              {tab.label}
-            </span>
-            <span
-              className={cn(
-                "flex min-w-8 items-center justify-center rounded-full px-2 py-1.5",
-                COUNT_TONE[tab.key],
-              )}
-            >
-              <span className="optical-center">
-                {formatArabicNumber(counts[tab.key])}
-              </span>
-            </span>
-          </button>
-        );
-      })}
+      {ADMIN_ORDER_TABS.map((tab) => (
+        <OrderTabChip
+          key={tab.key}
+          tab={tab.key}
+          label={tab.label}
+          count={counts[tab.key]}
+          selected={tab.key === active}
+          onSelect={() => onSelect(tab.key)}
+        />
+      ))}
     </div>
   );
 }

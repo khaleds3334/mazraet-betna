@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { resolveTab, type AdminOrderTabKey } from "@/lib/constants";
 import type { OrderTabCounts } from "@/lib/queries/orders";
 import { useUrlParam } from "@/hooks/useUrlParam";
+import { OrdersShell } from "./OrdersShell";
 import { OrderTabs } from "./OrderTabs";
 
 const writeTab = (tab: AdminOrderTabKey) => tab;
@@ -38,16 +39,17 @@ export function OrdersBrowser({
   const [active, select] = useUrlParam("tab", initialTab, resolveTab, writeTab);
 
   return (
-    <>
-      {/* The tabs are pinned with the toolbar above them, not with the list they
-          control — the list is what moves underneath (T-35). */}
-      <div className="sticky top-0 z-10 flex flex-col gap-4 bg-background pt-4 pb-3">
-        {header}
-        <OrderTabs active={active} counts={counts} onSelect={select} />
-      </div>
-
-      {/* The last card clears the tab bar through <main>'s bottom padding. */}
-      <div className="px-screen pb-4">{panels[active]}</div>
-    </>
+    <OrdersShell
+      header={
+        <>
+          {/* The tabs are pinned with the toolbar above them, not with the list
+              they control — the list is what moves underneath (T-35). */}
+          {header}
+          <OrderTabs active={active} counts={counts} onSelect={select} />
+        </>
+      }
+    >
+      {panels[active]}
+    </OrdersShell>
   );
 }
