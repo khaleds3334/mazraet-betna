@@ -25,7 +25,7 @@ export function RaisingDashboard({ data }: { data: CycleDashboard }) {
   const { feed } = data;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-screen pb-6 pt-4">
+    <div className="flex flex-1 flex-col gap-6 px-screen pb-6 pt-3">
       <CycleHeader
         name={data.name}
         startDate={data.startDate}
@@ -64,7 +64,7 @@ export function RaisingDashboard({ data }: { data: CycleDashboard }) {
       </div>
 
       {/* Feed section — required · withdrawn · available (right→left). */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         <div className="grid grid-cols-3 gap-3">
           <StatItem
             label={"العلف\nالمطلوب"}
