@@ -24,7 +24,11 @@ import {
   feedCost,
   purchasedBagsByPhase,
 } from "@/lib/calculations/feed";
-import { CYCLE_TOTAL_DAYS, SALE_READY_MIN_DAY } from "@/lib/constants";
+import {
+  CYCLE_TOTAL_DAYS,
+  SALE_READY_MIN_DAY,
+  type FeedPhase,
+} from "@/lib/constants";
 import { getFarmSettings } from "@/lib/queries/settings";
 
 export interface SaleState {
@@ -142,6 +146,74 @@ export interface CycleDashboard {
   };
 }
 
+/** The raw rows the feed summary is built from. */
+interface FeedInput {
+  startDate: string;
+  chickCount: number;
+  feed: { bags: number; bag_price: number; phase: FeedPhase | null }[];
+  withdrawals: {
+    bags: number;
+    withdrawn_on: string;
+    withdrawn_at: string | null;
+  }[];
+  /** Farm-level, so the caller supplies it. Null = no bag ever bought. */
+  lastBagPrice: number | null;
+}
+
+/**
+ * The feed store of one cycle: what it needs, what is in it, what has been opened,
+ * and the calendar of openings behind the consumption grid.
+ *
+ * Shared by the running dashboard (A-11) and a finished cycle's page (A-45), which
+ * draw the same grid from the same rows — the bag-classification rule below is
+ * subtle enough that two copies of it would eventually disagree.
+ */
+export function buildFeedSummary(input: FeedInput): CycleDashboard["feed"] {
+  const { badi, nami } = expectedFeedBags(input.chickCount);
+  const purchased = purchasedBagsByPhase(input.feed, badi);
+
+  // Classify each opened bag: the first `badiBagCount` bags (chronologically) are
+  // بادي, the rest نامي — Khaled's FIFO rule (بادي is opened until it runs out,
+  // then نامي). `bagNumber` is the bag's 1-based order across the whole cycle.
+  const badiBagCount = Math.round(badi);
+  let bagsSoFar = 0;
+  const withdrawalList = input.withdrawals.map((w) => {
+    const bagNumber = bagsSoFar + 1;
+    bagsSoFar += w.bags;
+    return {
+      dayOffset: differenceInCalendarDays(
+        new Date(w.withdrawn_on),
+        new Date(input.startDate),
+      ),
+      bagNumber,
+      phase: (bagNumber <= badiBagCount ? "badi" : "nami") as FeedPhase,
+      ageDays: chickAgeDays(input.startDate, new Date(w.withdrawn_on)),
+      withdrawnOn: w.withdrawn_on,
+      withdrawnAt: w.withdrawn_at,
+    };
+  });
+  // A bag opened before day 1 has no grid cell — hide it (the action blocks this,
+  // but seed/legacy rows might not).
+  const withdrawals = withdrawalList.filter((w) => w.dayOffset >= 0);
+
+  return {
+    requiredBadi: badi,
+    requiredNami: nami,
+    available: feedBagsAvailable(input.feed, input.withdrawals),
+    purchasedBadi: purchased.badi,
+    purchasedNami: purchased.nami,
+    withdrawn: feedBagsWithdrawn(input.withdrawals),
+    lastBagPrice: input.lastBagPrice,
+    // The grid is at least a full cycle long, and stretches if a bag was opened
+    // past day 40.
+    totalDays: Math.max(
+      CYCLE_TOTAL_DAYS,
+      ...withdrawals.map((w) => w.dayOffset + 1),
+    ),
+    withdrawals,
+  };
+}
+
 /**
  * Everything the running-cycle dashboard (A-11 raising / A-20 selling) shows for
  * the farm's active cycle, or null when there is none. Aggregates the cycle row
@@ -210,40 +282,6 @@ export async function getActiveCycleDashboard(
     otherExpenses,
   });
 
-  const { badi, nami } = expectedFeedBags(cycle.chick_count);
-  const purchased = purchasedBagsByPhase(feed, badi);
-
-  // Classify each opened bag: the first `badiBagCount` bags (chronologically) are
-  // بادي, the rest نامي — Khaled's FIFO rule (بادي is opened until it runs out,
-  // then نامي). `bagNumber` is the bag's 1-based order across the whole cycle.
-  const badiBagCount = Math.round(badi);
-  let bagsSoFar = 0;
-  const withdrawalList = withdrawals.map((w) => {
-    const bagNumber = bagsSoFar + 1;
-    bagsSoFar += w.bags;
-    return {
-      dayOffset: differenceInCalendarDays(
-        new Date(w.withdrawn_on),
-        new Date(cycle.start_date),
-      ),
-      bagNumber,
-      phase: (bagNumber <= badiBagCount ? "badi" : "nami") as "badi" | "nami",
-      ageDays: chickAgeDays(cycle.start_date, new Date(w.withdrawn_on)),
-      withdrawnOn: w.withdrawn_on,
-      withdrawnAt: w.withdrawn_at,
-    };
-  });
-  // A bag opened before day 1 has no grid cell — hide it (the action blocks this,
-  // but seed/legacy rows might not).
-  const withdrawalDetails = withdrawalList.filter((w) => w.dayOffset >= 0);
-
-  // Which cycle days a bag was opened on — one lit square per day on the grid.
-  const withdrawalDays = withdrawalDetails.map((w) => w.dayOffset);
-  const totalDays = Math.max(
-    CYCLE_TOTAL_DAYS,
-    ...withdrawalDays.map((d) => d + 1),
-  );
-
   const phase: CyclePhase = cycle.ended_at
     ? "ended"
     : cycle.sale_open
@@ -262,17 +300,13 @@ export async function getActiveCycleDashboard(
     salePrice: settings.salePrice,
     mortalityCount,
     expensesTotal,
-    feed: {
-      requiredBadi: badi,
-      requiredNami: nami,
-      available: feedBagsAvailable(feed, withdrawals),
-      purchasedBadi: purchased.badi,
-      purchasedNami: purchased.nami,
-      withdrawn: feedBagsWithdrawn(withdrawals),
+    feed: buildFeedSummary({
+      startDate: cycle.start_date,
+      chickCount: cycle.chick_count,
+      feed,
+      withdrawals,
       lastBagPrice,
-      totalDays,
-      withdrawals: withdrawalDetails,
-    },
+    }),
   };
 }
 

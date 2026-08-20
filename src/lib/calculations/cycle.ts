@@ -225,3 +225,50 @@ export function cycleDurationDays(
 ): number {
   return chickAgeDays(startDate, endedAt ? new Date(endedAt) : today);
 }
+
+/**
+ * The weight bands a cycle's birds are sorted into on its detail page (A-45).
+ * Boundaries and wording come straight from the design; the colours are the ones
+ * the design gives each band, and they read as a scale — red for the birds that
+ * came in light, dark green for the heaviest.
+ *
+ * Both class names are spelled out rather than derived from one another
+ * (`bg-error` → `fill-error`). Tailwind finds classes by reading the source, so a
+ * name assembled at runtime is a name it never generates — the swatch would show
+ * and the matching pie slice would come out blank.
+ */
+export const WEIGHT_BANDS = [
+  { label: "اوزان ١.٥ كجم او اقل", max: 1.5, swatch: "bg-error", slice: "fill-error" },
+  { label: "اوزان بين ١.٥ كجم و ٢ كجم", max: 2, swatch: "bg-accent-tan", slice: "fill-accent-tan" },
+  { label: "اوزان من ٢ كجم الي ٢.٥ كجم", max: 2.5, swatch: "bg-primary", slice: "fill-primary" },
+  { label: "اوزان فوق ٢.٥ كجم", max: Infinity, swatch: "bg-foreground", slice: "fill-foreground" },
+] as const;
+
+export interface WeightBand {
+  label: string;
+  /** Tailwind class for the legend square. */
+  swatch: string;
+  /** Tailwind class for the pie wedge. */
+  slice: string;
+  count: number;
+}
+
+/**
+ * Sort every bird the cycle weighed into the four bands (FR-24). A bird lands in
+ * the first band its weight does not exceed, so 1.5 kg counts as "١.٥ او اقل" and
+ * 2.0 as "بين ١.٥ و ٢" — the boundaries belong to the band below them, which is
+ * how the labels read out loud.
+ */
+export function weightDistribution(weights: number[]): WeightBand[] {
+  const counts = WEIGHT_BANDS.map(() => 0);
+  for (const weight of weights) {
+    const index = WEIGHT_BANDS.findIndex((band) => weight <= band.max);
+    counts[index === -1 ? WEIGHT_BANDS.length - 1 : index] += 1;
+  }
+  return WEIGHT_BANDS.map((band, index) => ({
+    label: band.label,
+    swatch: band.swatch,
+    slice: band.slice,
+    count: counts[index],
+  }));
+}

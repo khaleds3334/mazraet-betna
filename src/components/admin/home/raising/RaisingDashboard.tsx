@@ -7,7 +7,7 @@ import { CycleExpensesCard } from "@/components/admin/shared/expenses/CycleExpen
 import { CycleHeader } from "../shared/CycleHeader";
 import { CycleStatCard } from "../shared/CycleStatCard";
 import { StatSection } from "../shared/StatSection";
-import { FeedGrid } from "./FeedGrid";
+import { FeedGrid } from "@/components/admin/shared/FeedGrid";
 import { StartSellingButton } from "./StartSellingButton";
 
 /**
