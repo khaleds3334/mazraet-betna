@@ -14,10 +14,14 @@ export function AddOrderLauncher({
   customers,
   weights,
   defaultCleaning,
+  saleOpen,
 }: {
   customers: CustomerOption[];
   weights: number[];
   defaultCleaning: boolean;
+  /** False outside مرحلة البيع. The button still opens — a dead pill explains
+   *  nothing, and the sheet is where the reason fits. */
+  saleOpen: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -35,6 +39,7 @@ export function AddOrderLauncher({
         customers={customers}
         weights={weights}
         defaultCleaning={defaultCleaning}
+        saleOpen={saleOpen}
       />
     </>
   );

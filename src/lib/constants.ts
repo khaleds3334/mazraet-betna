@@ -131,6 +131,14 @@ export function resolveTab(value: string | null | undefined): AdminOrderTabKey {
  * the server says it if the store emptied while he was looking at the screen —
  * and a "use server" module may only export functions.
  */
+/**
+ * Why an order can't be booked. Same sentence in the sheet before he fills it in
+ * and on the server if the sale closed while it was open — and a `"use server"`
+ * module may only export functions, so it lives here.
+ */
+export const SALE_NOT_OPEN =
+  "البيع مش مفتوح دلوقتي، ابدأ مرحلة البيع الأول عشان تسجّل طلبات.";
+
 export const NO_FEED_IN_STORE = "مفيش علف متوفر في المخزن، سجّل شراء علف الأول.";
 
 export const FEED_PHASE_LABEL: Record<FeedPhase, string> = {

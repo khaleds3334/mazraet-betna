@@ -111,6 +111,7 @@ export default async function AdminOrdersPage({
               customers={customers}
               weights={settings.availableWeights}
               defaultCleaning={settings.defaultCleaning}
+              saleOpen={cycle?.saleOpen ?? false}
             />
             <div className="px-screen">
               {/* Static until the list it would filter is wired — see SearchField. */}

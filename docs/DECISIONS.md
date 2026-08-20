@@ -1156,3 +1156,45 @@ left of its digits without affecting the text around it.
 label stays «ربح الدورة» and the tone turns red — green on a loss reads as a win
 (Khaled, 2026-08-20).
 **Date:** 2026-08-20
+
+### D-38 — «الدورة الحالية» means the selling cycle, or the last one to end
+One definition, in `getDefaultOrdersCycle`, for every screen that says the words:
+
+1. the cycle **selling** right now — that is where orders are being placed;
+2. otherwise the **last cycle to end** — during التربية nobody is ordering, and
+   what still matters is who owes for the flock just sold;
+3. otherwise whatever cycle exists at all — a farm's first, still being raised.
+
+**Why it changed:** the rule was "active first, then newest", which pointed at a
+**raising** cycle the moment one started. The day the admin registers a new flock,
+the orders screen would empty out and every customer's «طلبات الدورة» would drop to
+zero — on exactly the day last cycle's debts still need chasing.
+**Consequence:** during التربية the orders screen shows the previous cycle's
+orders, which is why booking is gated separately (D-39) — otherwise a new order
+would land on the raising cycle and vanish from the screen that created it.
+**Date:** 2026-08-20
+
+### D-39 — An order can only be booked while the sale is open
+`createOrder` refuses unless the farm's active cycle has `sale_open`. The sheet
+(A-56) says so before the form is filled in, with both save buttons inert; the
+button that opens it stays live, because a dead pill explains nothing and the
+sheet is where the reason fits.
+**Why:** birds in التربية are weeks from ready — an order booked against them
+promises a date nobody can keep. And with D-38, the orders screen is looking at the
+previous cycle at that moment, so the new order would be invisible the instant it
+was created.
+**Date:** 2026-08-20
+
+### D-40 — A customer's money is read twice: lifetime, and this cycle
+`CustomerSummary` carries `debt`/`invoiceTotal`/`paidTotal` for everything the
+customer has ever owed, and `inCycle` for the same three figures on الدورة الحالية.
+- the row's **debt** and the screen's «اجمالي الآجل» stay lifetime — that is what
+  the list is sorted and filtered by, and what the farm is actually owed;
+- the row's **paid-vs-owed bar** reads `inCycle`;
+- the history sheet's debt figure follows whichever chip is selected.
+
+**Why:** a bar summing five years of business says nothing about the flock being
+collected for this week, and barely moves when a payment lands on it (Khaled,
+2026-08-20). Both numbers are real; they answer different questions, so each is
+shown where its question is being asked.
+**Date:** 2026-08-20

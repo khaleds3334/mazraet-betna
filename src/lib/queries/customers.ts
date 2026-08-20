@@ -63,23 +63,34 @@ export async function listFarmCustomers(
   return data ?? [];
 }
 
-/** A customer as the admin's list shows them (A-30): who they are, and where
- *  they stand — orders placed, money invoiced, money paid, money still owed. */
-export interface CustomerSummary extends CustomerOption {
-  debt: number;
+/** Money as one slice of a customer's history stands. */
+export interface CustomerMoney {
   invoiceTotal: number;
   paidTotal: number;
+  debt: number;
+}
+
+/**
+ * A customer as the admin's list shows them (A-30): who they are, and where they
+ * stand — orders placed, money invoiced, money paid, money still owed.
+ *
+ * The money comes twice over. `debt`/`invoiceTotal`/`paidTotal` are everything
+ * they have ever owed the farm, which is what the list is sorted and filtered by.
+ * `inCycle` is the same three figures for **الدورة الحالية** alone — the row's
+ * paid-vs-owed bar reads those, because a bar summing five years of business says
+ * nothing about the flock he is collecting for this week (Khaled, 2026-08-20).
+ */
+export interface CustomerSummary extends CustomerOption, CustomerMoney {
   ordersTotal: number;
   ordersInCycle: number;
+  inCycle: CustomerMoney;
 }
 
 /** Running totals per customer while the orders are being walked. */
-interface Tally {
-  invoiceTotal: number;
-  paidTotal: number;
-  debt: number;
+interface Tally extends CustomerMoney {
   ordersTotal: number;
   ordersInCycle: number;
+  inCycle: CustomerMoney;
 }
 
 const EMPTY_TALLY: Tally = {
@@ -88,6 +99,7 @@ const EMPTY_TALLY: Tally = {
   debt: 0,
   ordersTotal: 0,
   ordersInCycle: 0,
+  inCycle: { invoiceTotal: 0, paidTotal: 0, debt: 0 },
 };
 
 /** Round to piasters — money never carries float noise. */
@@ -143,7 +155,15 @@ export async function listCustomerSummaries(
     // still owes, or a real debt would vanish from the list.
     tally.debt += Math.max(0, invoice.remaining);
     tally.ordersTotal += 1;
-    if (cycleId && order.cycle_id === cycleId) tally.ordersInCycle += 1;
+
+    if (cycleId && order.cycle_id === cycleId) {
+      tally.ordersInCycle += 1;
+      tally.inCycle = {
+        invoiceTotal: tally.inCycle.invoiceTotal + invoice.total,
+        paidTotal: tally.inCycle.paidTotal + invoice.paid,
+        debt: tally.inCycle.debt + Math.max(0, invoice.remaining),
+      };
+    }
 
     tallies.set(order.customer_id, tally);
   }
@@ -157,6 +177,11 @@ export async function listCustomerSummaries(
       paidTotal: toPiasters(tally.paidTotal),
       ordersTotal: tally.ordersTotal,
       ordersInCycle: tally.ordersInCycle,
+      inCycle: {
+        invoiceTotal: toPiasters(tally.inCycle.invoiceTotal),
+        paidTotal: toPiasters(tally.inCycle.paidTotal),
+        debt: toPiasters(tally.inCycle.debt),
+      },
     };
   });
 }

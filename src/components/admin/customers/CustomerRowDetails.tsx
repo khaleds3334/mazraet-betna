@@ -17,8 +17,13 @@ function Figure({ label, value }: { label: string; value: string }) {
 
 /**
  * What opens under a customer row when the admin taps it (A-31 expanded): how
- * many orders this customer has placed — in the running cycle and ever — and how
- * much of everything he was ever invoiced is already paid.
+ * many orders this customer has placed — in الدورة الحالية and ever — and how much
+ * of **that cycle's** invoices are already paid.
+ *
+ * The bar is scoped to the cycle on purpose (Khaled, 2026-08-20): a bar summing
+ * every order the customer ever placed says nothing about the flock the admin is
+ * collecting for this week, and it barely moves when a payment lands. The
+ * lifetime figure is still on the row above, as the debt.
  *
  * The whole block is the way into that customer's order history (A-32) — it is a
  * summary of orders, so the orders are what it opens. The trigger is a stretched
@@ -44,10 +49,11 @@ export function CustomerRowDetails({
 }) {
   const [open, setOpen] = useState(false);
 
+  const money = customer.inCycle;
   // Nothing invoiced yet means nothing to show as paid — and no division by zero.
   const paidRatio =
-    customer.invoiceTotal > 0
-      ? Math.min(1, customer.paidTotal / customer.invoiceTotal)
+    money.invoiceTotal > 0
+      ? Math.min(1, money.paidTotal / money.invoiceTotal)
       : 0;
 
   return (
@@ -71,8 +77,8 @@ export function CustomerRowDetails({
 
       <div className="pointer-events-none relative flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2 text-sm text-heading">
-          <p>إجمالي: {formatCurrency(customer.invoiceTotal)}</p>
-          <p>مدفوع: {formatCurrency(customer.paidTotal)}</p>
+          <p>إجمالي: {formatCurrency(money.invoiceTotal)}</p>
+          <p>مدفوع: {formatCurrency(money.paidTotal)}</p>
         </div>
 
         {/*

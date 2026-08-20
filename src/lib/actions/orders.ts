@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { getFarmSettings } from "@/lib/queries/settings";
+import { SALE_NOT_OPEN } from "@/lib/constants";
 
 /**
  * Order actions (admin only). Writes go through the RLS-bound client — the order
@@ -57,15 +58,21 @@ export async function createOrder(
 
   const supabase = await createClient();
 
-  // An order belongs to a cycle — the birds come out of the running flock.
+  // An order belongs to a cycle — the birds come out of the running flock, and
+  // only while that flock is actually for sale. Booking during التربية would
+  // promise birds that are weeks from ready, and the order would sit in a cycle
+  // the orders screen isn't even looking at (Khaled, 2026-08-20).
   const { data: cycle } = await supabase
     .from("cycle")
-    .select("id")
+    .select("id, sale_open")
     .eq("farm_id", farm.farmId)
     .eq("is_active", true)
     .maybeSingle();
   if (!cycle) {
     return { ok: false, error: "مفيش دورة شغالة دلوقتي عشان تسجّل عليها طلب." };
+  }
+  if (!cycle.sale_open) {
+    return { ok: false, error: SALE_NOT_OPEN };
   }
 
   const { data: order, error: orderError } = await supabase

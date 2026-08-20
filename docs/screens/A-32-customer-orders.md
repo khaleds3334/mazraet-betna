@@ -35,9 +35,17 @@ ship every customer's whole history to open one of them. It travels on a server
 *action* (`fetchCustomerOrders`) purely because a client component cannot call a
 query; the read itself stays in `/lib/queries` and the action writes nothing.
 
-**Which cycle is "الحالية":** `getDefaultOrdersCycle` — the running one, or the
-last to end. The same definition the row's «طلبات الدورة» count already uses, so
-the chip and the number above it always agree.
+**Which cycle is "الحالية":** `getDefaultOrdersCycle` — the cycle **selling** now,
+else the **last to end**, else whatever exists. One definition for the whole app,
+so the chip here, the count on the row, and the orders screen always mean the same
+cycle.
+
+**It opens on «الدورة الحالية»**, not «الكل» — that is the flock being collected
+for, and the reason the sheet gets opened at all.
+
+**The debt at the top follows the chip.** «الدورة الحالية» beside a lifetime debt
+would be two numbers contradicting each other on one line. `القديم` is the
+remainder: everything owed, minus this cycle's.
 
 ## Components
 New: `CustomerOrdersSheet`

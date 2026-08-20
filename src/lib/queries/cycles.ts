@@ -319,15 +319,30 @@ export interface OrdersCycle {
   startDate: string;
   /** True while this is the farm's running cycle (nothing has ended it yet). */
   isActive: boolean;
+  /** True only while customers can order on it — the gate on booking (FR-11). */
+  saleOpen: boolean;
 }
 
 /**
- * The cycle the orders screen (A-50) shows by default: the running cycle if
- * there is one, otherwise the most recent cycle that ended — so the admin always
- * lands on the orders that still matter to him. Null for a farm with no cycles.
+ * **«الدورة الحالية»** — the cycle every screen means when it says that word, in
+ * one place so they cannot mean different things (Khaled, 2026-08-20):
  *
- * The funnel filter on that screen will let him pick any other cycle; when it
- * lands, it only supplies the id and this stays the fallback.
+ *   1. the cycle **selling** right now, if there is one — that is where orders
+ *      are being placed;
+ *   2. otherwise the **last cycle to end** — during raising nobody is ordering,
+ *      and what still matters is who owes for the flock just sold;
+ *   3. otherwise whatever cycle exists at all — a farm's first cycle, still being
+ *      raised, with no history behind it.
+ *
+ * Null only for a farm that has never registered one.
+ *
+ * The old rule was "active first, then newest", which pointed at a **raising**
+ * cycle the moment one started — an empty orders screen and «طلبات الدورة: ٠» on
+ * every customer, on the very day the previous cycle's debts still needed
+ * chasing.
+ *
+ * One read: a farm has a handful of cycles, so they are ranked here rather than
+ * in three queries with two fallbacks.
  */
 export async function getDefaultOrdersCycle(
   farmId: string,
@@ -335,21 +350,24 @@ export async function getDefaultOrdersCycle(
   const supabase = await createClient();
   const { data } = await supabase
     .from("cycle")
-    .select("id, seq, name, start_date, is_active")
-    // Active first, then newest — one row, no second query for the fallback.
+    .select("id, seq, name, start_date, is_active, sale_open, ended_at")
     .eq("farm_id", farmId)
-    .order("is_active", { ascending: false })
-    .order("start_date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!data) return null;
+    .order("start_date", { ascending: false });
+
+  const cycles = data ?? [];
+  const chosen =
+    cycles.find((cycle) => cycle.is_active && cycle.sale_open) ??
+    cycles.filter((cycle) => cycle.ended_at).at(0) ??
+    cycles.at(0);
+  if (!chosen) return null;
 
   return {
-    cycleId: data.id,
-    seq: data.seq,
-    name: data.name,
-    startDate: data.start_date,
-    isActive: data.is_active,
+    cycleId: chosen.id,
+    seq: chosen.seq,
+    name: chosen.name,
+    startDate: chosen.start_date,
+    isActive: chosen.is_active,
+    saleOpen: chosen.is_active && chosen.sale_open,
   };
 }
 

@@ -14,10 +14,12 @@ export function OrdersToolbar({
   customers,
   weights,
   defaultCleaning,
+  saleOpen,
 }: {
   customers: CustomerOption[];
   weights: number[];
   defaultCleaning: boolean;
+  saleOpen: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 px-screen">
@@ -25,6 +27,7 @@ export function OrdersToolbar({
         customers={customers}
         weights={weights}
         defaultCleaning={defaultCleaning}
+        saleOpen={saleOpen}
       />
 
       {/* 2px is the weight Figma draws it at. The icon's own stroke scales with

@@ -20,6 +20,17 @@ const FILTERS = [
 type FilterKey = (typeof FILTERS)[number]["key"];
 
 /**
+ * What this customer still owes on the slice being shown. The figure at the top
+ * answers the list under it — «الدورة الحالية» beside a lifetime debt would be two
+ * numbers contradicting each other on one line (Khaled, 2026-08-20).
+ */
+function debtFor(filter: FilterKey, customer: CustomerSummary): number {
+  if (filter === "current") return customer.inCycle.debt;
+  if (filter === "past") return Math.max(0, customer.debt - customer.inCycle.debt);
+  return customer.debt;
+}
+
+/**
  * A customer's order history (A-32) — the sheet behind the expanded row. Their
  * name and number at the top with what they still owe, a filter across cycles,
  * and every order they ever placed as the same card the orders screen draws.
@@ -28,6 +39,11 @@ type FilterKey = (typeof FILTERS)[number]["key"];
  * the invoice opens from it, a payment is recorded on it. Redrawing a lighter
  * version here would mean two cards to keep in step, and the admin learning the
  * order twice.
+ *
+ * **It opens on «الدورة الحالية»** — the cycle selling now, or the last one to
+ * end. That is the flock being collected for, and the reason the sheet gets opened
+ * at all; «الكل» is there for the once-in-a-while question about someone's history
+ * (Khaled, 2026-08-20).
  *
  * The history is fetched when the sheet opens, not with the screen — the list
  * would otherwise ship every customer's orders to open one of them. Filtering
@@ -57,7 +73,7 @@ export function CustomerOrdersSheet({
   const [result, setResult] = useState<
     { orders: CustomerOrder[] } | { error: string } | null
   >(null);
-  const [filter, setFilter] = useState<FilterKey>("all");
+  const [filter, setFilter] = useState<FilterKey>("current");
 
   useEffect(() => {
     if (!open) return;
@@ -110,7 +126,7 @@ export function CustomerOrdersSheet({
               </span>
               <ContactLinks phone={customer.phone} className="gap-2" />
             </div>
-            <DebtAmount amount={customer.debt} iconSize={22} />
+            <DebtAmount amount={debtFor(filter, customer)} iconSize={22} />
           </div>
 
           <div className="flex items-center justify-center gap-2.5 overflow-x-auto">
@@ -140,7 +156,9 @@ export function CustomerOrdersSheet({
           <p className="py-10 text-center text-muted">
             {filter === "all"
               ? "العميل ده لسه ماطلبش حاجة"
-              : "مفيش طلبات في الفترة دي"}
+              : filter === "current"
+                ? "مفيش طلبات في الدورة الحالية"
+                : "مفيش طلبات قديمة"}
           </p>
         )}
 

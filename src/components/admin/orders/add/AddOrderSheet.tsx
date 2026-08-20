@@ -15,6 +15,7 @@ import {
 import { createOrder } from "@/lib/actions/orders";
 import type { CustomerOption } from "@/lib/queries/customers";
 import { useToast } from "@/hooks/useToast";
+import { SALE_NOT_OPEN } from "@/lib/constants";
 import {
   EMPTY_RECIPIENT,
   OrderRecipient,
@@ -36,6 +37,7 @@ export function AddOrderSheet({
   customers,
   weights,
   defaultCleaning,
+  saleOpen,
 }: {
   open: boolean;
   onClose: () => void;
@@ -43,6 +45,8 @@ export function AddOrderSheet({
   /** The approximate weights a customer may ask for, from settings (FR-5). */
   weights: number[];
   defaultCleaning: boolean;
+  /** False outside مرحلة البيع — the form says so and refuses to save. */
+  saleOpen: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -174,15 +178,22 @@ export function AddOrderSheet({
           placeholder="مثلا: عاوز فرختين لوحدهم و ٣ لوحدهم..."
         />
 
+        {/* Said before he fills the form in, not after he taps save — the birds
+            are weeks from ready and there is nothing to book (FR-11). */}
+        {!saleOpen && <InlineError message={SALE_NOT_OPEN} />}
         {error && <InlineError message={error} />}
 
         <div className="mt-auto flex flex-col gap-4 pb-2">
-          <Button onClick={submit} isLoading={saving}>
+          <Button onClick={submit} disabled={!saleOpen} isLoading={saving}>
             اكد الطلب
           </Button>
           {/* Saves exactly like the button above until the weighing screen (A-52)
               exists — then this one will save and go straight there. */}
-          <Button variant="outline" onClick={submit} disabled={saving}>
+          <Button
+            variant="outline"
+            onClick={submit}
+            disabled={saving || !saleOpen}
+          >
             تأكيد الطلب ووزن الفراخ
           </Button>
         </div>

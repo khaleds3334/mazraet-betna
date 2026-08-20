@@ -24,7 +24,11 @@ belong to nobody, so they're excluded. `cycleId` comes from
   summed — clamped so an overpaid order can't erase another order's real debt
 - `اجمالي الآجل` = sum of every customer's debt — always the whole farm, never the
   filtered subset
-- Row progress bar = `paidTotal / invoiceTotal`, filling from the physical left
+- Row progress bar = `inCycle.paidTotal / inCycle.invoiceTotal`, filling from the
+  physical left — **scoped to الدورة الحالية** (Khaled, 2026-08-20). A bar summing
+  every order a customer ever placed says nothing about the flock being collected
+  for this week, and barely moves when a payment lands. The lifetime figure is
+  still on the row above, as the debt
 
 ## Search
 `matchesNameOrPhone` in `lib/search.ts`, run in the browser over the list the page
