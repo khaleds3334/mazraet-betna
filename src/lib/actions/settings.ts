@@ -1,0 +1,363 @@
+"use server";
+
+import { addDays } from "date-fns";
+import { revalidatePath } from "next/cache";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { getCurrentFarm } from "@/lib/queries/admin";
+import { SALE_WINDOW_DAYS } from "@/lib/constants";
+import { normalizePhone, phoneError } from "@/lib/phone";
+import { adminCredentials } from "@/lib/auth/session";
+import type { ActionResult } from "./cycles";
+
+/**
+ * Farm settings (A-70, FR-5 / FR-11). Two writes that behave differently on
+ * purpose: the sale switch takes effect the instant it is tapped, because it is
+ * visible to every customer and an admin who closed the sale and walked away
+ * must not find it still open (Khaled, 2026-08-21). Everything else waits for
+ * «حفظ الاعدادات».
+ *
+ * Both go through the RLS-bound client — `settings_write` and `cycle_write`
+ * allow the farm owner only.
+ */
+
+/** Every screen that reads a price, the weights, or the sale state. */
+function revalidateFarm(): void {
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin");
+  revalidatePath("/admin/orders");
+  revalidatePath("/", "layout"); // the customer's home countdown and CTA
+}
+
+/**
+ * Close or re-open the sale on the cycle that is currently selling (FR-11).
+ *
+ * This is not the cycle's selling *phase* — that is started and ended from the
+ * cycle itself. This only answers "are we taking orders right now", so it
+ * refuses when no cycle is selling: there would be nothing to take orders on,
+ * and flipping the flag would put a sale on a flock that is still being raised.
+ */
+export async function setSaleOpen(open: boolean): Promise<ActionResult> {
+  const farm = await getCurrentFarm();
+  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  const supabase = await createClient();
+
+  const { data: cycle } = await supabase
+    .from("cycle")
+    .select("id, sale_open, sale_closes_at")
+    .eq("farm_id", farm.farmId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (!cycle) {
+    return { ok: false, error: "مفيش دورة شغالة دلوقتي." };
+  }
+  // A cycle is in its selling phase if the sale is on, or if it is off but the
+  // cycle still carries the window it was closed out of. Re-opening is only ever
+  // un-doing a close — a flock still being raised has no window to re-enter.
+  const isSelling = cycle.sale_open || Boolean(cycle.sale_closes_at);
+  if (!isSelling) {
+    return { ok: false, error: "ابدأ مرحلة البيع للدورة الأول." };
+  }
+
+  const { error } = await supabase
+    .from("cycle")
+    .update({
+      sale_open: open,
+      // Closing a cycle that never got a dated window (opened before
+      // 2026-08-21) would leave nothing to tell "closed for now" from "never
+      // opened", and the switch could not bring it back. Give it one on the way
+      // out; a cycle that already has a date keeps it.
+      ...(!open && !cycle.sale_closes_at
+        ? { sale_closes_at: addDays(new Date(), SALE_WINDOW_DAYS).toISOString() }
+        : {}),
+    })
+    .eq("id", cycle.id);
+
+  if (error) {
+    return {
+      ok: false,
+      error: open ? "مقدرناش نفتح البيع، حاول تاني." : "مقدرناش نقفل البيع، حاول تاني.",
+    };
+  }
+
+  revalidateFarm();
+  return { ok: true };
+}
+
+export type SaveSettingsInput = {
+  salePrice: number;
+  cleaningPrice: number;
+  availableWeights: number[];
+  /**
+   * `YYYY-MM-DD`, or "" to hand the date back to the app.
+   *
+   * Which date this *is* depends on what the farm is doing, because the screen
+   * only ever shows one: while a sale is open it is when that sale ends
+   * (`cycle.sale_closes_at`); otherwise it is when the next one starts
+   * (`settings.sale_starts_at`). `editingSaleEnd` says which, rather than
+   * letting this action re-derive it — the admin saves the field he was shown,
+   * even if the sale closed underneath him while he was typing.
+   */
+  saleDate: string;
+  editingSaleEnd: boolean;
+};
+
+/**
+ * Save the kilo price, the cleaning fee, the weights on offer, and the date the
+ * next sale starts.
+ *
+ * Changing a price here never touches an order already taken: an order stamps
+ * `unit_price` and `cleaning_price` when it is booked (T-15 as amended), so the
+ * new price meets the next order and nothing before it.
+ *
+ * Unticking a weight only stops it being *offered* — orders already placed at
+ * that weight keep it, because the weight lives on the order line, not here.
+ */
+export async function saveSettings(
+  input: SaveSettingsInput,
+): Promise<ActionResult> {
+  const farm = await getCurrentFarm();
+  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  if (!Number.isFinite(input.salePrice) || input.salePrice <= 0) {
+    return { ok: false, error: "سعر الكيلو لازم يكون أكبر من صفر." };
+  }
+  if (!Number.isFinite(input.cleaningPrice) || input.cleaningPrice < 0) {
+    return { ok: false, error: "سعر التنظيف مينفعش يكون بالسالب." };
+  }
+  if (input.availableWeights.length === 0) {
+    return { ok: false, error: "سيب وزن واحد على الأقل، وإلا مفيش حاجة يطلبها." };
+  }
+
+  const supabase = await createClient();
+
+  // An empty field is not "no sale ever" — it is "you work it out", which is
+  // what null means to the countdown.
+  const date = input.saleDate ? new Date(input.saleDate).toISOString() : null;
+
+  const { error } = await supabase
+    .from("settings")
+    .update({
+      sale_price: input.salePrice,
+      cleaning_price: input.cleaningPrice,
+      // Stored smallest-first so every screen offering them reads one order,
+      // whatever order they were tapped in.
+      available_weights: [...input.availableWeights].sort((a, b) => a - b),
+      ...(input.editingSaleEnd ? {} : { sale_starts_at: date }),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("farm_id", farm.farmId);
+
+  if (error) return { ok: false, error: "مقدرناش نحفظ الاعدادات، حاول تاني." };
+
+  // The end of an open sale lives on the cycle, not on the farm — it belongs to
+  // this flock, and the next one starts its own window.
+  if (input.editingSaleEnd && date) {
+    const { error: cycleError } = await supabase
+      .from("cycle")
+      .update({ sale_closes_at: date })
+      .eq("farm_id", farm.farmId)
+      .eq("is_active", true);
+
+    if (cycleError) {
+      return { ok: false, error: "الأسعار اتحفظت، بس تاريخ انتهاء البيع لأ. حاول تاني." };
+    }
+  }
+
+  revalidateFarm();
+  return { ok: true };
+}
+
+/**
+ * The number customers ring (FR-30). Kept apart from `owner_phone`, which is
+ * only how the admin's login is routed — so changing the number on the app never
+ * changes the number he signs in with, and he can publish a different one.
+ *
+ * Empty hands it back to the login number, which is what a farm that has never
+ * set one already publishes.
+ */
+export async function saveContactPhone(rawPhone: string): Promise<ActionResult> {
+  const farm = await getCurrentFarm();
+  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  const phone = normalizePhone(rawPhone);
+  if (phone) {
+    const bad = phoneError(phone);
+    if (bad) return { ok: false, error: bad };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("farm")
+    .update({ contact_phone: phone || null })
+    .eq("id", farm.farmId);
+
+  if (error) return { ok: false, error: "مقدرناش نحفظ الرقم، حاول تاني." };
+
+  revalidateFarm();
+  return { ok: true };
+}
+
+/**
+ * Change the admin PIN from settings (FR-1ب).
+ *
+ * The old PIN is required and is checked inside the database, in the same call
+ * that writes the new one (`set_admin_pin`, migration 021) — a stolen phone with
+ * a live session should not be enough to lock the owner out of his own farm.
+ *
+ * Goes through the **service-role** client, like login does: `admin_credentials`
+ * has no RLS policy (T-14), and the function is granted to that role alone, so
+ * neither PIN is ever handled anywhere the browser can reach.
+ *
+ * The two failures are told apart deliberately — a wrong current PIN is the
+ * admin's own mistake and he needs to know which field to fix.
+ */
+export async function changePin(
+  currentPin: string,
+  newPin: string,
+  confirmPin: string,
+): Promise<ActionResult> {
+  const farm = await getCurrentFarm();
+  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  const current = currentPin.replace(/\D/g, "");
+  const next = newPin.replace(/\D/g, "");
+  const confirm = confirmPin.replace(/\D/g, "");
+
+  if (current.length !== 6) {
+    return { ok: false, error: "اكتب الرقم السري الحالي كامل (٦ أرقام)." };
+  }
+  if (next.length !== 6) {
+    return { ok: false, error: "الرقم السري الجديد لازم يكون ٦ أرقام." };
+  }
+  if (next !== confirm) {
+    return { ok: false, error: "الرقمين مش زي بعض — اكتب الجديد تاني." };
+  }
+  if (next === current) {
+    return { ok: false, error: "الرقم الجديد زي القديم — اختار رقم تاني." };
+  }
+
+  const admin = createAdminClient();
+  const { data: changed, error } = await admin.rpc("set_admin_pin", {
+    _farm_id: farm.farmId,
+    _current_pin: current,
+    _new_pin: next,
+  });
+
+  if (error) return { ok: false, error: "حصلت مشكلة، حاول تاني." };
+  if (!changed) return { ok: false, error: "الرقم السري الحالي غلط." };
+
+  return { ok: true };
+}
+
+/**
+ * Change the number the admin signs in with (FR-1, D-14).
+ *
+ * The phone is not just a column — it *is* the credential. `session.ts` derives
+ * both halves of the auth account from it: the email is
+ * `{phone}@admin.mazraetbetna.local` and the password is an HMAC over the phone.
+ * So moving `farm.owner_phone` on its own routes the next login to a farm whose
+ * auth account no longer exists, and locks the owner out of his own farm with no
+ * way back except the database.
+ *
+ * Both halves move here, in an order chosen for what happens when one fails:
+ * the auth account first, the farm row second, and the account put back if the
+ * farm write fails. The half-way state that leaves is "auth moved, farm not",
+ * which still signs in on the OLD number — the number he is standing there
+ * holding. The reverse order fails the other way, on a number he has no reason
+ * to try.
+ *
+ * The current PIN authorises it, checked in the database (`verify_admin_pin`)
+ * for the same reason changing the PIN needs it: an unlocked phone must not be
+ * enough to move the farm to a number the owner does not control.
+ *
+ * The session survives — the auth user's *id* never changes, only its email — so
+ * the admin is not signed out. The new number applies from his next login.
+ */
+export async function changeLoginPhone(
+  rawPhone: string,
+  pin: string,
+): Promise<ActionResult> {
+  const farm = await getCurrentFarm();
+  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  const phone = normalizePhone(rawPhone);
+  const bad = phoneError(phone);
+  if (bad) return { ok: false, error: bad };
+
+  if (pin.replace(/\D/g, "").length !== 6) {
+    return { ok: false, error: "اكتب الرقم السري كامل (٦ أرقام)." };
+  }
+
+  const admin = createAdminClient();
+
+  const { data: row } = await admin
+    .from("farm")
+    .select("owner_id, owner_phone")
+    .eq("id", farm.farmId)
+    .maybeSingle();
+  if (!row) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
+
+  if (row.owner_phone === phone) {
+    return { ok: false, error: "ده نفس رقمك الحالي." };
+  }
+
+  const { data: valid } = await admin.rpc("verify_admin_pin", {
+    _farm_id: farm.farmId,
+    _pin: pin.replace(/\D/g, ""),
+  });
+  if (!valid) return { ok: false, error: "الرقم السري غلط." };
+
+  // Login looks the farm up by number before it looks at customers, so a number
+  // already on a customer would send that customer into the admin PIN screen —
+  // a door they can never open, and their own account unreachable.
+  const [{ data: otherFarm }, { data: customer }] = await Promise.all([
+    admin.from("farm").select("id").eq("owner_phone", phone).maybeSingle(),
+    admin.from("customer").select("id").eq("phone", phone).maybeSingle(),
+  ]);
+  if (otherFarm) return { ok: false, error: "الرقم ده بتاع مزرعة تانية." };
+  if (customer) {
+    return { ok: false, error: "الرقم ده مسجّل كعميل — امسحه من العملاء الأول." };
+  }
+
+  if (!row.owner_id) {
+    // No auth account is linked yet, so there is nothing to move: the next login
+    // creates one from whatever number the farm carries.
+    const { error } = await admin
+      .from("farm")
+      .update({ owner_phone: phone })
+      .eq("id", farm.farmId);
+    if (error) return { ok: false, error: "مقدرناش نغيّر الرقم، حاول تاني." };
+    revalidateFarm();
+    return { ok: true };
+  }
+
+  const next = adminCredentials(phone);
+  const { error: authError } = await admin.auth.admin.updateUserById(
+    row.owner_id,
+    { email: next.email, password: next.password, user_metadata: { phone } },
+  );
+  if (authError) {
+    return { ok: false, error: "مقدرناش نغيّر الرقم، حاول تاني." };
+  }
+
+  const { error: farmError } = await admin
+    .from("farm")
+    .update({ owner_phone: phone })
+    .eq("id", farm.farmId);
+
+  if (farmError) {
+    // Put the account back on the old number so the admin can still get in.
+    const previous = adminCredentials(row.owner_phone);
+    await admin.auth.admin.updateUserById(row.owner_id, {
+      email: previous.email,
+      password: previous.password,
+      user_metadata: { phone: row.owner_phone },
+    });
+    return { ok: false, error: "مقدرناش نغيّر الرقم، حاول تاني." };
+  }
+
+  revalidateFarm();
+  return { ok: true };
+}

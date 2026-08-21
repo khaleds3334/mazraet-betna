@@ -11,8 +11,50 @@ export type ExpenseCategory = Enums<"expense_category">;
 /** Which feed a purchase was: بادي (starter) or نامي (grower) — migration 013. */
 export type FeedPhase = Enums<"feed_phase">;
 
-/** A raising cycle runs 30 days before the selling phase (FR-4). */
-export const RAISING_PERIOD_DAYS = 30;
+/**
+ * A raising cycle runs 28 days before the selling phase. FR-4 wrote 30; 28 is
+ * when these birds actually reach selling weight on this farm (Khaled,
+ * 2026-08-21, migration 019). This is only the fallback — the live value is
+ * `settings.raising_period_days`, which the admin owns.
+ */
+export const RAISING_PERIOD_DAYS = 28;
+
+/**
+ * Between cycles there is no cycle to date the next sale from, so the customer's
+ * countdown runs on an estimate: {@link SALE_START_ROLL_DAYS} out, pushed forward
+ * another {@link SALE_START_ROLL_STEP_DAYS} every time that many days pass with
+ * no new cycle registered.
+ *
+ * **Why it rolls instead of just counting down:** a fixed date reaches zero, and
+ * then the customer's home says the sale starts today when there are no birds —
+ * the farm has not even bought chicks. Rolling keeps the promise vague but never
+ * false: it always reads "about a month", which is the honest answer while the
+ * admin has not committed to a date. The moment he picks one (A-70) or registers
+ * a cycle, the real date takes over and the estimate is never used again.
+ */
+export const SALE_START_ROLL_DAYS = 34;
+export const SALE_START_ROLL_STEP_DAYS = 6;
+
+/**
+ * How long a sale window runs by default: opening the selling phase dates its
+ * end five days out (Khaled, 2026-08-21), which is what the customer's home
+ * counts down to. The admin can move that date from settings (A-70) — the flock
+ * decides when it actually ends, not the calendar.
+ */
+export const SALE_WINDOW_DAYS = 5;
+
+/**
+ * Every weight the farm can put on offer (kg) — the badges on A-70. Which of
+ * them a customer actually sees is `settings.available_weights`, the subset the
+ * admin has ticked; this is the full row he ticks from.
+ *
+ * A constant rather than a table: these are the sizes a bird comes in, not a
+ * setting. Listed smallest-first, which is the order the row is read in — in
+ * RTL the first badge lands on the right (Khaled, 2026-08-22).
+ */
+export const OFFERED_WEIGHTS = [
+  1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3,
+] as const;
 
 /**
  * Age (days) at which the admin may open the sale — the "بدء مرحلة البيع" button

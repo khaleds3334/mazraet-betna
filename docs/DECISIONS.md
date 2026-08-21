@@ -403,6 +403,49 @@ Confirming D-05 at the schema level: the invoice = `orders` + `order_line` (actu
 **Note:** The `debt` entity listed in BUILD-WORKFLOW Phase 1 is intentionally not a table for this reason; debt computation will live in `/lib/calculations` (Phase 2).
 **Date:** 2026-07-22
 
+**Amended 2026-08-21 (Khaled) — the snapshot moves from weighing to ordering.**
+`unit_price` / `cleaning_price` are now stamped in `createOrder`, not in the
+weighing action. Everything else about T-15 stands: the invoice is still derived,
+and an old invoice still never moves when settings change.
+**Why the moment matters:** the customer is quoted a price when they order. Under
+the old rule, an order booked on Monday and weighed on Wednesday was billed at
+Wednesday's price — so raising the kilo price mid-sale silently re-priced orders
+the farm had already promised. FR-5 ("applies to new sales, not ones already
+recorded") reads either way; the customer's understanding does not.
+**Consequence:** orders taken before this change still have `unit_price = null`
+and are stamped at weighing by the old fallback, which is the closest we can get
+to a price nobody recorded. Nothing to migrate — the columns already existed.
+
+### T-47 — The sale switch writes immediately; the rest of A-70 waits for «حفظ»
+Settings (A-70) has two save behaviours on one screen. «حالة البيع للمزرعة»
+writes on tap; the price, cleaning fee, weights and date are committed by the
+button.
+**Why:** closing the sale is the only control on the screen that is visible to
+someone else the instant it lands. An admin who closes the sale and walks away
+from an unsaved screen has told the customers nothing, and orders keep arriving
+for birds he has decided not to sell. The others are his own numbers, where a
+half-edited screen he can still abandon is the safer default.
+**What it does not do:** it never starts or ends a cycle's selling *phase* —
+that stays on the cycle (A-44). It only answers "are we taking orders right now",
+which is why it is disabled when no cycle is selling, and why re-opening requires
+`sale_closes_at` to already exist: that column is set by the phase and never by
+this switch, so it is how the two are told apart.
+**Date:** 2026-08-21
+
+### T-48 — Between cycles the customer's countdown rolls instead of expiring
+With no cycle to date the next sale from, the home counts down to an estimate:
+`SALE_START_ROLL_DAYS` (34) out from the last cycle's end, pushed forward another
+6 days every 6 days that pass with no new cycle. The admin's own date (A-70)
+overrides it; registering a cycle replaces it outright.
+**Why:** a fixed date reaches zero. The customer's home would then say the sale
+starts today while the farm has not even bought chicks — the one thing a
+countdown must never do is come true when nothing is behind it. Rolling keeps the
+answer honestly vague ("about a month") until someone commits to a real date.
+**Why derived, not stored:** expressed as whole 6-day steps from `ended_at`, so
+the answer depends only on that timestamp and the clock. Two devices agree, and
+nothing has to run on a schedule to keep a stored date fresh.
+**Date:** 2026-08-21
+
 ### D-22 — The orders screen is always scoped to one cycle
 `/admin/orders` never shows "all orders ever". It scopes to a single cycle,
 defaulting to the **running cycle**, or — when none is running — the **most

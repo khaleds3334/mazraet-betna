@@ -44,9 +44,11 @@ export type CreateOrderResult =
  * the moment it exists — there is no approval step (D-02) — so it lands in
  * "pending" and shows up under الجديدة.
  *
- * Price is deliberately NOT stamped here: `unit_price` / `cleaning_price` are
- * snapshotted at weighing (T-15), so a price change before the birds go on the
- * scale is still picked up.
+ * Price is stamped here, at the moment the order is taken (T-15 as amended,
+ * Khaled 2026-08-21): the customer is quoted a price when they order, so that
+ * is the price they pay. Editing the kilo price in settings mid-sale moves only
+ * the orders taken after it — the ones already booked keep what they were told,
+ * even if they are weighed days later.
  */
 export async function createOrder(
   input: CreateOrderInput,
@@ -81,11 +83,18 @@ export async function createOrder(
     return { ok: false, error: SALE_NOT_OPEN };
   }
 
+  const settings = await getFarmSettings(farm.farmId);
+
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
       farm_id: farm.farmId,
       cycle_id: cycle.id,
+      // The quote, held from this moment (T-15 as amended). Cleaning is stamped
+      // whether or not this order takes it — the admin can switch cleaning on at
+      // the scale, and it must cost what it cost when the order was placed.
+      unit_price: settings.salePrice,
+      cleaning_price: settings.cleaningPrice,
       // A house order belongs to nobody — that is what keeps it out of every
       // per-customer debt tally without those having to know about it.
       customer_id: input.isHouse ? null : input.customerId,
@@ -274,7 +283,9 @@ export async function saveWeights(
   }
 
   const settings = await getFarmSettings(farm.farmId);
-  // Stamped once, on the first weigh-in, and never touched again (T-15).
+  // The order carries its own price from the moment it was booked (T-15 as
+  // amended). The fallback is only for orders taken before that change — they
+  // were stamped here instead, and stamping them now is the closest we can get.
   const unitPrice = order.unit_price ?? settings.salePrice;
   const cleaningPrice = order.cleaning_price ?? settings.cleaningPrice;
 

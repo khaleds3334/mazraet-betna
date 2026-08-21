@@ -11,6 +11,7 @@ import {
   cycleDurationDays,
   daysSince,
   expectedSaleDate,
+  rollingSaleStartDate,
   type CycleEstimateBasis,
 } from "@/lib/calculations/cycle";
 import {
@@ -38,10 +39,21 @@ export interface SaleState {
 }
 
 /**
- * Sale state of the farm's active cycle:
- *   • sale open  → count down to when the sale window closes (`sale_closes_at`).
- *   • sale closed → count down to the expected sale start (start + raising period).
- * Returns null when the farm has no active cycle.
+ * What the customer's home counts down to (FR-25), in the order the farm can
+ * actually answer it:
+ *
+ *   • a cycle is selling  → the end of the window (`sale_closes_at`);
+ *   • a cycle is raising  → its own sale date (start + raising period);
+ *   • no cycle at all     → the admin's date from A-70, and only if he has not
+ *     set one, the rolling estimate off the last cycle to end.
+ *
+ * `saleOpen` stays false in every case but the first, so closing the sale from
+ * settings takes orders down without touching the cycle: the toggle writes
+ * `sale_open`, and the customer's home reads it from here.
+ *
+ * Returns null only when the farm has never had a cycle and no date is set —
+ * there is genuinely nothing to promise, and the home says so rather than
+ * counting down to a date nobody chose.
  */
 export async function getActiveSaleState(
   farmId: string,
@@ -54,23 +66,44 @@ export async function getActiveSaleState(
     .eq("farm_id", farmId)
     .eq("is_active", true)
     .maybeSingle();
-  if (!cycle) return null;
-
-  if (cycle.sale_open) {
-    return { saleOpen: true, targetDate: cycle.sale_closes_at };
-  }
 
   const { data: settings } = await supabase
     .from("settings")
-    .select("raising_period_days")
+    .select("raising_period_days, sale_starts_at")
     .eq("farm_id", farmId)
     .maybeSingle();
 
-  const target = expectedSaleDate(
-    cycle.start_date,
-    settings?.raising_period_days,
-  );
-  return { saleOpen: false, targetDate: target.toISOString() };
+  if (cycle) {
+    if (cycle.sale_open) {
+      return { saleOpen: true, targetDate: cycle.sale_closes_at };
+    }
+    const target = expectedSaleDate(
+      cycle.start_date,
+      settings?.raising_period_days,
+    );
+    return { saleOpen: false, targetDate: target.toISOString() };
+  }
+
+  // Between cycles. The admin's own date wins — he may know when the next
+  // chicks arrive long before he registers them.
+  if (settings?.sale_starts_at) {
+    return { saleOpen: false, targetDate: settings.sale_starts_at };
+  }
+
+  const { data: lastEnded } = await supabase
+    .from("cycle")
+    .select("ended_at")
+    .eq("farm_id", farmId)
+    .not("ended_at", "is", null)
+    .order("ended_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!lastEnded?.ended_at) return null;
+
+  return {
+    saleOpen: false,
+    targetDate: rollingSaleStartDate(lastEnded.ended_at).toISOString(),
+  };
 }
 
 /**

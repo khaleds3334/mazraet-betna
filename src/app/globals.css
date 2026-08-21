@@ -35,6 +35,7 @@
   --color-surface-page: #fcfff6; /* Surface/page — input fields & similar fills */
   --color-surface: #f7feeb; /* Surface/default 2 — cards, tiles */
   --color-surface-warm: #fff9f2; /* Surface/page 2 — warm sections (feed/temp) */
+  --color-surface-notice: #fff1e3; /* Surface/default 3 — the farm-status card (A-70) */
   --color-white: #ffffff; /* Neutral/white */
 
   /* ── Text ─────────────────────────────────────────────────────────── */

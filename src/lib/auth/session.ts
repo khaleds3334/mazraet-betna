@@ -29,7 +29,13 @@ function customerCredentials(phone: string) {
   };
 }
 
-function adminCredentials(phone: string) {
+/**
+ * Exported because changing the admin's login number has to move the auth
+ * account to the credentials the *next* login will derive — and the only way to
+ * be sure it matches is to derive it from here, rather than rebuilding the same
+ * two strings somewhere else and hoping they stay in step.
+ */
+export function adminCredentials(phone: string) {
   return {
     email: `${phone}@admin.mazraetbetna.local`,
     password: derivePassword("admin", phone),

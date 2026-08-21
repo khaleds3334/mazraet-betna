@@ -6,6 +6,8 @@ import { addDays, differenceInCalendarDays } from "date-fns";
 import {
   ASSUMED_FEED_BAG_PRICE,
   RAISING_PERIOD_DAYS,
+  SALE_START_ROLL_DAYS,
+  SALE_START_ROLL_STEP_DAYS,
   WEEKLY_TEMPERATURE_C,
 } from "@/lib/constants";
 import { expectedFeedBags } from "@/lib/calculations/feed";
@@ -32,6 +34,32 @@ export function expectedSaleDate(
 ): Date {
   const start = typeof startDate === "string" ? new Date(startDate) : startDate;
   return addDays(start, raisingPeriod);
+}
+
+/**
+ * When to tell customers the next sale starts, with no cycle to date it from.
+ *
+ * Anchored on the day the last cycle ended, the estimate sits
+ * {@link SALE_START_ROLL_DAYS} out and is pushed forward another
+ * {@link SALE_START_ROLL_STEP_DAYS} each time that many days pass without a new
+ * cycle — so it never runs down to "today" while the farm still has no birds.
+ * See the constants for why it rolls rather than counts down.
+ *
+ * Expressed as whole steps rather than by mutating a stored date, so the answer
+ * depends only on `endedAt` and the clock: the same farm read twice, or read on
+ * two devices, gives the same date, and nothing has to run on a schedule.
+ */
+export function rollingSaleStartDate(
+  endedAt: Date | string,
+  today: Date = new Date(),
+): Date {
+  const ended = typeof endedAt === "string" ? new Date(endedAt) : endedAt;
+  const elapsed = daysSince(ended, today);
+  const steps = Math.floor(elapsed / SALE_START_ROLL_STEP_DAYS);
+  return addDays(
+    ended,
+    SALE_START_ROLL_DAYS + steps * SALE_START_ROLL_STEP_DAYS,
+  );
 }
 
 /** Days left until the raising period ends. Zero once the window is reached (FR-7). */

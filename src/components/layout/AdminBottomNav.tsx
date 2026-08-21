@@ -29,8 +29,16 @@ const ITEMS: NavEntry[] = [
   { href: "/admin/cycles", label: "الدورات", icon: "cycles" },
 ];
 
+/**
+ * Screens that replace the tab bar with their own bottom control. Settings ends
+ * in «حفظ الاعدادات», which has to sit where the thumb already is — two fixed
+ * bars stacked would push it up into the page (Khaled, 2026-08-22).
+ */
+const NO_NAV = ["/admin/settings"];
+
 export function AdminBottomNav() {
   const pathname = usePathname();
+  if (NO_NAV.includes(pathname)) return null;
 
   return (
     <nav

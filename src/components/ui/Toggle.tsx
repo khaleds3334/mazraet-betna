@@ -18,10 +18,13 @@ export function Toggle({
   checked,
   onChange,
   label,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
+  /** Greys the switch and refuses the tap — when there is nothing to switch. */
+  disabled?: boolean;
 }) {
   return (
     <button
@@ -29,10 +32,12 @@ export function Toggle({
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
         "relative h-6 w-[49px] shrink-0 rounded-full shadow-field transition-colors",
         checked ? "bg-primary" : "bg-control-border",
+        disabled && "cursor-not-allowed",
       )}
     >
       <span

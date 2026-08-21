@@ -1,5 +1,6 @@
 "use server";
 
+import { addDays } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
@@ -8,6 +9,7 @@ import { estimatedCycleExpenses } from "@/lib/calculations/cycle";
 import { countOpenCycleOrders } from "@/lib/queries/orders";
 import { countAvailableChickens } from "@/lib/queries/selling";
 import { pluralizeChicken, pluralizeOrder } from "@/lib/format";
+import { SALE_WINDOW_DAYS } from "@/lib/constants";
 
 /**
  * Cycle actions (admin only). Writes go through the RLS-bound client — the
@@ -160,7 +162,13 @@ export async function startSelling(salePrice: number): Promise<ActionResult> {
 
   const { error } = await supabase
     .from("cycle")
-    .update({ sale_open: true })
+    .update({
+      sale_open: true,
+      // The window the customer's home counts down to. Dated here so the sale
+      // never opens without an end — the admin can move it from settings, but
+      // he should not have to before customers can be told anything.
+      sale_closes_at: addDays(new Date(), SALE_WINDOW_DAYS).toISOString(),
+    })
     .eq("id", cycle.id);
 
   if (error) return { ok: false, error: "مقدرناش نفتح البيع، حاول تاني." };

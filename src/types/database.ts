@@ -191,6 +191,7 @@ export type Database = {
       farm: {
         Row: {
           created_at: string
+          contact_phone: string | null
           id: string
           name: string
           owner_id: string | null
@@ -199,6 +200,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          contact_phone?: string | null
           id?: string
           name: string
           owner_id?: string | null
@@ -207,6 +209,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          contact_phone?: string | null
           id?: string
           name?: string
           owner_id?: string | null
@@ -611,6 +614,7 @@ export type Database = {
           pickup_times: string[]
           raising_period_days: number
           sale_price: number
+          sale_starts_at: string | null
           updated_at: string
         }
         Insert: {
@@ -622,6 +626,7 @@ export type Database = {
           pickup_times?: string[]
           raising_period_days?: number
           sale_price?: number
+          sale_starts_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -633,6 +638,7 @@ export type Database = {
           pickup_times?: string[]
           raising_period_days?: number
           sale_price?: number
+          sale_starts_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -650,6 +656,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      set_admin_pin: {
+        Args: { _farm_id: string; _current_pin: string; _new_pin: string }
+        Returns: boolean
+      }
       verify_admin_pin: {
         Args: { _farm_id: string; _pin: string }
         Returns: boolean

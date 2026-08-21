@@ -20,6 +20,12 @@ export interface FarmSettings {
   pickupTimes: string[];
   /** Days a cycle is raised before it may be sold. */
   raisingPeriodDays: number;
+  /**
+   * The admin's own answer to «فترة البيع تبدء في» (A-70), ISO — or null to let
+   * the app work it out. Only consulted between cycles: while one is running,
+   * the cycle itself dates the sale.
+   */
+  saleStartsAt: string | null;
 }
 
 /** Sensible values when a farm has no settings row yet — the UI never shows NaN. */
@@ -30,7 +36,96 @@ const FALLBACK: FarmSettings = {
   availableWeights: [],
   pickupTimes: [],
   raisingPeriodDays: RAISING_PERIOD_DAYS,
+  saleStartsAt: null,
 };
+
+/**
+ * What the sale switch on A-70 is allowed to do, and what the date field means.
+ *
+ * There are three states, and only the last one can be switched:
+ *   • no active cycle       — nothing to sell;
+ *   • active, never opened  — the flock is still being raised, and the selling
+ *     phase is started from the cycle, not from here;
+ *   • selling               — the switch closes and re-opens orders.
+ *
+ * A cycle counts as selling when `sale_open` is on, or when it is off but the
+ * cycle carries a `sale_closes_at` — a window it can be let back into.
+ *
+ * Both halves are needed. Cycles opened before the sale window was dated
+ * (2026-08-21) have `sale_open = true` and no `sale_closes_at`, so testing the
+ * date alone called a cycle that was actively selling "still being raised".
+ */
+export interface SaleControlState {
+  /** Orders are being taken right now. */
+  open: boolean;
+  /** The switch has a cycle to act on. */
+  canToggle: boolean;
+  /** The line under the heading, saying what the switch will do or why it won't. */
+  hint: string;
+  /** True while a sale is open — the date field then edits its *end*. */
+  editingSaleEnd: boolean;
+  /** The date the field starts on, `YYYY-MM-DD`, or "" when none is set. */
+  date: string;
+}
+
+/** `YYYY-MM-DD` in local time — what a native date input expects. */
+function toDateInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export async function getSaleControlState(
+  farmId: string,
+): Promise<SaleControlState> {
+  const supabase = await createClient();
+
+  const [{ data: cycle }, settings] = await Promise.all([
+    supabase
+      .from("cycle")
+      .select("sale_open, sale_closes_at")
+      .eq("farm_id", farmId)
+      .eq("is_active", true)
+      .maybeSingle(),
+    getFarmSettings(farmId),
+  ]);
+
+  const startDate = toDateInput(settings.saleStartsAt);
+
+  if (!cycle) {
+    return {
+      open: false,
+      canToggle: false,
+      hint: "لا توجد دورة بيع حاليا",
+      editingSaleEnd: false,
+      date: startDate,
+    };
+  }
+
+  const isSelling = cycle.sale_open || Boolean(cycle.sale_closes_at);
+  if (!isSelling) {
+    return {
+      open: false,
+      canToggle: false,
+      hint: "الدورة لسه في مرحلة التربية — ابدأ البيع من صفحة الدورات",
+      editingSaleEnd: false,
+      date: startDate,
+    };
+  }
+
+  return {
+    open: cycle.sale_open,
+    canToggle: true,
+    hint: cycle.sale_open
+      ? "البيع مفتوح — اقفله عشان توقف الطلبات مؤقتا"
+      : "البيع مقفول مؤقتا — العملاء مش بيقدروا يطلبوا",
+    editingSaleEnd: cycle.sale_open,
+    date: cycle.sale_open
+      ? toDateInput(cycle.sale_closes_at)
+      : startDate,
+  };
+}
 
 /**
  * The farm's settings row. Wrapped in React `cache` so several components in one
@@ -42,7 +137,7 @@ export const getFarmSettings = cache(
     const { data } = await supabase
       .from("settings")
       .select(
-        "sale_price, cleaning_price, default_cleaning, available_weights, pickup_times, raising_period_days",
+        "sale_price, cleaning_price, default_cleaning, available_weights, pickup_times, raising_period_days, sale_starts_at",
       )
       .eq("farm_id", farmId)
       .maybeSingle();
@@ -55,6 +150,7 @@ export const getFarmSettings = cache(
       availableWeights: data.available_weights.map(Number),
       pickupTimes: data.pickup_times,
       raisingPeriodDays: data.raising_period_days,
+      saleStartsAt: data.sale_starts_at,
     };
   },
 );
