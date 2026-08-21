@@ -12,8 +12,9 @@ import {
   Toggle,
   WeightBadge,
 } from "@/components/ui";
-import { createOrder } from "@/lib/actions/orders";
+import { createOrder, fetchOrder } from "@/lib/actions/orders";
 import type { CustomerOption } from "@/lib/queries/customers";
+import type { OrderListItem } from "@/lib/queries/orders";
 import { useToast } from "@/hooks/useToast";
 import { SALE_NOT_OPEN } from "@/lib/constants";
 import {
@@ -30,6 +31,17 @@ import {
  * weight, whether cleaning is included, and any note. One weight covers the whole
  * order; splitting into different weights happens later, on the weighing screen
  * (FR-14ب) — which is what the note field's example hints at.
+ *
+ * **Two ways out, one save.** «اكد الطلب» books it and closes. «تأكيد الطلب ووزن
+ * الفراخ» books the same order and hands it straight to the weighing sheet
+ * (D-50) — the customer standing at the counter with his birds, which is the
+ * common case for an order the admin types himself. The order is fetched back
+ * after the save rather than assembled here: the weighing sheet reads a whole
+ * `OrderListItem`, and one made up client-side would be a second, quietly
+ * different definition of an order.
+ *
+ * The form is only cleared once the save lands. A failed save keeps every field,
+ * because the alternative is retyping an order in front of a waiting customer.
  */
 export function AddOrderSheet({
   open,
@@ -38,9 +50,12 @@ export function AddOrderSheet({
   weights,
   defaultCleaning,
   saleOpen,
+  onWeigh,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Hands the freshly booked order to the weighing sheet (A-52). */
+  onWeigh: (order: OrderListItem) => void;
   customers: CustomerOption[];
   /** The approximate weights a customer may ask for, from settings (FR-5). */
   weights: number[];
@@ -68,7 +83,7 @@ export function AddOrderSheet({
     setError(null);
   }
 
-  async function submit() {
+  async function submit(thenWeigh = false) {
     const { isHouse, orphan, customer, forSomeoneElse, onBehalfOf } = recipient;
 
     if (!isHouse && !orphan && !customer) {
@@ -95,17 +110,27 @@ export function AddOrderSheet({
       notes,
       isHouse,
     });
-    setSaving(false);
 
     if (!result.ok) {
+      setSaving(false);
       setError(result.error);
       return;
     }
+
+    // Read the saved order back before closing anything. If this fails the order
+    // is still booked — say so and close, rather than leave him on a form whose
+    // save already went through and invite him to send it twice.
+    const order = result.orderId && thenWeigh
+      ? await fetchOrder(result.orderId)
+      : null;
+    setSaving(false);
 
     toast.success("تم تسجيل الطلب");
     reset();
     onClose();
     router.refresh();
+
+    if (order) onWeigh(order);
   }
 
   return (
@@ -128,6 +153,7 @@ export function AddOrderSheet({
           value={recipient}
           onChange={setRecipient}
           customers={customers}
+          autoFocus={open}
         />
 
         <div className="flex flex-col gap-1">
@@ -184,14 +210,17 @@ export function AddOrderSheet({
         {error && <InlineError message={error} />}
 
         <div className="mt-auto flex flex-col gap-4 pb-2">
-          <Button onClick={submit} disabled={!saleOpen} isLoading={saving}>
+          <Button
+            onClick={() => submit()}
+            disabled={!saleOpen}
+            isLoading={saving}
+          >
             اكد الطلب
           </Button>
-          {/* Saves exactly like the button above until the weighing screen (A-52)
-              exists — then this one will save and go straight there. */}
+          {/* Same save, then straight onto the scale (D-50). */}
           <Button
             variant="outline"
-            onClick={submit}
+            onClick={() => submit(true)}
             disabled={saving || !saleOpen}
           >
             تأكيد الطلب ووزن الفراخ

@@ -278,6 +278,28 @@ function toOrderListItem(order: OrderRow, cycleSeq: number): OrderListItem {
 }
 
 /**
+ * One order, by id — what «تأكيد الطلب ووزن الفراخ» needs to hand the weighing
+ * sheet the order it has just created (D-50).
+ *
+ * Reads through `ORDER_COLUMNS` and `toOrderListItem` like the list does, so the
+ * card and the weighing sheet see the same order whichever door they came in by.
+ */
+export async function getOrder(
+  farmId: string,
+  orderId: string,
+): Promise<OrderListItem | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("orders")
+    .select(`${ORDER_COLUMNS}, cycle(seq)`)
+    .eq("farm_id", farmId)
+    .eq("id", orderId)
+    .maybeSingle();
+
+  return data ? toOrderListItem(data, data.cycle?.seq ?? 0) : null;
+}
+
+/**
  * Every order of one cycle, newest first — the admin orders screen (A-50). The
  * screen splits them into its three tabs itself (D-31).
  */

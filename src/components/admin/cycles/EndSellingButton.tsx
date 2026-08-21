@@ -11,7 +11,7 @@ import {
 } from "@/components/ui";
 import { useToast } from "@/hooks/useToast";
 import { endCycle } from "@/lib/actions/cycles";
-import { pluralizeOrder } from "@/lib/format";
+import { pluralizeChicken, pluralizeOrder } from "@/lib/format";
 
 const LABEL = "انتهاء فترة البيع";
 
@@ -24,15 +24,29 @@ const LABEL = "انتهاء فترة البيع";
  * this borrows the shape of the one that opens the sale (A-23), which is the same
  * question in the other direction.
  *
- * **Open orders block it** (D-36): a cycle that closes over an order still being
- * weighed strands that order in history, where the orders screen no longer looks.
- * The count is shown in the dialog before he commits, and the action checks again
- * on the server — the number this screen rendered with can be minutes old.
+ * **Two things block it,** and the dialog names whichever applies before he
+ * commits — the action checks both again on the server, since the numbers this
+ * screen rendered with can be minutes old:
+ *
+ *   • **an open order** (D-36) — a cycle that closes over an order still being
+ *     weighed strands it in history, where the orders screen no longer looks;
+ *   • **a bird nobody has taken** (D-49) — closing over unsold stock walks the
+ *     flock into history with it.
+ *
+ * Only one message shows at a time, and orders come first: they are the reason he
+ * can act on right now, and clearing them is often what empties the flock anyway.
  *
  * Failure is an inline error, never a toast (T-09): ending a cycle is critical,
  * and a toast that auto-dismisses unseen would leave him believing it closed.
  */
-export function EndSellingButton({ openOrders }: { openOrders: number }) {
+export function EndSellingButton({
+  openOrders,
+  availableChickens,
+}: {
+  openOrders: number;
+  /** Birds still free to sell — «الفراخ المتوفرة» on the selling dashboard. */
+  availableChickens: number;
+}) {
   const router = useRouter();
   const toast = useToast();
 
@@ -40,7 +54,14 @@ export function EndSellingButton({ openOrders }: { openOrders: number }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const blocked = openOrders > 0;
+  // Orders first: clearing them is often what empties the flock too, so leading
+  // with the birds would send him to fix the second thing first.
+  const blockedReason =
+    openOrders > 0
+      ? `فيه ${pluralizeOrder(openOrders)} لسه مفتوحة في الدورة، خلّصها الأول.`
+      : availableChickens > 0
+        ? `لسه فيه ${pluralizeChicken(availableChickens)} متوفرة في الدورة، بيعها او سجّلها نافق الأول.`
+        : null;
 
   function close() {
     setOpen(false);
@@ -84,11 +105,7 @@ export function EndSellingButton({ openOrders }: { openOrders: number }) {
             النهائي.
           </p>
 
-          {blocked && (
-            <InlineError
-              message={`فيه ${pluralizeOrder(openOrders)} لسه مفتوحة في الدورة، خلّصها الأول.`}
-            />
-          )}
+          {blockedReason && <InlineError message={blockedReason} />}
           {error && <InlineError message={error} />}
 
           <ConfirmActions
@@ -96,7 +113,7 @@ export function EndSellingButton({ openOrders }: { openOrders: number }) {
             onConfirm={submit}
             onCancel={close}
             isLoading={submitting}
-            disabled={blocked}
+            disabled={blockedReason !== null}
           />
         </div>
       </Modal>

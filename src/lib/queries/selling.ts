@@ -103,3 +103,43 @@ export async function getSellingStats(
     orders: tallyOrderTabs(orders),
   };
 }
+
+/**
+ * Birds still free to sell on one cycle — the same figure the «الفراخ المتوفرة»
+ * tile shows, read on its own because ending a cycle has to check it (D-49) and
+ * that check should not pull the whole selling dashboard behind it.
+ *
+ * Deliberately the same inputs and the same `availableChickens` as the tile: a
+ * second definition of "what is left of the flock" would eventually disagree with
+ * the number on screen, and the admin would be refused for a reason the screen
+ * does not show. It reads the flock's mortality itself so the one caller that
+ * needs it — a server action, with no dashboard in hand — can just ask.
+ */
+export async function countAvailableChickens(
+  cycleId: string,
+  chickCount: number,
+): Promise<number> {
+  const supabase = await createClient();
+
+  const [{ data }, { data: mortality }] = await Promise.all([
+    supabase
+      .from("orders")
+      .select("status, order_line(id)")
+      .eq("cycle_id", cycleId)
+      .neq("status", "cancelled"),
+    supabase.from("mortality").select("count").eq("cycle_id", cycleId),
+  ]);
+  const orders = data ?? [];
+
+  const countLines = (statuses: OrderStatus[]): number =>
+    orders
+      .filter((order) => statuses.includes(order.status))
+      .reduce((sum, order) => sum + (order.order_line?.length ?? 0), 0);
+
+  return availableChickens({
+    chickCount,
+    mortalityCount: (mortality ?? []).reduce((sum, m) => sum + m.count, 0),
+    soldCount: countLines(DELIVERED_STATUSES),
+    requestedCount: countLines(RUNNING_STATUSES),
+  });
+}

@@ -36,10 +36,13 @@ export function OrderRecipient({
   value,
   onChange,
   customers,
+  autoFocus = false,
 }: {
   value: Recipient;
   onChange: (recipient: Recipient) => void;
   customers: CustomerOption[];
+  /** True while the sheet is open — puts the cursor in the customer search. */
+  autoFocus?: boolean;
 }) {
   const set = (patch: Partial<Recipient>) => onChange({ ...value, ...patch });
 
@@ -74,6 +77,7 @@ export function OrderRecipient({
               selected={value.customer}
               onSelect={(customer) => set({ customer })}
               disabled={value.orphan}
+              autoFocus={autoFocus}
             />
 
             <div className="flex items-center justify-around gap-2">

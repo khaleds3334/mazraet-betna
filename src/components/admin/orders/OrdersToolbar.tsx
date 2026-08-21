@@ -31,6 +31,8 @@ export function OrdersToolbar({
   customers,
   weights,
   defaultCleaning,
+  salePrice,
+  cleaningPrice,
 }: {
   /** The cycle being shown — the picker marks it, and the archive names it. */
   cycle: OrdersCycle;
@@ -42,6 +44,9 @@ export function OrdersToolbar({
   customers: CustomerOption[];
   weights: number[];
   defaultCleaning: boolean;
+  /** Live settings — handed on to the weighing sheet «اضافة طلب» can open. */
+  salePrice: number;
+  cleaningPrice: number;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 px-screen">
@@ -51,6 +56,8 @@ export function OrdersToolbar({
             customers={customers}
             weights={weights}
             defaultCleaning={defaultCleaning}
+            salePrice={salePrice}
+            cleaningPrice={cleaningPrice}
             saleOpen
           />
         ) : (

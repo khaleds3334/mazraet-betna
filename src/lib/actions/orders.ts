@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { getFarmSettings } from "@/lib/queries/settings";
+import { getOrder, type OrderListItem } from "@/lib/queries/orders";
 import { ORPHAN_MUST_BE_PAID, SALE_NOT_OPEN } from "@/lib/constants";
 import { orderRemaining } from "@/lib/calculations/invoice";
 
@@ -32,7 +33,11 @@ export type CreateOrderInput = {
   isHouse: boolean;
 };
 
-export type CreateOrderResult = { ok: false; error: string } | { ok: true };
+export type CreateOrderResult =
+  | { ok: false; error: string }
+  /** `orderId` is set only by {@link createOrder} — it is the order it just made,
+   *  so «تأكيد الطلب ووزن الفراخ» can open the weighing sheet on it (D-50). */
+  | { ok: true; orderId?: string };
 
 /**
  * Book an order from the admin side (A-56, FR-12/FR-13). The order is confirmed
@@ -118,7 +123,23 @@ export async function createOrder(
 
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
-  return { ok: true };
+  return { ok: true, orderId: order.id };
+}
+
+/**
+ * The order the admin has just created, ready for the weighing sheet (D-50).
+ *
+ * A server *action* around a read, the same way `fetchCustomerOrders` is: the
+ * add-order sheet is a client component and cannot call a query, and the query
+ * itself stays in `/lib/queries` where every other read of an order lives. It
+ * writes nothing.
+ */
+export async function fetchOrder(
+  orderId: string,
+): Promise<OrderListItem | null> {
+  const farm = await getCurrentFarm();
+  if (!farm) return null;
+  return getOrder(farm.farmId, orderId);
 }
 
 /**

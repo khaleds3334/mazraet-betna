@@ -6,7 +6,8 @@ import { getCurrentFarm } from "@/lib/queries/admin";
 import { getCycleEstimateBasis, hasActiveCycle } from "@/lib/queries/cycles";
 import { estimatedCycleExpenses } from "@/lib/calculations/cycle";
 import { countOpenCycleOrders } from "@/lib/queries/orders";
-import { pluralizeOrder } from "@/lib/format";
+import { countAvailableChickens } from "@/lib/queries/selling";
+import { pluralizeChicken, pluralizeOrder } from "@/lib/format";
 
 /**
  * Cycle actions (admin only). Writes go through the RLS-bound client — the
@@ -190,19 +191,30 @@ export async function endCycle(): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: cycle } = await supabase
     .from("cycle")
-    .select("id")
+    .select("id, chick_count")
     .eq("farm_id", farm.farmId)
     .eq("is_active", true)
     .maybeSingle();
   if (!cycle) return { ok: false, error: "مفيش دورة شغالة دلوقتي." };
 
-  // Checked again here, never only in the dialog: the count the screen was
-  // rendered with can be minutes old, and a customer can order in between.
+  // Both checks run again here, never only in the dialog: the counts the screen
+  // was rendered with can be minutes old, and a customer can order in between.
   const openOrders = await countOpenCycleOrders(cycle.id);
   if (openOrders > 0) {
     return {
       ok: false,
       error: `فيه ${pluralizeOrder(openOrders)} لسه مفتوحة في الدورة، خلّصها الأول.`,
+    };
+  }
+
+  // A cycle that closes over unsold birds walks the flock into history (D-49).
+  // Read after the order check, so «متوفرة» here can only mean birds nobody has
+  // asked for.
+  const available = await countAvailableChickens(cycle.id, cycle.chick_count);
+  if (available > 0) {
+    return {
+      ok: false,
+      error: `لسه فيه ${pluralizeChicken(available)} متوفرة في الدورة، بيعها او سجّلها نافق الأول.`,
     };
   }
 

@@ -20,11 +20,13 @@ export function RunningCycleControls({
   phase,
   feed,
   openOrders,
+  availableChickens,
 }: {
   phase: CycleListItem["phase"];
   feed: CycleDashboard["feed"];
   /** Orders still open on this cycle — ending it is refused while any are. */
   openOrders: number;
+  availableChickens: number;
 }) {
   return (
     <div className="relative flex flex-col gap-4 pt-1">
@@ -33,7 +35,10 @@ export function RunningCycleControls({
       {phase === "selling" && (
         <>
           <FeedTracker feed={feed} />
-          <EndSellingButton openOrders={openOrders} />
+          <EndSellingButton
+            openOrders={openOrders}
+            availableChickens={availableChickens}
+          />
         </>
       )}
     </div>

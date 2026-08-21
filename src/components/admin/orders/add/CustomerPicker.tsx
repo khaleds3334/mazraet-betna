@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon, SearchField } from "@/components/ui";
 import type { CustomerOption } from "@/lib/queries/customers";
 import { matchesNameOrPhone } from "@/lib/search";
@@ -12,19 +12,34 @@ import { matchesNameOrPhone } from "@/lib/search";
  *
  * Filtering happens in the browser over the farm's customers, loaded once with
  * the screen — no round trip per keystroke.
+ *
+ * `autoFocus` puts the cursor in the box and the keyboard on screen the moment
+ * the sheet opens. Picking the customer is the first thing every order needs, and
+ * making the admin tap the field before he can type it is a tap he is doing with
+ * one hand while holding something in the other (Khaled, 2026-08-21). It focuses
+ * on the flip to `true`, not only at mount, because the sheet stays mounted
+ * behind the screen between openings.
  */
 export function CustomerPicker({
   customers,
   selected,
   onSelect,
   disabled = false,
+  autoFocus = false,
 }: {
   customers: CustomerOption[];
   selected: CustomerOption | null;
   onSelect: (customer: CustomerOption | null) => void;
   disabled?: boolean;
+  /** True while the sheet holding this is open — see the note above. */
+  autoFocus?: boolean;
 }) {
   const [query, setQuery] = useState("");
+  const input = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (autoFocus && !disabled) input.current?.focus();
+  }, [autoFocus, disabled]);
 
   const results = useMemo(
     () =>
@@ -66,6 +81,7 @@ export function CustomerPicker({
         value={query}
         onChange={setQuery}
         disabled={disabled}
+        inputRef={input}
       />
 
       {query.trim() && (

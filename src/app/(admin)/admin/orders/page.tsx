@@ -166,6 +166,8 @@ export default async function AdminOrdersPage({
         customers={customers}
         weights={settings.availableWeights}
         defaultCleaning={settings.defaultCleaning}
+        salePrice={settings.salePrice}
+        cleaningPrice={settings.cleaningPrice}
       />
       <div className="px-screen">
         {/* Static until the list it would filter is wired — see SearchField. */}

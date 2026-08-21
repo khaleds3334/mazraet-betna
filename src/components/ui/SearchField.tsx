@@ -18,6 +18,7 @@ export function SearchField({
   value,
   onChange,
   disabled = false,
+  inputRef,
   className,
 }: {
   placeholder: string;
@@ -26,6 +27,8 @@ export function SearchField({
   value?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;
+  /** Handle on the input, for a caller that needs to focus it. */
+  inputRef?: React.Ref<HTMLInputElement>;
   className?: string;
 }) {
   return (
@@ -49,6 +52,7 @@ export function SearchField({
 
       {onChange ? (
         <input
+          ref={inputRef}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           disabled={disabled}

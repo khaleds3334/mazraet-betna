@@ -71,9 +71,9 @@ export function SellingDashboard({
               value={formatArabicNumber(money.income)}
               tone="brand"
             />
+            {/* No `estimated`: the budget verdict belongs to التربية (D-47). */}
             <CycleExpensesCard
               total={cycle.expensesTotal}
-              estimated={cycle.estimatedExpenses}
               expenses={expenses}
             />
             <CycleStatCard

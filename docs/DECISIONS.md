@@ -1426,3 +1426,58 @@ for half a day, which had the further problem of burying the phase colours it wa
 supposed to sit alongside — the second بادي bag of a ١.٥-bag cycle went red, and the
 lime never got seen.
 **Date:** 2026-08-21
+
+### D-49 — A cycle also can't close over a bird nobody took
+`endCycle` already refused while an order was still open (D-36). It now refuses
+while «الفراخ المتوفرة» is above zero as well, and the confirm dialog says which of
+the two is holding it up before he taps.
+
+**Why:** the tile the whole selling dashboard is built around says birds are still
+available — free to sell, nobody's — and closing the cycle would walk them into
+history with it. There is no undo, and nothing downstream ever asks where they
+went: the flock leaves through orders or through mortality, and «متوفرة» means
+neither has happened yet. Either sell them, or record them as نافق — both are one
+action away, and both are the truth about a bird that isn't there any more
+(Khaled, 2026-08-21).
+
+**Orders are named first** when both apply. Clearing the orders is usually what
+empties the flock too, so leading with the birds would send him to fix the second
+thing first.
+
+**The count comes from `countAvailableChickens`**, which uses the same three inputs
+and the same `availableChickens` as the dashboard tile. A second definition of
+"what is left of the flock" would eventually disagree with the number on screen,
+and being refused for a reason the screen doesn't show is worse than not being
+refused at all. It is read after the order check, so «متوفرة» in the message can
+only mean birds nobody has asked for.
+**Date:** 2026-08-21
+
+### D-50 — «تأكيد الطلب ووزن الفراخ» books the order and opens the scale on it
+The second button on A-56 now does what its label says: it saves the order, closes
+the sheet, and opens the weighing sheet (A-52) on the order it just created. Until
+now it saved exactly like the first button — a placeholder from before A-52
+existed.
+
+**Why it earns its own button:** an order the admin types himself is usually one
+he is typing with the customer in front of him and the birds about to go on the
+scale. Booking then hunting the new card down in the list is two steps for the
+thing that was always going to happen next.
+
+**The order is fetched back after the save**, through `fetchOrder` — a server
+action wrapping the `getOrder` query, the same shape as `fetchCustomerOrders`. The
+weighing sheet reads a whole `OrderListItem`, and assembling one client-side from
+the form would be a second, quietly different definition of an order.
+
+**If that read fails the order is still booked.** The sheet closes and reports
+success rather than leaving him on a form whose save already went through — which
+is the state that produces the same order twice.
+
+**The weighing sheet is held by the launcher, not by the add sheet.** The add
+sheet has closed by the time it opens, and two sheets on the same layer rank by
+DOM order rather than by intent (T-40). It mounts only once there is an order, so
+its weighing draft is keyed to that order from its first render.
+
+**The customer search focuses as the sheet opens.** Picking the customer is the
+first thing every order needs, and the tap to reach the field is one the admin
+makes with a hand that is holding something else (Khaled, 2026-08-21).
+**Date:** 2026-08-21

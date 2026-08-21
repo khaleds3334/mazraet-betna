@@ -11,6 +11,7 @@ import {
   type CycleListItem,
 } from "@/lib/queries/cycles";
 import { countOpenCycleOrders } from "@/lib/queries/orders";
+import { countAvailableChickens } from "@/lib/queries/selling";
 
 /**
  * Where a row leads depends on what the cycle is doing:
@@ -51,6 +52,15 @@ export default async function AdminCyclesPage() {
     running ? undefined : getCycleEstimateBasis(farm.farmId),
   ]);
 
+  // And refused while any bird is still unsold (D-49). Read after the dashboard
+  // because it needs the flock size from it, and only for a cycle that is selling
+  // — a flock still being raised has every bird available by definition, and
+  // «انتهاء فترة البيع» isn't on the row yet.
+  const available =
+    running?.phase === "selling" && dashboard
+      ? await countAvailableChickens(running.cycleId, dashboard.chickCount)
+      : 0;
+
   return (
     <div className="flex flex-col gap-4 pt-4">
       {!running && <CyclesToolbar basis={basis} />}
@@ -69,6 +79,7 @@ export default async function AdminCyclesPage() {
                   phase={cycle.phase}
                   feed={dashboard.feed}
                   openOrders={openOrders}
+                  availableChickens={available}
                 />
               )}
             </CycleRow>

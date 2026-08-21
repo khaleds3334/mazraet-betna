@@ -19,13 +19,19 @@ import { CycleExpensesSheet } from "./CycleExpensesSheet";
  * `label` differs by screen: «مصاريف الدورة» on a running cycle, «اخر المصاريف»
  * between cycles, where the number belongs to the cycle that just closed.
  *
- * **Brown until it passes the forecast, then red** (D-47). Spending money is what
- * a cycle does — the tile was red for simply existing, which on the raising
- * dashboard sat beside a red mortality figure and sometimes red feed counts, and
- * three reds on one screen train the eye to skip all of them. Red here now means
- * one thing: this cycle has cost more than A-41 said it would when he registered
- * it. Without a stored forecast (`estimated` is null — a cycle registered before
- * migration 018) there is no line to cross, and it stays brown.
+ * **Brown until it passes the forecast, then red — but only where a forecast is
+ * handed in** (D-47). Spending money is what a cycle does, and on the *raising*
+ * dashboard a permanently red tile sat beside a red mortality figure and
+ * sometimes red feed counts; three reds on one screen train the eye to skip all
+ * of them. There, red is earned: this cycle has cost more than A-41 said it
+ * would.
+ *
+ * **Everywhere else the tile is simply red**, as it always was. The selling
+ * dashboard is not a screen about the budget — it is about birds and money moving
+ * — and «اخر المصاريف» between cycles reports a cycle that is closed and has
+ * nothing left to decide. Leaving `estimated` out is how a screen says "no verdict
+ * here" (Khaled, 2026-08-21). A cycle registered before migration 018 has no
+ * forecast either, and lands in the same place.
  */
 export function CycleExpensesCard({
   total,
@@ -41,7 +47,10 @@ export function CycleExpensesCard({
 }) {
   const [open, setOpen] = useState(false);
 
-  const overBudget = estimated != null && estimated > 0 && total > estimated;
+  // No forecast handed in → no judgement to make, and the tile keeps the red it
+  // has always had.
+  const judged = estimated != null && estimated > 0;
+  const danger = !judged || total > estimated;
 
   return (
     <>
@@ -55,7 +64,7 @@ export function CycleExpensesCard({
           icon="payment"
           label={label}
           value={formatArabicNumber(total)}
-          tone={overBudget ? "danger" : "brown"}
+          tone={danger ? "danger" : "brown"}
         />
       </button>
 
