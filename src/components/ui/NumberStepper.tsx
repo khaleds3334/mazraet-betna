@@ -56,6 +56,9 @@ export function NumberStepper({
       >
         <input
           inputMode={fractional ? "decimal" : "numeric"}
+          // See the note in `Stepper` — an RTL field puts the caret at the far
+          // end of a number, which is not where the digit he wants to fix is.
+          dir="ltr"
           aria-label={label}
           placeholder="٠"
           size={Math.max(1, String(value || "٠").length)}

@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { SearchField } from "@/components/ui";
 import { OrdersToolbar } from "@/components/admin/orders/OrdersToolbar";
-import { OrdersBrowser } from "@/components/admin/orders/OrdersBrowser";
-import { OrdersShell } from "@/components/admin/orders/OrdersShell";
-import { OrdersEmptyState } from "@/components/admin/orders/OrdersEmptyState";
+import {
+  OrdersBrowser,
+  type OrderEntry,
+} from "@/components/admin/orders/OrdersBrowser";
 import { OrdersEmptyHeader } from "@/components/admin/orders/OrdersEmptyHeader";
 import { OrderCard } from "@/components/admin/orders/card/OrderCard";
 import {
@@ -25,47 +25,36 @@ import {
   type OrderListItem,
 } from "@/lib/queries/orders";
 
-/** One tab's worth of cards — or the reason it's empty. */
-function OrdersPanel({
-  orders,
-  tab,
-  salePrice,
-  cleaningPrice,
-  weights,
-}: {
-  orders: OrderListItem[];
-  tab: AdminOrderTabKey;
-  salePrice: number;
-  cleaningPrice: number;
-  weights: number[];
-}) {
-  if (orders.length === 0) return <OrdersEmptyState tab={tab} />;
-
-  return (
-    <ul className="flex flex-col gap-3">
-      {orders.map((order) => (
-        <li key={order.id}>
-          <OrderCard
-            order={order}
-            salePrice={salePrice}
-            cleaningPrice={cleaningPrice}
-            weights={weights}
-          />
-        </li>
-      ))}
-    </ul>
-  );
+/**
+ * One order, ready for the browser: the card rendered here on the server, and the
+ * handful of fields its search box matches against.
+ */
+function toEntry(
+  order: OrderListItem,
+  settings: { salePrice: number; cleaningPrice: number; weights: number[] },
+): OrderEntry {
+  return {
+    id: order.id,
+    number: order.number,
+    customer: order.customer,
+    onBehalfOf: order.onBehalfOf,
+    card: (
+      <OrderCard
+        order={order}
+        salePrice={settings.salePrice}
+        cleaningPrice={settings.cleaningPrice}
+        weights={settings.weights}
+      />
+    ),
+  };
 }
 
-/** The three tabs of a farm with no cycle — each one's own empty sentence. */
-function emptyPanels(): Record<AdminOrderTabKey, React.ReactNode> {
-  return Object.fromEntries(
-    ADMIN_ORDER_TABS.map((group) => [
-      group.key,
-      <OrdersEmptyState key={group.key} tab={group.key} />,
-    ]),
-  ) as Record<AdminOrderTabKey, React.ReactNode>;
-}
+/** An empty tab set — a farm with no cycle, and the archive's two unused tabs. */
+const NO_ENTRIES: Record<AdminOrderTabKey, OrderEntry[]> = {
+  new: [],
+  active: [],
+  done: [],
+};
 
 /**
  * Admin orders list (A-50). One cycle's orders — the one selling now by default,
@@ -116,7 +105,7 @@ export default async function AdminOrdersPage({
       <OrdersBrowser
         initialTab={parseTab(params.tab) ?? DEFAULT_ADMIN_ORDER_TAB}
         counts={EMPTY_ORDER_TAB_COUNTS}
-        panels={emptyPanels()}
+        panels={NO_ENTRIES}
         header={<OrdersEmptyHeader />}
       />
     </div>
@@ -156,38 +145,43 @@ export default async function AdminOrdersPage({
       option.cycleId === cycle.cycleId,
   );
 
+  // The search box belongs to `OrdersBrowser` now — it owns the query and the
+  // list it filters, and a box wired to neither would be decoration.
   const header = (
-    <>
-      <OrdersToolbar
-        cycle={cycle}
-        cycles={pickable}
-        orderCount={orders.length}
-        allDone={counts.done === orders.length}
-        customers={customers}
-        weights={settings.availableWeights}
-        defaultCleaning={settings.defaultCleaning}
-        salePrice={settings.salePrice}
-        cleaningPrice={settings.cleaningPrice}
-      />
-      <div className="px-screen">
-        {/* Static until the list it would filter is wired — see SearchField. */}
-        <SearchField placeholder="ابحث باسم العميل او رقم الطلب" />
-      </div>
-    </>
+    <OrdersToolbar
+      cycle={cycle}
+      cycles={pickable}
+      orderCount={orders.length}
+      allDone={counts.done === orders.length}
+      customers={customers}
+      weights={settings.availableWeights}
+      defaultCleaning={settings.defaultCleaning}
+      salePrice={settings.salePrice}
+      cleaningPrice={settings.cleaningPrice}
+    />
   );
 
+  const cardSettings = {
+    salePrice: settings.salePrice,
+    cleaningPrice: settings.cleaningPrice,
+    weights: settings.availableWeights,
+  };
+
+  // An archive: one list, no tabs to choose between (D-41) — but the same search
+  // box, because a finished cycle is exactly where he goes looking for one order.
   if (!cycle.saleOpen) {
     return (
       <div className="flex flex-col">
-        <OrdersShell header={header}>
-          <OrdersPanel
-            orders={orders}
-            tab="done"
-            salePrice={settings.salePrice}
-            cleaningPrice={settings.cleaningPrice}
-            weights={settings.availableWeights}
-          />
-        </OrdersShell>
+        <OrdersBrowser
+          initialTab="done"
+          counts={counts}
+          panels={{
+            ...NO_ENTRIES,
+            done: orders.map((order) => toEntry(order, cardSettings)),
+          }}
+          header={header}
+          showTabs={false}
+        />
       </div>
     );
   }
@@ -195,16 +189,11 @@ export default async function AdminOrdersPage({
   const panels = Object.fromEntries(
     ADMIN_ORDER_TABS.map((group) => [
       group.key,
-      <OrdersPanel
-        key={group.key}
-        tab={group.key}
-        orders={orders.filter((order) => group.statuses.includes(order.status))}
-        salePrice={settings.salePrice}
-        cleaningPrice={settings.cleaningPrice}
-        weights={settings.availableWeights}
-      />,
+      orders
+        .filter((order) => group.statuses.includes(order.status))
+        .map((order) => toEntry(order, cardSettings)),
     ]),
-  ) as Record<AdminOrderTabKey, React.ReactNode>;
+  ) as Record<AdminOrderTabKey, OrderEntry[]>;
 
   return (
     <div className="flex flex-col">

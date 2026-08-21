@@ -76,3 +76,48 @@ export function matchesNameOrPhone(
 
   return flatten(name).includes(flatten(wanted));
 }
+
+/**
+ * Whether an order matches what the admin typed, on the orders screen (A-50).
+ *
+ * A query of digits is tried against **both** the order number and the customer's
+ * phone, because either could be what he is holding and neither is worth making
+ * him pick a mode for. Anything else is a name, matched exactly the way the
+ * customers screen matches one.
+ *
+ * **The number match is a suffix, not a substring.** An order number is the cycle
+ * followed by a zero-padded sequence — order 3 of cycle 1 is `١٠٠٣` — so
+ * `includes` made «١» match every order of that cycle, and the search looked like
+ * it did nothing (Khaled, 2026-08-21). People say an order number from its end:
+ * «تلاتة», «٠٠٣», «١٠٠٣» all find that order; «١» finds only the ones that
+ * actually end in one.
+ *
+ * The phone stays a substring — a fragment from the middle of a number is a normal
+ * way to look someone up, and it is long enough not to match everything.
+ *
+ * An order with no customer (FR-13) still matches by its number; where a name was
+ * written instead (`onBehalfOf`), that is what the name match reads.
+ */
+export function matchesOrder(
+  order: {
+    number: string;
+    customer: { name: string; phone: string } | null;
+    onBehalfOf: string | null;
+  },
+  query: string,
+): boolean {
+  const typed = query.trim();
+  if (!typed) return true;
+
+  const digits = toLatinDigits(typed);
+  if (digits) {
+    if (toLatinDigits(order.number).endsWith(digits)) return true;
+    return (order.customer?.phone ?? "").includes(digits);
+  }
+
+  const person = order.customer ?? {
+    name: order.onBehalfOf ?? "",
+    phone: "",
+  };
+  return person.name ? matchesNameOrPhone(person, typed) : false;
+}

@@ -26,6 +26,13 @@ import {
 } from "./OrderRecipient";
 
 /**
+ * Long enough for a phone keyboard to finish sliding up and the viewport to
+ * settle at its new height — scrolling before that measures a screen that is
+ * about to change.
+ */
+const KEYBOARD_SETTLE_MS = 350;
+
+/**
  * "انشاء طلب باسم عميل" (A-56) — a sheet that fills the screen, so it reads as a
  * page while the orders list stays mounted behind it.
  *
@@ -215,7 +222,16 @@ export function AddOrderSheet({
         {noteOpen ? (
           <div className="flex flex-col gap-2">
             {/* Mounted only when open, so `autoFocus` lands on the tap that
-                opened it — no ref, no effect. */}
+                opened it — no ref, no effect.
+
+                `scroll-mb-44` is what keeps it off the keyboard. The browser
+                scrolls a focused field just barely into view, and "in view" here
+                includes the strip the confirm buttons are pinned over — so the
+                note landed underneath them. `scroll-margin-bottom` is the browser's
+                own way of being told to leave room, and it applies to the scroll
+                the browser does by itself; the `onFocus` nudge is for the second
+                one, after the keyboard has finished opening and the viewport has
+                changed size under it (Khaled, 2026-08-21). */}
             <TextareaField
               id="order-notes"
               label="اي ملاحظات"
@@ -223,6 +239,14 @@ export function AddOrderSheet({
               onChange={(event) => setNotes(event.target.value)}
               placeholder="مثلا: عاوز فرختين لوحدهم و ٣ لوحدهم..."
               autoFocus
+              className="scroll-mb-44"
+              onFocus={(event) => {
+                const field = event.currentTarget;
+                window.setTimeout(
+                  () => field.scrollIntoView({ block: "center" }),
+                  KEYBOARD_SETTLE_MS,
+                );
+              }}
             />
             <button
               type="button"

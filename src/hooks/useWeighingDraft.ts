@@ -49,8 +49,35 @@ function lastAddedNumber(lines: WeighingDraft[]): number {
 }
 
 /**
+ * Everything about a weigh-out that the admin can have changed. Two states with
+ * the same signature are the same work, whichever side they came from.
+ */
+function signature(state: WeighingState): string {
+  return JSON.stringify({
+    cleaning: state.cleaning,
+    lines: state.lines.map((line) => [
+      line.key,
+      line.batchNo,
+      line.approxWeight,
+      line.actualWeight,
+    ]),
+  });
+}
+
+/**
  * The weigh-out this sheet starts from: whatever was left on the device if it
- * holds real weights, otherwise the order as the server has it.
+ * differs from the order as the server has it, otherwise the server's copy.
+ *
+ * **Any difference counts, not only a weight** (D-56). It used to restore the
+ * draft only if some `actualWeight` was set, so splitting an order into bags and
+ * then losing the page threw the split away — the work was on the device the
+ * whole time, and the sheet reopened as if it had never happened (Khaled,
+ * 2026-08-21). A split is a decision about the customer's order; it is worth no
+ * less than a number off the scale.
+ *
+ * Comparing the two rather than checking for weights also settles the case the
+ * old test was really guarding: a draft identical to the server is not restored,
+ * because there is nothing in it to restore.
  *
  * Read while the state initialises rather than in an effect, so the sheet never
  * renders the server's values first and then swaps them — the admin would see
@@ -64,12 +91,12 @@ function openingState(
 ): { state: WeighingState; restored: boolean } {
   if (typeof window === "undefined")
     return { state: fromServer, restored: false };
+
   const stored = readStoredDraft(orderId);
-  // Only worth restoring if a weight was actually entered — otherwise the
-  // server's rows are the fresher copy of the very same thing.
-  return stored?.lines.some((line) => line.actualWeight != null)
-    ? { state: stored, restored: true }
-    : { state: fromServer, restored: false };
+  if (!stored || signature(stored) === signature(fromServer)) {
+    return { state: fromServer, restored: false };
+  }
+  return { state: stored, restored: true };
 }
 
 /**

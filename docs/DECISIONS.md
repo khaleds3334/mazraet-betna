@@ -1505,3 +1505,128 @@ control that sometimes does nothing teaches him that tapping is not worth trying
 The tile itself is unchanged in both cases — only the wrapper differs, the same
 arrangement `CycleExpensesCard` uses.
 **Date:** 2026-08-21
+
+### D-52 — Numbers are typed as digits, and the caret sits where the number ends
+Three changes to how the admin types a number, all from the same session with the
+app in his hand (Khaled, 2026-08-21).
+
+**`dir="ltr"` on every numeric field** — `Stepper`, `NumberStepper`, and the
+weighing row. Digits lay out left-to-right wherever they sit, even inside an RTL
+paragraph, so an RTL input puts the caret at the *far* end of the number: to fix
+the last digit of «١.٥٢٠» he had to reach past the ١, on the opposite side from
+the digit he was looking at. Every one of these fields is centred, so nothing
+moves on screen; only the caret goes where it belongs. (Related to **T-51**, which
+is the same bidi behaviour showing up in output rather than in input.)
+
+**The weighing field places the decimal point itself.** He types `2250`, the field
+reads `٢.٢٥٠`. No bird weighs ten kilos, so the first digit is always kilos and
+everything after it is grams — there is exactly one place the separator can go.
+Reaching for a dot on a phone keypad, one-handed, over a scale, to type a
+character that carries no information is a tap that exists for the software's
+benefit. The point appears with the first digit and stays put, so a half-typed
+`٢٢٥` reads as two and a quarter kilos rather than as two hundred. `inputMode` is
+`numeric` now, not `decimal`. Typing the dot anyway still works — it is stripped
+with everything else that isn't a digit and lands in the same place.
+
+**The digits are Arabic-Indic as they are typed, not after.** The field holds the
+digit stream and renders it formatted, instead of letting the phone's own Latin
+text sit in the box until something converts it (rule 3).
+**Date:** 2026-08-21
+
+### D-53 — The orders search filters cards the browser already has
+«ابحث باسم العميل او رقم الطلب» works. It matches the way the customers screen
+does — articles dropped, spelling forgiven — and a query of digits also matches the
+**order number**, since that is as likely to be what he is holding as a phone
+number, and neither is worth making him pick a mode for (`matchesOrder`).
+
+**The cards stay server-rendered.** Each order travels to `OrdersBrowser` as a
+finished node plus the four fields the search needs; filtering chooses which of the
+built cards to place. So searching costs no round trip and no re-render of a
+screenful of cards — the same reasoning that made tab switching free (D-31).
+
+**The query stays out of the URL,** unlike the tab: it is a glance at the list, not
+a place to come back to.
+
+**An empty tab and an empty search say different things.** «لا يوجد طلبات جديدة»
+means the tab is empty; «مفيش طلب بالبحث ده» means the tab has orders this query
+doesn't reach. Using the first for both would read as if the orders had gone.
+
+**The archive face searches too** — it now goes through `OrdersBrowser` with its
+tab bar hidden rather than through `OrdersShell` directly. A finished cycle is
+exactly where he goes looking for one particular order.
+**Date:** 2026-08-21
+
+### D-54 — In the split dialog, ± moves a bird between bags
+«تقسيم الفراخ وزنات مختلفة» (A-53) splits an order; it never changes how many
+birds are in it. The ± buttons now honour that literally: ﹣ takes a bird out of a
+bag and puts it in the bag **below**, creating that bag if there isn't one, and ＋
+takes it back from the same place, so the two undo each other.
+
+**Why this and not what it did before:** ﹣ used to just lower a count and leave
+the birds unaccounted for, so the dialog answered a split with «لسه ٣ فراخ من غير
+وزنة» and made him go and create the second bag himself. The move he wanted was
+always the same one — «خد واحدة من دي وحطها في التانية» — and now it is one tap:
+he opens on «٤ فراخ» and taps ﹣ (Khaled, 2026-08-21).
+
+**The counts therefore add up on their own.** «حفظ» can still refuse, but only for
+a split that arrived already broken — a draft saved before this rule existed.
+
+**The last bird in a bag stays put.** Emptying a bag is what the bin is for, and
+the bin says where the birds went; a ﹣ that made a row vanish would not.
+
+**The rules live in `splitBatches.ts`,** not in the dialog: where a bird goes is
+the part with the thinking in it, and it reads better as five named functions than
+as five branches inside a component.
+
+**The row is fluid, and the select draws its own arrow.** Fixed widths
+(`w-26` + `w-36` + the bin) ran past the dialog's padding at 320px; and the native
+select arrow was a few pixels tall on whichever side the platform chose, so it is
+replaced by the app's own `arrowDown` at 24px on the right — the leading edge in
+RTL, the same as every other field (`PickerField`).
+**Date:** 2026-08-21
+
+### D-55 — Once an order is split, birds are added and removed only in the split
+On the weighing sheet (A-52), «اضافة فرخة اخري» and the bin on the last row
+disappear as soon as the order has more than one bag.
+
+**Why:** both act on the *end of the list*, which is one particular bag, while a
+split is an arrangement of all of them. A bird appended to the last bag is a bird
+the split never allotted; one trimmed off it silently empties a bag the customer
+was already quoted for. Neither is visible as a mistake — the totals still look
+plausible, and the arithmetic only fails later, at the invoice (Khaled,
+2026-08-21).
+
+**Where they go instead:** «تقسيم الفراخ وزنات مختلفة», which is the one screen
+where the counts are shown adding up to the order (D-54), and where ± moves a bird
+rather than inventing one.
+
+**Unsplit orders are untouched** — one bag is the end of the list, so trimming and
+appending mean exactly what they say (FR-14ج).
+
+### D-56 — A weighing draft is kept for any unsaved work, and the sheet's scroll stays in the sheet
+Two bugs behind one report: the admin split an order, the page refreshed under him
+while he was scrolling, and the split was gone (Khaled, 2026-08-21).
+
+**The draft was only restored if a weight had been entered.** `openingState` tested
+for a non-null `actualWeight`, so a split — which changes bagging and asked
+weights, not actual ones — was written to the device and then ignored on the way
+back in. The test is now a comparison: restore the draft when it **differs from
+the order the server has**, whatever the difference is. A split is a decision about
+a customer's order and is worth no less than a number off the scale. Comparing also
+settles what the old test was really guarding against: a draft identical to the
+server isn't restored, because there is nothing in it to restore.
+
+The restore toast now says «الشغل» rather than «الأوزان» — an order can come back
+re-bagged with no weight on it at all.
+
+**And the refresh should not have happened.** A swipe that ran out of list carried
+on into the document, which on a phone is how the browser is asked to reload.
+`overscroll-contain` on the three scrollers that can be flicked — `BottomSheet`,
+`Modal`'s body, and the weighing list itself — keeps the gesture where it started.
+The document already had `overscroll-none`, but an overlay portalled into `<body>`
+is its own scroll container and chains into it.
+
+**Kept: nothing is sent to the server until «حفظ الاوزان».** An order half-priced
+is worse than one not yet priced. The draft is the safety net for that choice, so
+the net has to hold everything the choice puts in it.
+**Date:** 2026-08-21

@@ -40,6 +40,12 @@ export function Stepper({
       />
       <input
         inputMode="numeric"
+        // Digits are laid out left-to-right wherever they sit, so in an RTL
+        // field the caret lands at the wrong end of them: to fix the last digit
+        // of «١.٥٢٠» the admin had to reach past the ١ on the far side. `dir="ltr"`
+        // puts the caret where the number ends, which is where he is looking
+        // (Khaled, 2026-08-21). Both fields are centred, so nothing moves.
+        dir="ltr"
         aria-label={label}
         placeholder="٠"
         size={Math.max(1, String(value || "٠").length)}

@@ -1,19 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { Button, CloseButton, InlineError, Modal } from "@/components/ui";
+import {
+  Button,
+  CloseButton,
+  DashedAddButton,
+  InlineError,
+  Modal,
+} from "@/components/ui";
 import type { WeighingBatch } from "@/hooks/useWeighingDraft";
 import { pluralizeChicken } from "@/lib/format";
 import { SplitBatchRow } from "./SplitBatchRow";
+import {
+  addBatch,
+  canAddBatch,
+  canMoveUp,
+  moveDown,
+  moveUp,
+  removeBatch,
+} from "./splitBatches";
 
 /**
  * "تقسيم الفراخ وزنات مختلفة" (A-53) — the same birds, dealt into bags.
  *
  * It splits; it never changes how many birds there are. Adding and removing a
  * bird belongs on the sheet behind this, where the admin can see the weights he
- * has already taken. So every bag's count is moved *between* bags, and the
- * counts must add up to the order before it can be saved — a bag list that
- * doesn't account for every bird would leave birds with no bag to go in.
+ * has already taken.
+ *
+ * **So ± moves a bird between bags** (D-54, `splitBatches.ts`). Taking one out of
+ * a bag puts it in the bag below — creating that bag if it is the first time,
+ * which is how an order that has never been split gets its second weight: he
+ * opens on «٤ فراخ» and taps ﹣ (Khaled, 2026-08-21). ＋ takes the bird back from
+ * the same place, so the two buttons undo each other.
+ *
+ * The counts therefore add up on their own, and «حفظ» is only ever refused for a
+ * split that arrived here already broken — a draft saved before this rule existed.
  */
 export function SplitOrderDialog({
   open,
@@ -49,40 +70,6 @@ export function SplitOrderDialog({
     );
   }
 
-  /** A new bag starts with one bird, taken from the last bag that can spare it. */
-  function addBatch() {
-    setBatches((current) => {
-      const donor = [...current]
-        .reverse()
-        .findIndex((batch) => batch.count > 1);
-      if (left <= 0 && donor === -1) return current;
-
-      const next = current.map((batch, position) =>
-        left <= 0 && position === current.length - 1 - donor
-          ? { ...batch, count: batch.count - 1 }
-          : batch,
-      );
-      return [
-        ...next,
-        { count: 1, weight: current.at(-1)?.weight ?? weights[0] },
-      ];
-    });
-  }
-
-  /** Removing a bag hands its birds back to the one above it. */
-  function removeBatch(index: number) {
-    setBatches((current) => {
-      if (current.length < 2) return current;
-      const kept = current.filter((_, position) => position !== index);
-      const target = index === 0 ? 0 : index - 1;
-      kept[target] = {
-        ...kept[target],
-        count: kept[target].count + current[index].count,
-      };
-      return kept;
-    });
-  }
-
   return (
     <Modal
       open={open}
@@ -105,21 +92,23 @@ export function SplitOrderDialog({
               batch={batch}
               index={index}
               weights={weights}
-              canAdd={left > 0}
+              canIncrease={canMoveUp(batches, index)}
+              canDecrease={batch.count > 1}
               canRemove={batches.length > 1}
               onChange={(patch) => update(index, patch)}
-              onRemove={() => removeBatch(index)}
+              onIncrease={() => setBatches((now) => moveUp(now, index))}
+              onDecrease={() => setBatches((now) => moveDown(now, index))}
+              onRemove={() => setBatches((now) => removeBatch(now, index))}
             />
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={addBatch}
-          className="dashed-frame min-h-11 w-full rounded-[10px] bg-surface-page text-base text-foreground"
-        >
-          اضافة وزنة اخري
-        </button>
+        {canAddBatch(batches) && (
+          <DashedAddButton
+            label="اضافة وزنة اخري"
+            onClick={() => setBatches(addBatch)}
+          />
+        )}
 
         {left !== 0 && (
           <InlineError

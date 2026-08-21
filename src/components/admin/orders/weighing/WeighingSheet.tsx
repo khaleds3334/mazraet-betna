@@ -72,14 +72,16 @@ export function WeighingSheet({
   const [saving, setSaving] = useState(false);
   const [splitting, setSplitting] = useState(false);
 
-  // Said out loud the first time the sheet is opened: weights appearing on their
-  // own would otherwise read as the app having saved something it hasn't. Gated
-  // on `open` because every order card keeps its sheet mounted for the slide-in.
+  // Said out loud the first time the sheet is opened: work appearing on its own
+  // would otherwise read as the app having saved something it hasn't. It says
+  // «الشغل» rather than «الأوزان» because a split is restored too, and an order
+  // may come back re-bagged without a single weight on it (D-56). Gated on `open`
+  // because every order card keeps its sheet mounted for the slide-in.
   const announced = useRef(false);
   useEffect(() => {
     if (!open || !restored || announced.current) return;
     announced.current = true;
-    toast.info("رجّعنالك الأوزان اللي كنت مسجّلها قبل ما تقفل");
+    toast.info("رجّعنالك الشغل اللي كنت عامله قبل ما تقفل");
   }, [open, restored, toast]);
 
   const unitPrice = order.weighing.unitPrice ?? salePrice;
