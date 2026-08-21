@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { Button, NumberStepper, StatItem } from "@/components/ui";
+import { FeedPhasePair } from "../FeedPhasePair";
+import { FEED_PHASE_TEXT } from "@/lib/feedColors";
 import { useToast } from "@/hooks/useToast";
 import { addFeedPurchase } from "@/lib/actions/expenses";
 import { remainingFeedBags } from "@/lib/calculations/feed";
 import { ASSUMED_FEED_BAG_PRICE } from "@/lib/constants";
 import type { CycleDashboard } from "@/lib/queries/cycles";
-import { formatArabicNumber } from "@/lib/format";
 
 /** One phase's inputs: bag count (right) + per-bag price (left), matching the design. */
 function PhaseRow({
@@ -76,9 +77,11 @@ export function FeedExpenseForm({
     purchasedBadi: feed.purchasedBadi,
     purchasedNami: feed.purchasedNami,
   });
-  const [badiBags, setBadiBags] = useState(remaining.badi);
+  // The tile above may read `-١` (a bag more than the estimate); a field that
+  // opens on "buy minus one bag" would not.
+  const [badiBags, setBadiBags] = useState(Math.max(0, remaining.badi));
   const [badiPrice, setBadiPrice] = useState(lastPrice);
-  const [namiBags, setNamiBags] = useState(remaining.nami);
+  const [namiBags, setNamiBags] = useState(Math.max(0, remaining.nami));
   const [namiPrice, setNamiPrice] = useState(lastPrice);
   const [submitting, setSubmitting] = useState(false);
 
@@ -104,14 +107,41 @@ export function FeedExpenseForm({
       <div className="grid grid-cols-3 gap-3">
         <StatItem
           label={"العلف\nالمطلوب"}
-          value={`${formatArabicNumber(remaining.badi)} / ${formatArabicNumber(remaining.nami)}`}
+          value={
+            <FeedPhasePair
+              badi={remaining.badi}
+              nami={remaining.nami}
+              badiAlert={feed.availableBadi <= 0 && remaining.badi > 0}
+              namiAlert={feed.availableNami <= 0 && remaining.nami > 0}
+            />
+          }
         />
         <StatItem
           label={"العلف\nالمسحوب"}
-          value={formatArabicNumber(feed.withdrawn)}
-          valueClassName="text-accent-tan"
+          value={
+            /* Always its own feed's colour. The tile is a running total, and a
+               total that changes colour says the whole of it went past the
+               estimate when only its last bag did — the grid below marks that
+               bag, which is where it belongs (Khaled, 2026-08-21). */
+            <FeedPhasePair
+              badi={feed.withdrawnBadi}
+              nami={feed.withdrawnNami}
+              badiClassName={FEED_PHASE_TEXT.badi}
+              namiClassName={FEED_PHASE_TEXT.nami}
+            />
+          }
         />
-        <StatItem label={"العلف\nالمتوفر"} value={formatArabicNumber(feed.available)} />
+        <StatItem
+          label={"العلف\nالمتوفر"}
+          value={
+            <FeedPhasePair
+              badi={feed.availableBadi}
+              nami={feed.availableNami}
+              badiAlert={feed.availableBadi <= 0}
+              namiAlert={feed.availableNami <= 0}
+            />
+          }
+        />
       </div>
 
       <PhaseRow

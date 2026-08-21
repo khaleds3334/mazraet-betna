@@ -161,6 +161,54 @@ export function pluralizeCustomer(count: number): string {
 }
 
 /**
+ * Bags of feed, as the farm says them — including the halves it buys and opens
+ * (D-43): `صفر` · `نص شكارة` · `شكارة` · `شكارة ونص` · `شكارتين` · `شكارتين ونص` ·
+ * `٣ شكاير` · `٣ شكاير ونص` · `١١ شكارة`.
+ *
+ * The half is a word, not a decimal: «شكارة ونص» is what he says out loud, and
+ * «١.٥ شكارة» is what a spreadsheet says. The tiles still print the figure — this
+ * is for the sentences.
+ */
+export function pluralizeBags(count: number): string {
+  const whole = Math.floor(count);
+  const half = count - whole >= 0.5;
+
+  if (whole === 0) return half ? "نص شكارة" : "صفر";
+
+  const bags =
+    whole === 1
+      ? "شكارة"
+      : whole === 2
+        ? "شكارتين"
+        : whole <= 10
+          ? `${toArabicDigits(whole)} شكاير`
+          : `${toArabicDigits(whole)} شكارة`;
+
+  return half ? `${bags} ونص` : bags;
+}
+
+/**
+ * Feminine Arabic ordinals, for counting شكارة: `الأولى` … `العاشرة`. Past ten it
+ * falls back to `رقم ١١` — the spelled-out ordinals get long and unfamiliar, and a
+ * cycle rarely opens more than ten bags of one feed anyway.
+ */
+export function arabicOrdinal(n: number): string {
+  const NAMES = [
+    "الأولى",
+    "الثانية",
+    "الثالثة",
+    "الرابعة",
+    "الخامسة",
+    "السادسة",
+    "السابعة",
+    "الثامنة",
+    "التاسعة",
+    "العاشرة",
+  ];
+  return NAMES[n - 1] ?? `رقم ${toArabicDigits(n)}`;
+}
+
+/**
  * Arabic day pluralization for the flock age (FR-7), same shape as
  * {@link pluralizeChicken}: `١ يوم` · `٢ يومين` · `٣–١٠ ايام` · `١١+ يوم`.
  */

@@ -4,13 +4,21 @@ import { cn } from "@/lib/utils";
 
 /**
  * Value colouring. The icon and the value always share the tone, exactly as the
- * design does: green for a neutral figure, red for a cost, tan for something
- * pending or owed, olive for something finished.
+ * design does: green for a neutral figure, brown for money spent, red for
+ * something that needs a decision, tan for something pending or owed, olive for
+ * something finished.
+ *
+ * **Red is rationed** (D-47). It used to be the tone for any cost, which on the
+ * raising dashboard put it on the expenses tile, on the mortality tile, and on
+ * whichever feed figures had run out — three reds on one screen, and a colour
+ * that appears everywhere stops meaning anything. It is now reserved for a figure
+ * the admin has to do something about; ordinary spending is brown.
  */
-export type StatTone = "brand" | "danger" | "tan" | "olive";
+export type StatTone = "brand" | "brown" | "danger" | "tan" | "olive";
 
 const TONE_TEXT: Record<StatTone, string> = {
   brand: "text-foreground",
+  brown: "text-accent-brown",
   danger: "text-error",
   tan: "text-accent-tan",
   olive: "text-brand-olive",

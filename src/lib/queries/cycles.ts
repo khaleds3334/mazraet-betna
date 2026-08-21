@@ -97,7 +97,17 @@ export interface FeedWithdrawal {
   /** Day offset (0-based, from the start date) — its cell on the grid. */
   dayOffset: number;
   /** 1-based order of this bag across the whole cycle (الشكارة رقم N). */
-  bagNumber: number;
+  /** Its place **within its own feed** — بادي and نامي each count from ١ (D-45). */
+  phaseIndex: number;
+  /** How much came out this time: a whole 50kg bag, or half of one. */
+  bags: number;
+  /** For a half opening: which half of its bag it is. Null for a whole bag. */
+  half: "first" | "second" | null;
+  /** True once this opening takes the phase past what the cycle was estimated
+   *  to need — the flock is eating more than the forecast allowed for. */
+  beyondRequired: boolean;
+  /** Every bag opened before this one, both feeds together. */
+  eatenBefore: number;
   /** بادي while inside the cycle's required starter bags, then نامي (Khaled's rule). */
   phase: "badi" | "nami";
   /** Chick age (days) on the day the bag was opened. */
@@ -126,12 +136,19 @@ export interface CycleDashboard {
   mortalityCount: number;
   /** Cycle expenses so far: chicks + feed + manual expenses (FR-19). */
   expensesTotal: number;
+  /** What A-41 forecast this cycle would cost, kept from the day it was
+   *  registered. Null for cycles created before migration 018 — no line to
+   *  cross, so the expenses tile stays neutral (D-46). */
+  estimatedExpenses: number | null;
   feed: {
     /** Expected bags for the whole cycle — starter / grower (بادي / نامي). */
     requiredBadi: number;
     requiredNami: number;
     /** Bags still in the store (bought − withdrawn). */
     available: number;
+    /** The same, per feed — the two piles are counted apart (D-43). */
+    availableBadi: number;
+    availableNami: number;
     /** Bags bought so far this cycle, per phase — what's already in the store. */
     purchasedBadi: number;
     purchasedNami: number;
@@ -181,19 +198,41 @@ export function buildFeedSummary(input: FeedInput): CycleDashboard["feed"] {
   // Each opened bag says which feed it was (migration 017). Rows older than that
   // carry no phase, and fall back to the rule the app used before the column
   // existed: bags are بادي until the cycle's بادي requirement is used up, then
-  // نامي. `bagNumber` is the bag's 1-based order across the whole cycle.
+  // نامي.
+  //
+  // Two running totals, because the farm counts two things (D-45): `bagsSoFar` is
+  // everything opened, which is what «أكلوا قبلها» reports; `perPhase` is each
+  // feed on its own, which is what names the bag. `floor` is what makes two halves
+  // of the same bag share its ordinal — «نصف الشكارة الثانية», twice — instead of
+  // the second half claiming to be a third bag.
   let bagsSoFar = 0;
+  const perPhase: Record<FeedPhase, number> = { badi: 0, nami: 0 };
+
   const withdrawalList = input.withdrawals.map((w) => {
-    const bagNumber = bagsSoFar + 1;
-    const inferred: FeedPhase = bagsSoFar < badi ? "badi" : "nami";
+    const phase: FeedPhase = w.phase ?? (bagsSoFar < badi ? "badi" : "nami");
+    const eatenBefore = bagsSoFar;
+    const openedOfPhase = perPhase[phase];
+    const phaseIndex = Math.floor(openedOfPhase) + 1;
+
+    // Which half of its bag this is: one that lands on a whole number starts a
+    // bag, one that lands on a half finishes the bag before it.
+    const half: FeedWithdrawal["half"] =
+      w.bags === 0.5 ? (openedOfPhase % 1 === 0.5 ? "second" : "first") : null;
+
     bagsSoFar += w.bags;
+    perPhase[phase] += w.bags;
+
     return {
+      half,
+      beyondRequired: perPhase[phase] > (phase === "badi" ? badi : nami),
       dayOffset: differenceInCalendarDays(
         new Date(w.withdrawn_on),
         new Date(input.startDate),
       ),
-      bagNumber,
-      phase: w.phase ?? inferred,
+      phaseIndex,
+      bags: w.bags,
+      eatenBefore,
+      phase,
       ageDays: chickAgeDays(input.startDate, new Date(w.withdrawn_on)),
       withdrawnOn: w.withdrawn_on,
       withdrawnAt: w.withdrawn_at,
@@ -207,6 +246,8 @@ export function buildFeedSummary(input: FeedInput): CycleDashboard["feed"] {
     requiredBadi: badi,
     requiredNami: nami,
     available: feedBagsAvailable(input.feed, input.withdrawals),
+    availableBadi: Math.max(0, purchased.badi - withdrawnByPhase.badi),
+    availableNami: Math.max(0, purchased.nami - withdrawnByPhase.nami),
     purchasedBadi: purchased.badi,
     purchasedNami: purchased.nami,
     withdrawn: feedBagsWithdrawn(input.withdrawals),
@@ -237,7 +278,7 @@ export async function getActiveCycleDashboard(
   const { data: cycle } = await supabase
     .from("cycle")
     .select(
-      "id, name, chick_count, chick_price, start_date, start_time, sale_open, ended_at",
+      "id, name, chick_count, chick_price, start_date, start_time, sale_open, ended_at, estimated_expenses",
     )
     .eq("farm_id", farmId)
     .eq("is_active", true)
@@ -309,6 +350,10 @@ export async function getActiveCycleDashboard(
     salePrice: settings.salePrice,
     mortalityCount,
     expensesTotal,
+    estimatedExpenses:
+      cycle.estimated_expenses === null
+        ? null
+        : Number(cycle.estimated_expenses),
     feed: buildFeedSummary({
       startDate: cycle.start_date,
       chickCount: cycle.chick_count,

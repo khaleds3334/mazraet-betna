@@ -44,7 +44,11 @@ export function RaisingDashboard({
             value={pluralizeDay(data.ageDays)}
             tone="brand"
           />
-          <CycleExpensesCard total={data.expensesTotal} expenses={expenses} />
+          <CycleExpensesCard
+            total={data.expensesTotal}
+            estimated={data.estimatedExpenses}
+            expenses={expenses}
+          />
           <CycleStatCard
             icon="mortality"
             label="عدد النافق"

@@ -184,6 +184,14 @@ export function outOfPhaseFeed(phase: FeedPhase): string {
   return `مفيش علف ${FEED_PHASE_LABEL[phase]} في المخزن، سجّل شراء علف ${FEED_PHASE_LABEL[phase]} الأول.`;
 }
 
+/**
+ * Half a bag left is not "no feed" — the popup ticks «نصف شكارة» by itself in that
+ * case, so this is only reached if he unticks it and asks for a whole one.
+ */
+export function onlyHalfBagLeft(phase: FeedPhase): string {
+  return `مفيش غير نص شكارة ${FEED_PHASE_LABEL[phase]} في المخزن.`;
+}
+
 /** Manual expense categories (FR-18 / Phase 7 chips). */
 export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategory, string> = {
   feed: "علف",

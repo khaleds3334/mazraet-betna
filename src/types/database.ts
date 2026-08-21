@@ -77,6 +77,7 @@ export type Database = {
       }
       cycle: {
         Row: {
+          estimated_expenses: number | null
           chick_count: number
           chick_price: number
           created_at: string
@@ -92,6 +93,7 @@ export type Database = {
           start_time: string | null
         }
         Insert: {
+          estimated_expenses?: number | null
           chick_count: number
           chick_price?: number
           created_at?: string
@@ -107,6 +109,7 @@ export type Database = {
           start_time?: string | null
         }
         Update: {
+          estimated_expenses?: number | null
           chick_count?: number
           chick_price?: number
           created_at?: string

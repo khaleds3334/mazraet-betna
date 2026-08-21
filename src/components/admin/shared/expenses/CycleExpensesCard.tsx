@@ -18,17 +18,30 @@ import { CycleExpensesSheet } from "./CycleExpensesSheet";
  *
  * `label` differs by screen: «مصاريف الدورة» on a running cycle, «اخر المصاريف»
  * between cycles, where the number belongs to the cycle that just closed.
+ *
+ * **Brown until it passes the forecast, then red** (D-47). Spending money is what
+ * a cycle does — the tile was red for simply existing, which on the raising
+ * dashboard sat beside a red mortality figure and sometimes red feed counts, and
+ * three reds on one screen train the eye to skip all of them. Red here now means
+ * one thing: this cycle has cost more than A-41 said it would when he registered
+ * it. Without a stored forecast (`estimated` is null — a cycle registered before
+ * migration 018) there is no line to cross, and it stays brown.
  */
 export function CycleExpensesCard({
   total,
+  estimated,
   expenses,
   label = "مصاريف الدورة",
 }: {
   total: number;
+  /** «المصاريف المتوقعة» from A-41. Null = this cycle was never given one. */
+  estimated?: number | null;
   expenses: CycleExpenses;
   label?: string;
 }) {
   const [open, setOpen] = useState(false);
+
+  const overBudget = estimated != null && estimated > 0 && total > estimated;
 
   return (
     <>
@@ -42,7 +55,7 @@ export function CycleExpensesCard({
           icon="payment"
           label={label}
           value={formatArabicNumber(total)}
-          tone="danger"
+          tone={overBudget ? "danger" : "brown"}
         />
       </button>
 

@@ -124,14 +124,18 @@ export function nextWithdrawalPhase(input: {
 }
 
 /**
- * Bags still to buy for each phase — what the purchase form (A-15) opens on, so
- * the admin isn't asked again for feed he has already brought in.
+ * Bags still to buy for each phase: the cycle's estimate minus what is already
+ * bought. Halves survive the subtraction — a cycle needing ١.٥ reaches ٠ once ١.٥
+ * is bought, not the ٠.٥ the old whole-bag rounding left behind.
  *
- * Never negative: once he has bought everything the cycle needs, both open at
- * zero and he types whatever he is actually buying.
+ * **It goes negative, and that is the point** (D-46). Buying ٤ بادي against an
+ * estimate of ٣ shows `-١`: one bag more than the flock is reckoned to need. The
+ * estimate is a forecast, not an allowance, so the extra bag is worth seeing — and
+ * `٠` would say he had bought exactly enough, which is a different fact.
  *
- * Halves survive the subtraction: a cycle needing ١.٥ shows ٠ once ١.٥ is bought,
- * not the ٠.٥ the old whole-bag rounding left behind (Khaled, 2026-08-21).
+ * Callers that need a count rather than a balance clamp it themselves: the
+ * purchase form opens its steppers on `Math.max(0, …)`, since «اشترِ ناقص واحد»
+ * is not a thing.
  */
 export function remainingFeedBags(input: {
   requiredBadi: number;
@@ -140,8 +144,8 @@ export function remainingFeedBags(input: {
   purchasedNami: number;
 }): { badi: number; nami: number } {
   return {
-    badi: round2(Math.max(0, input.requiredBadi - input.purchasedBadi)),
-    nami: round2(Math.max(0, input.requiredNami - input.purchasedNami)),
+    badi: round2(input.requiredBadi - input.purchasedBadi),
+    nami: round2(input.requiredNami - input.purchasedNami),
   };
 }
 

@@ -1250,3 +1250,179 @@ Every other order can go out unpaid precisely because a customer's name is on it
 with a price attached — the birds can't leave on credit. That is the right price;
 an anonymous debt is not a debt.
 **Date:** 2026-08-21
+
+### D-43 — Feed is counted by the half bag, and every bag says which feed it was
+`feed.bags` and `feed_withdrawal.bags` are `numeric(6,2)`, constrained to halves;
+`feed_withdrawal.phase` records بادي/نامي the way migration 013 did for purchases
+(both in migration 017). The withdraw popup (A-13) gained two controls that are
+not in the Figma file — a «نصف شكارة» checkbox and a بادي/نامي pair — added on
+Khaled's word (2026-08-21).
+
+**Why:** a 50kg sack is bought and opened by the half on this farm, and `int` was
+truncating that in silence. And the store is not one pile: بادي and نامي are
+counted apart, so an opening has to say which one it came out of or the two
+counts drift.
+
+**Both controls arrive answered**, the way the day and the time already did — the
+admin is standing at the store with his hands busy, and the popup's job is to be
+tappable, not to be a questionnaire. He can override either, and his answer is
+what gets stored.
+
+**Which feed comes next is decided by quantity alone** (`nextWithdrawalPhase`):
+bags are بادي until the cycle's بادي requirement has been opened, then نامي. The
+flock's **age** was the other candidate — "after day ١٥–١٧ it's all نامي" — and
+was turned down: a large cycle can reach day ١٦ with بادي still in its quota, so
+the two rules disagree exactly where it matters, and a default the admin can't
+predict is worse than one that is occasionally worth changing.
+
+**This supersedes the withdrawal half of T-47**, which kept withdrawals inferred
+on the grounds that asking mid-cycle was friction. It is not friction when the
+answer is already filled in.
+**Date:** 2026-08-21
+
+### D-44 — «العلف المطلوب» is what is still to buy
+The tile on A-11/A-44 and in the purchase form shows the cycle's estimate **minus
+what has already been bought**, per phase, reaching ٠ / ٠ once the store is
+complete. It is the same subtraction that pre-fills the purchase form's bag
+counts, so the number he reads and the number he is handed are one number.
+
+**Why:** it used to hold the whole cycle's forecast for the whole cycle, so a full
+store still read «١.٥ / ٥.٥» — true, and useless. Standing in the feed shop the
+only question is how many more (Khaled, 2026-08-21).
+
+**And it prints its halves.** The tile used to round to whole bags to stay compact
+(the display note in **T-22**, now retired) while the create-cycle sheet showed the
+same cycle's halves: registering ١٠٠ كتكوت against «١.٥ و ٥.٥» opened a dashboard
+saying «٢ و ٦», and one of the two had to be wrong.
+**Date:** 2026-08-21
+
+### D-45 — A bag is named within its own feed, and says what came before it
+The bag-detail popup (A-13) reads «الشكارة الأولى بادي» / «نصف الشكارة الثانية
+بادي», with «أكلوا قبلها» underneath. The ordinal counts **within the phase** and
+restarts at نامي; a half opening is prefixed «نصف» and does not advance the
+ordinal past the bag it is half of; «أكلوا قبلها» is every bag opened before this
+one, both phases together.
+
+**Why:** the number used to be a running count across the whole cycle, and a half
+bag advanced it as if it were whole — so «الشكارة رقم ٣» could mean two and a half
+bags of two different feeds. The farm counts بادي and نامي separately, and this
+popup exists to answer "which bag was that?" in the terms he thinks in (Khaled,
+2026-08-21).
+**Date:** 2026-08-21
+
+### T-53 — No overlay scrolls sideways, and the expense sheet opens fresh
+`overflow-x-hidden` alongside the `overflow-y-auto` on `BottomSheet` and `Modal`.
+CSS computes the other axis from `visible` to `auto` the moment one axis is
+scrollable, so **one element a pixel too wide turned an entire sheet into a
+horizontal scroller** — which is what the expense sheet was doing. Hiding it is
+not the same as fitting it, so the content was fixed too: `NumberStepper` shrinks,
+the bag rows wrap at 320px, and the expenses table's item column wraps instead of
+widening the row.
+
+**The category chips are pinned with the title.** Same reasoning that put the ✕ up
+there (T-45): a form long enough to scroll is exactly the one you want out of.
+
+**Closing that sheet without saving discards the typing** — the forms are keyed on
+an opening counter, so each opening remounts them. The other sheets keep
+half-finished work on purpose; this one opens on figures the app worked out (bags
+still to buy, the last bag's price), and a half-edited number sitting in that slot
+is indistinguishable from a default (Khaled, 2026-08-21).
+**Date:** 2026-08-21
+
+### T-54 — Press-and-hold repeats in gears, and never changes the amount
+`StepButton` repeats while held: 450ms before the first repeat, then gaps of
+260 → 130 → 60ms as the hold continues. **The step itself never changes.**
+
+**Why not accelerate the amount too:** it is the obvious way to make a long run
+fast, and it makes the number unpredictable — the admin looks up from the store
+and the count has jumped by five. These are bags of feed and pounds of money, and
+he can always type the number instead.
+
+**The bag price steps by ١, not ٥٠.** The field opens on what he last paid
+(T-46), so what he does there is nudge it — and ٥٠ could not reach ١٤٧٠ from
+١٤٥٠ at all. Holding covers the distance when the gap is real.
+**Date:** 2026-08-21
+
+### D-46 — The feed tiles hold two figures each, and colour them apart
+«العلف المتوفر» is split into بادي / نامي the way «العلف المطلوب» already was, and
+each side of each pair colours on its own (`FeedPhasePair`).
+
+**Red is one condition said in two places:** a feed whose store has run out. In
+المتوفر it marks the `٠` — that pile is gone. In المطلوب it marks the bags still
+owed to the cycle, because owing bags is ordinary while owing them with an empty
+store is the flock going hungry tomorrow. المطلوب at `٠` never reddens: nothing
+more to buy is not a problem, whatever the store holds.
+
+**Why the pair rather than one number:** the two feeds are separate stores, so one
+colour for both says the wrong thing about one of them — «٠ / ٣» is an emergency
+on the left and perfectly fine on the right, and this tile is read at a glance
+while standing in the feed store (Khaled, 2026-08-21).
+
+**A surplus shows as a negative, in green.** `remainingFeedBags` no longer clamps at
+zero: buying ٤ بادي against an estimate of ٣ reads `-١`, in `success` green. The
+estimate is a forecast, not an allowance, so the extra bag is worth seeing — and
+`٠` would claim he bought exactly enough, which is a different fact.
+
+*Colour revised the same day:* it was lime first, and lime then became بادي's own
+colour (D-48) — a lime figure would have read as "about بادي" instead of "a
+surplus". Red was the other candidate and is wrong for the same reason the rest of
+D-47 is: red in this very tile already means feed is owed with an empty store, and
+one colour cannot say both «ينقصك» and «عندك زيادة». Callers needing a count clamp it themselves; the
+purchase form's steppers still open at zero, since «اشترِ ناقص واحد» is not a thing.
+
+**«تسجيل مصاريف» replaces حفظ when the store is empty.** A disabled button explains
+nothing; this one closes the popup and opens the purchase sheet — closing first
+because a sheet sits *below* a dialog on the layer ladder (T-40).
+**Date:** 2026-08-21
+
+### D-47 — Red is rationed: it means "decide something", not "this is money"
+The «مصاريف الدورة» tile is **brown** (`accent-brown`) while spending tracks the
+forecast, and turns **red** only once it passes «المصاريف المتوقعة» — the figure
+A-41 showed when the cycle was registered, now stored on the cycle
+(`estimated_expenses`, migration 018).
+
+**Why:** the raising dashboard had three reds on it at once — the expenses tile
+(red for merely existing), the mortality figure, and whichever feed count had run
+out. A colour that appears everywhere stops being read; the admin glances at this
+screen between other work, and red has to earn the glance (Khaled, 2026-08-21).
+Mortality keeps it — a rising death count is the thing on this screen he most
+needs to catch — and so do the feed figures (D-46), which mean the flock goes
+hungry tomorrow. Spending money is simply what a cycle does.
+
+**Stored, not recomputed.** The forecast prices feed at the last bag bought, so
+re-deriving it mid-cycle would move the line every time he buys feed at a new
+price: «فوق المتوقع» would then be reporting the market, not his spending. The
+figure kept is the one he was told.
+
+**Cycles created before 018 have no forecast and stay brown** — no line, no
+verdict. Same for «اخر المصاريف» between cycles: that cycle is closed, and there
+is nothing left to decide about it.
+**Date:** 2026-08-21
+
+### D-48 — بادي and نامي have a colour, and a half bag shades half its day
+`lib/feedColors.ts` is the one definition: **بادي = lime** (`primary-hover`),
+**نامي = tan/orange** (`accent-tan` as a figure, `accent-orange` as a fill). The
+«العلف المسحوب» tile splits into the two feeds and prints each in its own colour,
+and the consumption grid under it fills each day in the same two — so a lime square
+and a lime figure are read as the same fact, which is the only reason to give them
+a colour at all (Khaled, 2026-08-21).
+
+**Text and fill are separate entries** in that file: the token that reads well as a
+number is not the one that reads well as a filled 20px square.
+
+**A half bag shades half its square**, cut corner to corner — first half on the
+left, second on the right, so the two halves of one bag would tile the square
+between them. A half used to fill the day exactly like a whole bag, which made a
+cycle run on halves look twice as hungry as it was. Two halves on one day fill it
+whole, since that is what they are.
+
+**Past the estimate is green — on the grid square only.** The «العلف المسحوب» tile
+keeps each feed's own colour whatever the total reaches: it is a running total, and
+recolouring the whole of it says every bag went past the estimate when only the last
+one did (Khaled, 2026-08-21). The grid marks the bag itself, which is the thing that
+actually crossed the line. Green rather than red, and the same green a surplus in «العلف المطلوب» takes: «زيادة عن المطلوب»
+is one idea and gets one colour wherever it appears (Khaled, 2026-08-21). It was red
+for half a day, which had the further problem of burying the phase colours it was
+supposed to sit alongside — the second بادي bag of a ١.٥-bag cycle went red, and the
+lime never got seen.
+**Date:** 2026-08-21

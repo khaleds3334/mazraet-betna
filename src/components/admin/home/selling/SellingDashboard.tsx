@@ -73,6 +73,7 @@ export function SellingDashboard({
             />
             <CycleExpensesCard
               total={cycle.expensesTotal}
+              estimated={cycle.estimatedExpenses}
               expenses={expenses}
             />
             <CycleStatCard

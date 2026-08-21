@@ -4,7 +4,11 @@ import { cn } from "@/lib/utils";
  * A labeled stat card (Figma "Stat Item"): a small centered tile with a muted
  * caption on top and a bold value below. Used for read-only computed figures
  * (e.g. "العلف المطلوب", "المصاريف المتوقعة"). `valueClassName` recolors the
- * value — e.g. red for an expense.
+ * whole value — e.g. red for an expense.
+ *
+ * `value` takes a node rather than a string, for the tiles that hold **two**
+ * figures and colour them apart: «بادي / نامي», where one side can be short and
+ * the other fine (D-46).
  */
 export function StatItem({
   label,
@@ -12,7 +16,7 @@ export function StatItem({
   valueClassName,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   valueClassName?: string;
 }) {
   return (

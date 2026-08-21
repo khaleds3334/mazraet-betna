@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
-import { hasActiveCycle } from "@/lib/queries/cycles";
+import { getCycleEstimateBasis, hasActiveCycle } from "@/lib/queries/cycles";
+import { estimatedCycleExpenses } from "@/lib/calculations/cycle";
 import { countOpenCycleOrders } from "@/lib/queries/orders";
 import { pluralizeOrder } from "@/lib/format";
 
@@ -53,6 +54,14 @@ export async function createCycle(
   const name = input.name.trim();
   const startTime = input.startTime.trim();
 
+  // The same forecast the sheet was showing him, recomputed here from the same
+  // reads rather than trusted from the form — and kept, so the expenses tile has
+  // a line to cross later (D-46). Recomputed server-side and stored once: a
+  // forecast that is re-derived mid-cycle moves every time he buys feed at a new
+  // price, and «فوق المتوقع» would then mean the market moved, not that he spent.
+  const basis = await getCycleEstimateBasis(farm.farmId);
+  const forecast = estimatedCycleExpenses(chickCount, chickPrice, basis);
+
   const supabase = await createClient();
   const { error } = await supabase.from("cycle").insert({
     farm_id: farm.farmId,
@@ -61,6 +70,7 @@ export async function createCycle(
     start_date: input.startDate,
     start_time: startTime || null,
     name: name || null,
+    estimated_expenses: forecast.total,
     is_active: true,
   });
 
