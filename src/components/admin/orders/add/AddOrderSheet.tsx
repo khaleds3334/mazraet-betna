@@ -6,6 +6,8 @@ import {
   BottomSheet,
   Button,
   CloseButton,
+  DashedAddButton,
+  Icon,
   InlineError,
   Stepper,
   TextareaField,
@@ -42,6 +44,18 @@ import {
  *
  * The form is only cleared once the save lands. A failed save keeps every field,
  * because the alternative is retyping an order in front of a waiting customer.
+ *
+ * **The note is folded away behind «اضافة ملاحظة»** — the dashed control (Khaled,
+ * 2026-08-21), the same one «اضافة فرخة اخري» uses on the weighing sheet. Most
+ * orders have nothing to say, and a three-line box sitting open for all of them
+ * pushed the buttons off a short screen. A disclosure button rather than a
+ * checkbox: a checkbox records an answer, and this records nothing — it decides
+ * whether a field is on screen.
+ *
+ * **Closing it clears what was typed**, on purpose. A note that is saved while
+ * hidden is a note he cannot check before he taps, and this form already has one
+ * of those in the notes' own example («فرختين لوحدهم»). Nothing this sheet sends
+ * is ever off screen.
  */
 export function AddOrderSheet({
   open,
@@ -71,6 +85,7 @@ export function AddOrderSheet({
   const [cleaning, setCleaning] = useState(defaultCleaning);
   const [weight, setWeight] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
+  const [noteOpen, setNoteOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -80,6 +95,7 @@ export function AddOrderSheet({
     setCleaning(defaultCleaning);
     setWeight(null);
     setNotes("");
+    setNoteOpen(false);
     setError(null);
   }
 
@@ -148,7 +164,7 @@ export function AddOrderSheet({
         </div>
       }
     >
-      <div className="flex min-h-full flex-col gap-6 px-screen pt-2">
+      <div className="flex flex-col gap-6 px-screen pt-2">
         <OrderRecipient
           value={recipient}
           onChange={setRecipient}
@@ -196,20 +212,48 @@ export function AddOrderSheet({
           </div>
         </div>
 
-        <TextareaField
-          id="order-notes"
-          label="اي ملاحظات"
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-          placeholder="مثلا: عاوز فرختين لوحدهم و ٣ لوحدهم..."
-        />
+        {noteOpen ? (
+          <div className="flex flex-col gap-2">
+            {/* Mounted only when open, so `autoFocus` lands on the tap that
+                opened it — no ref, no effect. */}
+            <TextareaField
+              id="order-notes"
+              label="اي ملاحظات"
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="مثلا: عاوز فرختين لوحدهم و ٣ لوحدهم..."
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setNoteOpen(false);
+                setNotes("");
+              }}
+              className="flex min-h-11 items-center gap-1 self-end px-1 text-sm text-muted"
+            >
+              <Icon name="close" size={16} aria-hidden />
+              شيل الملاحظة
+            </button>
+          </div>
+        ) : (
+          <DashedAddButton
+            label="اضافة ملاحظة"
+            onClick={() => setNoteOpen(true)}
+          />
+        )}
 
         {/* Said before he fills the form in, not after he taps save — the birds
             are weeks from ready and there is nothing to book (FR-11). */}
         {!saleOpen && <InlineError message={SALE_NOT_OPEN} />}
         {error && <InlineError message={error} />}
 
-        <div className="mt-auto flex flex-col gap-4 pb-2">
+        {/* Follows the form instead of being pushed to the foot of the sheet. The
+            form used to end in an always-open note box, so `mt-auto` looked like
+            spacing; with the note folded away it left a hole above the buttons
+            (Khaled, 2026-08-21). `sticky` keeps them reachable when the form is
+            long enough to scroll, which is the part `mt-auto` was really for. */}
+        <div className="sticky bottom-0 flex flex-col gap-4 bg-background pt-2 pb-2">
           <Button
             onClick={() => submit()}
             disabled={!saleOpen}

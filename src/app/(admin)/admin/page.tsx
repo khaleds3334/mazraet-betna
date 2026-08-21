@@ -10,6 +10,8 @@ import {
   listCycles,
 } from "@/lib/queries/cycles";
 import { getCycleExpenses } from "@/lib/queries/expenses";
+import { listFarmCustomers } from "@/lib/queries/customers";
+import { getFarmSettings } from "@/lib/queries/settings";
 import { getSellingStats } from "@/lib/queries/selling";
 
 /**
@@ -35,18 +37,26 @@ export default async function AdminHomePage() {
   }
 
   if (dashboard?.phase === "selling") {
-    const [stats, expenses] = await Promise.all([
+    // «اضافة طلب» lives in this header too (D-51), so the customer list and the
+    // order settings travel with the page the same way they do on A-50.
+    const [stats, expenses, customers, settings] = await Promise.all([
       getSellingStats(farm.farmId, dashboard.cycleId, {
         chickCount: dashboard.chickCount,
         mortalityCount: dashboard.mortalityCount,
       }),
       getCycleExpenses(dashboard.cycleId),
+      listFarmCustomers(farm.farmId),
+      getFarmSettings(farm.farmId),
     ]);
     return (
       <SellingDashboard
         cycle={dashboard}
         stats={stats}
         expenses={expenses}
+        customers={customers}
+        weights={settings.availableWeights}
+        defaultCleaning={settings.defaultCleaning}
+        cleaningPrice={settings.cleaningPrice}
       />
     );
   }

@@ -7,6 +7,8 @@ import { CycleStatCard } from "../shared/CycleStatCard";
 import { StatSection } from "../shared/StatSection";
 import { SellingHeader } from "./SellingHeader";
 import { RevealableStatCard } from "./RevealableStatCard";
+import { OrderStatLink } from "./OrderStatLink";
+import type { CustomerOption } from "@/lib/queries/customers";
 
 /**
  * Admin home while the sale is open (A-20_Home_SaleOpen): the header badges
@@ -15,25 +17,49 @@ import { RevealableStatCard } from "./RevealableStatCard";
  * `cycle` (the shared cycle read) and `stats` (the selling-only aggregates).
  *
  * Tile order inside each row is right→left, the way it reads in RTL.
+ *
+ * The header is `sticky`: «اضافة طلب», the kilo price and the sale state are the
+ * things this screen is for, and scrolling to read the figures should not take
+ * them away. The page's side padding moves onto the two blocks so the pinned one
+ * can paint the full width — otherwise the figures would slide past it through
+ * the gutters (the same arrangement as `OrdersShell`, T-35).
  */
 export function SellingDashboard({
   cycle,
   stats,
   expenses,
+  customers,
+  weights,
+  defaultCleaning,
+  cleaningPrice,
 }: {
   cycle: CycleDashboard;
   stats: SellingStats;
   expenses: CycleExpenses;
+  /** Handed to «اضافة طلب» in the header. */
+  customers: CustomerOption[];
+  weights: number[];
+  defaultCleaning: boolean;
+  cleaningPrice: number;
 }) {
   const { flock, money, orders } = stats;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-screen pb-6 pt-4">
-      <SellingHeader ageDays={cycle.ageDays} salePrice={cycle.salePrice} />
+    <div className="flex flex-1 flex-col gap-4 pb-6">
+      <div className="sticky top-0 z-10 bg-background px-screen pt-4 pb-2">
+        <SellingHeader
+          ageDays={cycle.ageDays}
+          salePrice={cycle.salePrice}
+          customers={customers}
+          weights={weights}
+          defaultCleaning={defaultCleaning}
+          cleaningPrice={cleaningPrice}
+        />
+      </div>
 
       {/* `my-auto` centres the three sections in the leftover height (the design
           centres them) yet collapses to 0 and scrolls on short screens. */}
-      <div className="my-auto flex flex-col gap-6">
+      <div className="my-auto flex flex-col gap-3 px-screen">
         {/* The flock, split three ways. Flat tiles here — the design raises only
           the money and order rows. */}
         <StatSection title="احصائيات الفراخ">
@@ -98,25 +124,29 @@ export function SellingDashboard({
           </div>
         </StatSection>
 
-        {/* Orders, grouped the way the admin's order tabs group them (FR-12). */}
+        {/* Orders, grouped the way the admin's order tabs group them (FR-12) —
+            and each tile opens its own tab, when it has anything to open. */}
         <StatSection title="الطلبات">
           <div className="grid grid-cols-3 gap-2">
-            <CycleStatCard
+            <OrderStatLink
+              tab="new"
               icon="ordersNew"
               label="الطلبات الجديدة"
-              value={formatArabicNumber(orders.new)}
+              count={orders.new}
               tone="brand"
             />
-            <CycleStatCard
+            <OrderStatLink
+              tab="active"
               icon="ordersProcessing"
               label="قيد التشغيل"
-              value={formatArabicNumber(orders.active)}
+              count={orders.active}
               tone="tan"
             />
-            <CycleStatCard
+            <OrderStatLink
+              tab="done"
               icon="delivered"
               label="المكتملة"
-              value={formatArabicNumber(orders.done)}
+              count={orders.done}
               tone="olive"
             />
           </div>

@@ -1481,3 +1481,27 @@ its weighing draft is keyed to that order from its first render.
 first thing every order needs, and the tap to reach the field is one the admin
 makes with a hand that is holding something else (Khaled, 2026-08-21).
 **Date:** 2026-08-21
+
+### D-51 — The selling home's header is pinned, takes orders, and its tiles open them
+Three changes to A-20, all the same idea: this is the screen the admin is standing
+on when a customer walks up, so what he needs from it should not require scrolling
+back or navigating away (Khaled, 2026-08-21).
+
+**«اضافة طلب» sits facing the settings gear.** It is the same `AddOrderLauncher`
+the orders screen uses, so there is one add-order sheet in the project rather than
+two that drift — and «تأكيد الطلب ووزن الفراخ» works from here too (D-50).
+
+**The header is `sticky`.** It holds the kilo price, whether the sale is open, and
+the way to take an order; none of that stops being true because he scrolled down
+to read the figures. The page's side padding moved onto the two blocks so the
+pinned one can paint the full width — otherwise the figures slide past it through
+the gutters (T-35).
+
+**Each order tile opens its own tab** — `/admin/orders?tab=new|active|done` —
+**but only when it has orders in it.** This settles the open question in
+`PROGRESS.md`: option ب. «٠ طلبات جديدة» is an answer, not an invitation; tapping
+it would open a list saying the same thing one screen further from home, and a
+control that sometimes does nothing teaches him that tapping is not worth trying.
+The tile itself is unchanged in both cases — only the wrapper differs, the same
+arrangement `CycleExpensesCard` uses.
+**Date:** 2026-08-21

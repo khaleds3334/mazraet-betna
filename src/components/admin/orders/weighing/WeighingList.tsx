@@ -1,5 +1,6 @@
 "use client";
 
+import { DashedAddButton } from "@/components/ui";
 import type { WeighingDraft } from "@/hooks/useWeighingDraft";
 import { formatCurrency, pluralizeChicken } from "@/lib/format";
 import { WeighingRow } from "./WeighingRow";
@@ -90,13 +91,7 @@ export function WeighingList({
 
             {/* Only the last bag offers another bird — it is the open one. */}
             {bagIndex === bags.length - 1 && (
-              <button
-                type="button"
-                onClick={onAdd}
-                className="dashed-frame min-h-11 w-full rounded-[10px] bg-surface-page text-base text-foreground"
-              >
-                اضافة فرخة اخري
-              </button>
+              <DashedAddButton label="اضافة فرخة اخري" onClick={onAdd} />
             )}
           </div>
         ))}
