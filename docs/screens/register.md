@@ -23,7 +23,11 @@ Action: `registerCustomer(phone, name)` in `/lib/actions/auth.ts`.
 
 ## Components
 New: `BackButton` (shared — rounded lime square, RTL back arrow)
-Reused: `InputField` (error state, right-aligned message) · `Button`
+Reused: `InputField` (error state, right-aligned message) · `Button` ·
+`EgyptDialCode` (flag + `+2` beside the number, same as the PIN screen)
+
+The phone block is stacked (label above the number) rather than label-and-value
+on one line — the longer label plus the flag does not fit across 360px.
 
 ## Icons
 `arrowRight` (back, already in the map)

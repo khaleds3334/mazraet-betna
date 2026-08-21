@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { BackButton } from "@/components/ui";
+import { BackButton, EgyptDialCode } from "@/components/ui";
 import { PinForm } from "./PinForm";
 
 /**
@@ -32,9 +32,14 @@ export default async function PinPage({
       </p>
 
       <div className="mt-8 flex flex-col gap-3 font-bold text-primary-foreground">
-        <span className="text-base">الحساب الخاص برقم التليفون</span>
-        <span className="text-h6" dir="rtl">
-          {phone}
+        <span className="text-base">ادخل الرقم السري الخاص بحسابك</span>
+
+        {/* Dial code then the number — the row follows the page direction, so
+            it reads right-to-left. The number itself is pinned LTR: it is a
+            phone number, and it keeps Latin digits (the FR-3 exception). */}
+        <span className="flex items-center gap-1.5 text-h6">
+          <EgyptDialCode />
+          <span dir="ltr">{phone}</span>
         </span>
       </div>
 

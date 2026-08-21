@@ -13,6 +13,7 @@ export { DashedAddButton } from "./DashedAddButton";
 export { ConfirmActions } from "./ConfirmActions";
 export { CloseButton } from "./CloseButton";
 export { ComingSoon } from "./ComingSoon";
+export { EgyptDialCode } from "./EgyptDialCode";
 export { EmptyState } from "./EmptyState";
 export { Icon } from "./Icon";
 export { InputField } from "./InputField";

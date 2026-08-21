@@ -24,6 +24,9 @@ Action: `verifyPin(phone, pin)` in `/lib/actions/auth.ts`; session plumbing in
 New: `PinInput` (shared — six boxes, each its own input, Arabic-Indic digits)
 Reused: `BackButton` · `Button`
 New token: `--text-h3` (28px, the PIN digits)
+Asset: `/public/images/flag-egypt.svg` — the round Egypt flag next to the phone,
+exported from Figma (3561:2585). A plain image, not a Hugeicon, so it renders
+through `next/image` rather than `<Icon>`.
 
 ## Feedback
 - Wrong PIN → boxes turn red + centered message above the button

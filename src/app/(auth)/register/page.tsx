@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { BackButton } from "@/components/ui";
+import { BackButton, EgyptDialCode } from "@/components/ui";
 import { RegisterForm } from "./RegisterForm";
 
 /**
@@ -28,14 +28,21 @@ export default async function RegisterPage({
       </h1>
 
       <p className="mt-6 text-right text-base leading-6 text-heading">
-        عشان دي أول مرة تطلب مننا من خلال التطبيق، يا ريت نتعرف بيك عشان نسجل اسمك
-        عندنا ونعرفك في الطلبات اللي جاية.
+        الرقم دا جديد علينا، سجل اسمك علشان نعرفك، و لو مسجل قبل كدا اتأكد من رقم التليفون بتاعك يكون صحيح
       </p>
 
-      <div className="mt-8 flex items-center justify-between font-bold text-primary-foreground">
-        <span className="text-base">رقم التليفون</span>
-        <span className="text-h6" dir="ltr">
-          {phone}
+      {/* Stacked rather than label-and-value on one line: the longer label plus
+          the flag and dial code do not fit across 360px. Same shape as the PIN
+          screen, which shows the same thing. */}
+      <div className="mt-8 flex flex-col gap-3 font-bold text-primary-foreground">
+        <span className="text-base">رقم التليفون الي بتسجل بيه</span>
+
+        {/* Dial code then the number — the row follows the page direction, so it
+            reads right-to-left. The number itself is pinned LTR: it is a phone
+            number, and it keeps Latin digits (the FR-3 exception). */}
+        <span className="flex items-center gap-1.5 text-h6">
+          <EgyptDialCode />
+          <span dir="ltr">{phone}</span>
         </span>
       </div>
 
