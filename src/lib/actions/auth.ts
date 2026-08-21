@@ -7,6 +7,7 @@ import {
   signInAdmin,
   type CustomerAuthRow,
 } from "@/lib/auth/session";
+import { isEgyptianMobile, normalizePhone, phoneError } from "@/lib/phone";
 
 /**
  * Auth actions. Login is phone-only for customers, phone + PIN for the admin
@@ -14,7 +15,6 @@ import {
  * /lib/auth/session.ts; this file is the three actions the screens call.
  */
 
-const PHONE_RE = /^\d{11}$/;
 // Names are Arabic only (the field asks for it, and the admin reads no Latin).
 const NAME_RE = /^[؀-ۿ\s]+$/;
 
@@ -30,10 +30,9 @@ export type StartLoginResult =
  *   • an unknown number → self-registration ("نورتنا لأول مرة")
  */
 export async function startLogin(rawPhone: string): Promise<StartLoginResult> {
-  const phone = rawPhone.replace(/\D/g, "");
-  if (!PHONE_RE.test(phone)) {
-    return { ok: false, error: "معلش، اتأكد إنك كاتب رقم الموبايل صح (١١ رقم)." };
-  }
+  const phone = normalizePhone(rawPhone);
+  const badPhone = phoneError(phone);
+  if (badPhone) return { ok: false, error: badPhone };
 
   const admin = createAdminClient();
 
@@ -73,10 +72,12 @@ export async function registerCustomer(
   rawPhone: string,
   rawName: string,
 ): Promise<RegisterResult> {
-  const phone = rawPhone.replace(/\D/g, "");
+  const phone = normalizePhone(rawPhone);
   const name = rawName.trim().replace(/\s+/g, " ");
 
-  if (!PHONE_RE.test(phone)) {
+  // The phone arrives in the URL from login, which already checked it — this
+  // only catches a hand-edited link.
+  if (!isEgyptianMobile(phone)) {
     return { ok: false, error: "الرقم مش مظبوط، ارجع واكتبه تاني." };
   }
   if (name.length < 2 || !NAME_RE.test(name)) {
@@ -144,10 +145,10 @@ export async function verifyPin(
   rawPhone: string,
   rawPin: string,
 ): Promise<VerifyPinResult> {
-  const phone = rawPhone.replace(/\D/g, "");
+  const phone = normalizePhone(rawPhone);
   const pin = rawPin.replace(/\D/g, "");
 
-  if (!PHONE_RE.test(phone)) {
+  if (!isEgyptianMobile(phone)) {
     return { ok: false, error: "الرقم مش مظبوط، ارجع وسجّل الدخول." };
   }
   if (pin.length !== 6) {

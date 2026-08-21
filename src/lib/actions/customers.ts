@@ -8,6 +8,7 @@ import {
   listCustomerOrders,
   type CustomerOrder,
 } from "@/lib/queries/orders";
+import { normalizePhone, phoneError } from "@/lib/phone";
 import type { ActionResult } from "./cycles";
 
 /**
@@ -19,7 +20,6 @@ import type { ActionResult } from "./cycles";
  * created and linked the first time they sign in with that number (D-14).
  */
 
-const PHONE_RE = /^\d{11}$/;
 // Arabic-only, same rule as the customer's own registration screen: the admin
 // reads no Latin, so a Latin name in his list is unreadable to him.
 const NAME_RE = /^[؀-ۿ\s]+$/;
@@ -34,14 +34,13 @@ type ParsedCustomer =
 /** Normalise and validate what the sheet sent, once for both actions. */
 function parse(rawName: string, rawPhone: string): ParsedCustomer {
   const name = rawName.trim().replace(/\s+/g, " ");
-  const phone = rawPhone.replace(/\D/g, "");
+  const phone = normalizePhone(rawPhone);
 
   if (name.length < 2 || !NAME_RE.test(name)) {
     return { ok: false, error: "اكتب اسم العميل بالعربي." };
   }
-  if (!PHONE_RE.test(phone)) {
-    return { ok: false, error: "الرقم مش مظبوط، لازم يكون ١١ رقم." };
-  }
+  const badPhone = phoneError(phone);
+  if (badPhone) return { ok: false, error: badPhone };
   return { ok: true, name, phone };
 }
 
