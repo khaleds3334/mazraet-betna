@@ -656,6 +656,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_farm: {
+        Args: { _name: string; _owner_phone: string; _pin: string }
+        Returns: string | null
+      }
       set_admin_pin: {
         Args: { _farm_id: string; _current_pin: string; _new_pin: string }
         Returns: boolean

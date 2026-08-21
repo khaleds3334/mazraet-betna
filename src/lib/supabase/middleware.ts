@@ -5,6 +5,12 @@ import type { Database } from "@/types/database";
 /** Auth screens anyone can reach without a session. Everything else needs one. */
 const PUBLIC_PATHS = ["/login", "/register", "/pin"];
 
+// ⚠️ DEV-ONLY — /new-farm makes a test farm and has no session to check, so it
+// has to be reachable signed out. The route itself 404s in a production build
+// (see /app/new-farm/page.tsx), and this list only lets it past the redirect;
+// it grants nothing. Remove with the page.
+if (process.env.NODE_ENV !== "production") PUBLIC_PATHS.push("/new-farm");
+
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
