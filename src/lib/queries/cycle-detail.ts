@@ -96,7 +96,7 @@ export async function getCycleDetail(
         .eq("cycle_id", cycleId),
       supabase
         .from("feed_withdrawal")
-        .select("bags, withdrawn_on, withdrawn_at, created_at")
+        .select("bags, phase, withdrawn_on, withdrawn_at, created_at")
         .eq("cycle_id", cycleId)
         .order("withdrawn_on", { ascending: true })
         .order("withdrawn_at", { ascending: true, nullsFirst: false })

@@ -4,8 +4,15 @@ import { BottomSheet, CloseButton, Icon } from "@/components/ui";
 import { formatArabicNumber, formatCurrency } from "@/lib/format";
 import type { CycleExpenses, ExpenseLine } from "@/lib/queries/expenses";
 
-/** Column widths, shared by the head and every row so they line up as one grid. */
-const ITEM_COL = "w-[38%] shrink-0";
+/**
+ * Column widths, shared by the head and every row so they line up as one grid.
+ *
+ * `min-w-0` on the item column is not decoration: a flex item's automatic minimum
+ * size is its *content*, so one long expense label pushed the row wider than the
+ * sheet and took the whole sheet sideways with it. Long labels now wrap inside
+ * their column instead.
+ */
+const ITEM_COL = "w-[38%] min-w-0 shrink-0 break-words";
 const NUM_COL = "flex-1 min-w-0 text-center";
 
 /** One line of the table: what it was, how many, at what price, and the product. */

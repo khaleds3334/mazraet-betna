@@ -175,6 +175,15 @@ export const FEED_PHASE_LABEL: Record<FeedPhase, string> = {
   nami: "نامي",
 };
 
+/**
+ * The store isn't one pile: علف بادي and علف نامي are counted apart, and a bag of
+ * one cannot be opened out of the other's stock. Written once because both sides
+ * say it — the popup warns before the tap (A-13) and the action refuses after it.
+ */
+export function outOfPhaseFeed(phase: FeedPhase): string {
+  return `مفيش علف ${FEED_PHASE_LABEL[phase]} في المخزن، سجّل شراء علف ${FEED_PHASE_LABEL[phase]} الأول.`;
+}
+
 /** Manual expense categories (FR-18 / Phase 7 chips). */
 export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategory, string> = {
   feed: "علف",

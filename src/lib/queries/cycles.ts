@@ -22,7 +22,7 @@ import {
   feedBagsAvailable,
   feedBagsWithdrawn,
   feedCost,
-  purchasedBagsByPhase,
+  bagsByPhase,
 } from "@/lib/calculations/feed";
 import {
   CYCLE_TOTAL_DAYS,
@@ -137,6 +137,10 @@ export interface CycleDashboard {
     purchasedNami: number;
     /** Bags withdrawn/consumed so far. */
     withdrawn: number;
+    /** Of those, how many were بادي and how many نامي — what is actually left of
+     *  each in the store, and what the next bag defaults to (A-13). */
+    withdrawnBadi: number;
+    withdrawnNami: number;
     /** Price of the last bag bought — pre-fills the purchase form. Null = never bought. */
     lastBagPrice: number | null;
     /** Cells in the consumption grid — one per cycle day (~40). */
@@ -153,6 +157,7 @@ interface FeedInput {
   feed: { bags: number; bag_price: number; phase: FeedPhase | null }[];
   withdrawals: {
     bags: number;
+    phase: FeedPhase | null;
     withdrawn_on: string;
     withdrawn_at: string | null;
   }[];
@@ -170,15 +175,17 @@ interface FeedInput {
  */
 export function buildFeedSummary(input: FeedInput): CycleDashboard["feed"] {
   const { badi, nami } = expectedFeedBags(input.chickCount);
-  const purchased = purchasedBagsByPhase(input.feed, badi);
+  const purchased = bagsByPhase(input.feed, badi);
+  const withdrawnByPhase = bagsByPhase(input.withdrawals, badi);
 
-  // Classify each opened bag: the first `badiBagCount` bags (chronologically) are
-  // بادي, the rest نامي — Khaled's FIFO rule (بادي is opened until it runs out,
-  // then نامي). `bagNumber` is the bag's 1-based order across the whole cycle.
-  const badiBagCount = Math.round(badi);
+  // Each opened bag says which feed it was (migration 017). Rows older than that
+  // carry no phase, and fall back to the rule the app used before the column
+  // existed: bags are بادي until the cycle's بادي requirement is used up, then
+  // نامي. `bagNumber` is the bag's 1-based order across the whole cycle.
   let bagsSoFar = 0;
   const withdrawalList = input.withdrawals.map((w) => {
     const bagNumber = bagsSoFar + 1;
+    const inferred: FeedPhase = bagsSoFar < badi ? "badi" : "nami";
     bagsSoFar += w.bags;
     return {
       dayOffset: differenceInCalendarDays(
@@ -186,7 +193,7 @@ export function buildFeedSummary(input: FeedInput): CycleDashboard["feed"] {
         new Date(input.startDate),
       ),
       bagNumber,
-      phase: (bagNumber <= badiBagCount ? "badi" : "nami") as FeedPhase,
+      phase: w.phase ?? inferred,
       ageDays: chickAgeDays(input.startDate, new Date(w.withdrawn_on)),
       withdrawnOn: w.withdrawn_on,
       withdrawnAt: w.withdrawn_at,
@@ -203,6 +210,8 @@ export function buildFeedSummary(input: FeedInput): CycleDashboard["feed"] {
     purchasedBadi: purchased.badi,
     purchasedNami: purchased.nami,
     withdrawn: feedBagsWithdrawn(input.withdrawals),
+    withdrawnBadi: withdrawnByPhase.badi,
+    withdrawnNami: withdrawnByPhase.nami,
     lastBagPrice: input.lastBagPrice,
     // The grid is at least a full cycle long, and stretches if a bag was opened
     // past day 40.
@@ -251,7 +260,7 @@ export async function getActiveCycleDashboard(
         .eq("cycle_id", cycle.id),
       supabase
         .from("feed_withdrawal")
-        .select("bags, withdrawn_on, withdrawn_at, created_at")
+        .select("bags, phase, withdrawn_on, withdrawn_at, created_at")
         .eq("cycle_id", cycle.id)
         .order("withdrawn_on", { ascending: true })
         .order("withdrawn_at", { ascending: true, nullsFirst: false })

@@ -95,14 +95,16 @@ export function formatWeight(
 }
 
 /**
- * Read a weight the admin typed — Arabic-Indic or Latin digits, with a dot, an
+ * Read a number the admin typed — Arabic-Indic or Latin digits, with a dot, an
  * Arabic decimal mark, or a comma — into a number. Returns `null` when there is
  * no number in the text, so the caller can keep the previous value.
  *
- * {@link toLatinDigits} can't do this: it throws away the decimal separator
- * along with everything else that isn't a digit, turning `1.840` into `1840`.
+ * {@link toLatinDigits} can't do this: it throws away the decimal separator along
+ * with everything else that isn't a digit, turning `1.840` into `1840`. Two
+ * fields need the fraction — a weight on the scale, and half a bag of feed — so
+ * the reading lives here once and they both call it.
  */
-export function parseWeight(input: string): number | null {
+export function parseDecimal(input: string): number | null {
   const normalized = input
     .replace(/[٠-٩]/g, (d) =>
       String(ARABIC_DIGITS.indexOf(d as (typeof ARABIC_DIGITS)[number])),
@@ -117,6 +119,9 @@ export function parseWeight(input: string): number | null {
   const value = Number(text);
   return text === "" || !Number.isFinite(value) ? null : value;
 }
+
+/** {@link parseDecimal}, named for the field that has always used it (A-52). */
+export const parseWeight = parseDecimal;
 
 /**
  * Arabic chicken pluralization (rule 7) — never a blanket `${n} فرخات`.

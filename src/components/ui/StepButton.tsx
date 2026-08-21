@@ -1,3 +1,6 @@
+"use client";
+
+import { useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -42,6 +45,24 @@ function MinusGlyph({ size }: { size: number }) {
 }
 
 /**
+ * Press-and-hold, in gears. A held button repeats, and the gaps between repeats
+ * shorten the longer it is held: the admin who wants ٢٥ شكارة should not tap
+ * twenty-five times, and the one who wants ٣ should not overshoot to ١٢ because
+ * the button took off under his thumb (Khaled, 2026-08-21).
+ *
+ * `after` is how many repeats have already fired; the last matching gear wins.
+ * The amount added per repeat never changes — only the rate. A stepper that
+ * silently starts adding ٥ at a time is a number the admin can't predict, and
+ * these are bags of feed and pounds of money.
+ */
+const HOLD_DELAY_MS = 450;
+const GEARS = [
+  { after: 0, everyMs: 260 },
+  { after: 6, everyMs: 130 },
+  { after: 14, everyMs: 60 },
+];
+
+/**
  * A stepper button from the design, in the two weights it is drawn in:
  *   • `soft` — a pale lime square under a faint glow, 44px (the weighing rows)
  *   • `solid` — a small filled lime square, 24px (the split dialog)
@@ -50,6 +71,10 @@ function MinusGlyph({ size }: { size: number }) {
  * on it, so the finger gets the size the admin needs (rule 8) while the design
  * keeps the size it asks for. Everything the admin taps here, he taps standing
  * over a scale.
+ *
+ * A tap fires `onClick` once; holding it repeats (see `GEARS`). A scroll that
+ * starts on the button cancels the hold rather than running it in the background,
+ * which is what `pointercancel` is for.
  */
 export function StepButton({
   onClick,
@@ -67,11 +92,63 @@ export function StepButton({
   disabled?: boolean;
 }) {
   const glyphSize = Math.round(size * 0.5833);
+
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const repeats = useRef(0);
+  // Set once a hold has fired, so the click that follows the release doesn't
+  // add one more on top of everything the hold already added.
+  const held = useRef(false);
+
+  // The chain of timeouts has to call the *latest* `onClick`, not the one from
+  // the render the press started in: a stepper's handler closes over the current
+  // value, so a stale one would add the step to the same number every time and
+  // the field would freeze one step above where it started. The ref is refreshed
+  // after every render, which lands long before the next repeat is due.
+  const fire = useRef(onClick);
+  useEffect(() => {
+    fire.current = onClick;
+  });
+
+  const stop = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    repeats.current = 0;
+  }, []);
+
+  // A declaration, not a `useCallback`: it schedules itself, and a `const` cannot
+  // be named inside its own initializer.
+  function repeat() {
+    held.current = true;
+    fire.current();
+    repeats.current += 1;
+
+    const gear =
+      GEARS.filter((g) => repeats.current >= g.after).at(-1) ?? GEARS[0];
+    timer.current = setTimeout(repeat, gear.everyMs);
+  }
+
+  // A button unmounted mid-hold (the sheet closed under it) must not keep firing.
+  useEffect(() => stop, [stop]);
+
   return (
     <button
       type="button"
       aria-label={label}
-      onClick={onClick}
+      onClick={() => {
+        if (held.current) {
+          held.current = false;
+          return;
+        }
+        onClick();
+      }}
+      onPointerDown={() => {
+        if (disabled) return;
+        held.current = false;
+        timer.current = setTimeout(repeat, HOLD_DELAY_MS);
+      }}
+      onPointerUp={stop}
+      onPointerLeave={stop}
+      onPointerCancel={stop}
       disabled={disabled}
       style={{
         width: size,
@@ -80,7 +157,7 @@ export function StepButton({
           tone === "soft" ? "0 0 10px 0 rgba(217,249,157,0.4)" : undefined,
       }}
       className={cn(
-        "relative flex shrink-0 items-center justify-center rounded-md text-foreground disabled:opacity-40",
+        "relative flex shrink-0 touch-manipulation items-center justify-center rounded-md text-foreground select-none disabled:opacity-40",
         tone === "soft" ? "bg-surface" : "bg-primary",
         // The tap target, centred on the square and never under 44px.
         "before:absolute before:top-1/2 before:left-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']",

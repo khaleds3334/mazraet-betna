@@ -85,7 +85,9 @@ export function Modal({
             anything that reaches its edge. */}
         <div
           className={cn(
-            "min-h-0 flex-1 overflow-y-auto px-4 pb-4",
+            // Sideways never — see the note in BottomSheet for why the x axis has to be
+            // said out loud.
+            "min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4",
             // With a header the caller owns the gap under it; without one the
             // body is the top of the card and needs the card's own padding.
             !header && "pt-4",

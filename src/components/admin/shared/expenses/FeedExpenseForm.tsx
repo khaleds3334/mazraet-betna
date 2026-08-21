@@ -24,16 +24,27 @@ function PhaseRow({
   onPrice: (n: number) => void;
 }) {
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full min-w-0 flex-col gap-4">
       <p className="w-full text-right text-h6 font-bold text-foreground">{title}</p>
-      <div className="flex items-start justify-between">
-        <NumberStepper label={`عدد شكاير ${title}`} value={bags} onChange={onBags} />
+      {/* Wraps rather than squeezes: at 320px the count and the price no longer
+          fit on one line, and a stepper narrow enough to fit is a stepper whose
+          "+" the admin misses while weighing. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-5">
+        {/* Half a bag is a real purchase, so the "+" moves in halves. */}
+        <NumberStepper
+          label={`عدد شكاير ${title}`}
+          value={bags}
+          onChange={onBags}
+          step={0.5}
+        />
+        {/* By the pound, not by fifty: the field opens on what he paid last time,
+            so what he does here is nudge it — and a ٥٠-جنيه step can't reach
+            ١٤٧٠ from ١٤٥٠ at all (Khaled, 2026-08-21). Holding it gets there fast. */}
         <NumberStepper
           label={`سعر شكارة ${title}`}
           value={price}
           onChange={onPrice}
           suffix="جنية"
-          step={50}
         />
       </div>
     </div>
@@ -93,7 +104,7 @@ export function FeedExpenseForm({
       <div className="grid grid-cols-3 gap-3">
         <StatItem
           label={"العلف\nالمطلوب"}
-          value={`${formatArabicNumber(Math.round(feed.requiredBadi))} / ${formatArabicNumber(Math.round(feed.requiredNami))}`}
+          value={`${formatArabicNumber(remaining.badi)} / ${formatArabicNumber(remaining.nami)}`}
         />
         <StatItem
           label={"العلف\nالمسحوب"}

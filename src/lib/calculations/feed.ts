@@ -69,36 +69,58 @@ export function expectedFeedBags(chickCount: number): {
 }
 
 /**
- * Bags bought so far, split into بادي and نامي. Since migration 013 the phase is
- * recorded on the purchase, so this is a read, not a guess.
+ * Bags split into بادي and نامي — the same sum for both tables that count them:
+ * what was **bought** (`feed`, phase stored since migration 013) and what was
+ * **opened** (`feed_withdrawal`, since 017).
  *
- * Rows from before that migration whose phase couldn't be attributed are left
+ * Rows from before those migrations whose phase couldn't be attributed are left
  * null in the database; they're folded in بادي-first — the order the flock eats
- * it in, and the rule the app used before the column existed. New data never
+ * it in, and the rule the app used before the columns existed. New data never
  * reaches that branch.
  */
-export function purchasedBagsByPhase(
-  purchases: { bags: number; phase: FeedPhase | null }[],
+export function bagsByPhase(
+  rows: { bags: number; phase: FeedPhase | null }[],
   requiredBadi: number,
 ): { badi: number; nami: number } {
   let badi = 0;
   let nami = 0;
   let unattributed = 0;
 
-  for (const row of purchases) {
+  for (const row of rows) {
     if (row.phase === "badi") badi += row.bags;
     else if (row.phase === "nami") nami += row.bags;
     else unattributed += row.bags;
   }
 
   if (unattributed > 0) {
-    const badiGap = Math.max(0, Math.round(requiredBadi) - badi);
+    const badiGap = Math.max(0, requiredBadi - badi);
     const toBadi = Math.min(unattributed, badiGap);
     badi += toBadi;
     nami += unattributed - toBadi;
   }
 
-  return { badi, nami };
+  return { badi: round2(badi), nami: round2(nami) };
+}
+
+/**
+ * Which feed the next opened bag is, offered as the default in the «سحب شكارة»
+ * popup (A-13). **Quantity decides it, and nothing else** (Khaled, 2026-08-21):
+ * bags are بادي until the cycle's بادي requirement has been opened, then نامي.
+ *
+ * The flock's age was the other candidate and was turned down — a rule that
+ * flipped to نامي on day ١٦ regardless would contradict a large cycle whose بادي
+ * quota still has bags in it, and two rules that can disagree are a rule the
+ * admin can't predict.
+ *
+ * It is a **default**, never a verdict: the popup lets him say otherwise, and
+ * that answer is what gets stored.
+ */
+export function nextWithdrawalPhase(input: {
+  /** بادي bags already opened this cycle. */
+  withdrawnBadi: number;
+  requiredBadi: number;
+}): FeedPhase {
+  return input.withdrawnBadi < input.requiredBadi ? "badi" : "nami";
 }
 
 /**
@@ -107,6 +129,9 @@ export function purchasedBagsByPhase(
  *
  * Never negative: once he has bought everything the cycle needs, both open at
  * zero and he types whatever he is actually buying.
+ *
+ * Halves survive the subtraction: a cycle needing ١.٥ shows ٠ once ١.٥ is bought,
+ * not the ٠.٥ the old whole-bag rounding left behind (Khaled, 2026-08-21).
  */
 export function remainingFeedBags(input: {
   requiredBadi: number;
@@ -115,8 +140,8 @@ export function remainingFeedBags(input: {
   purchasedNami: number;
 }): { badi: number; nami: number } {
   return {
-    badi: Math.max(0, Math.round(input.requiredBadi) - input.purchasedBadi),
-    nami: Math.max(0, Math.round(input.requiredNami) - input.purchasedNami),
+    badi: round2(Math.max(0, input.requiredBadi - input.purchasedBadi)),
+    nami: round2(Math.max(0, input.requiredNami - input.purchasedNami)),
   };
 }
 

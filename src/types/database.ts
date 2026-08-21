@@ -267,6 +267,7 @@ export type Database = {
           cycle_id: string
           farm_id: string
           id: string
+          phase: Database["public"]["Enums"]["feed_phase"] | null
           withdrawn_at: string | null
           withdrawn_on: string
         }
@@ -276,11 +277,13 @@ export type Database = {
           cycle_id: string
           farm_id: string
           id?: string
+          phase?: Database["public"]["Enums"]["feed_phase"] | null
           withdrawn_at?: string | null
           withdrawn_on?: string
         }
         Update: {
           bags?: number
+          phase?: Database["public"]["Enums"]["feed_phase"] | null
           created_at?: string
           cycle_id?: string
           farm_id?: string

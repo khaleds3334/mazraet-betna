@@ -3,9 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm, type CurrentFarm } from "@/lib/queries/admin";
-import type { ExpenseCategory } from "@/lib/constants";
-import { feedBagsAvailable } from "@/lib/calculations/feed";
-import { NO_FEED_IN_STORE } from "@/lib/constants";
+import type { ExpenseCategory, FeedPhase } from "@/lib/constants";
+import {
+  bagsByPhase,
+  expectedFeedBags,
+  feedBagsAvailable,
+} from "@/lib/calculations/feed";
+import { NO_FEED_IN_STORE, outOfPhaseFeed } from "@/lib/constants";
 import type { ActionResult } from "./cycles";
 
 /**
@@ -18,14 +22,16 @@ import type { ActionResult } from "./cycles";
 /** The active cycle for the current admin (farm + cycle, either may be null). */
 async function activeCycle(): Promise<{
   farm: CurrentFarm | null;
-  cycle: { id: string; start_date: string } | null;
+  cycle: { id: string; start_date: string; chick_count: number } | null;
 }> {
   const farm = await getCurrentFarm();
   if (!farm) return { farm: null, cycle: null };
   const supabase = await createClient();
   const { data } = await supabase
     .from("cycle")
-    .select("id, start_date")
+    // `chick_count` sizes the cycle's بادي requirement, which is what tells the
+    // withdrawal which stock it is coming out of.
+    .select("id, start_date, chick_count")
     .eq("farm_id", farm.farmId)
     .eq("is_active", true)
     .maybeSingle();
@@ -161,10 +167,22 @@ export async function addUtilitiesExpense(input: {
 }
 
 /**
+ * A bag count as the farm counts them: to the nearest half, never negative.
+ * The form only offers halves, but an action is reachable from anywhere and the
+ * database will refuse a third of a bag (`feed_bags_half_step`).
+ */
+function toHalfBags(value: number): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(0, Math.round(n * 2) / 2) : 0;
+}
+
+/**
  * Record a feed purchase — starter (بادي) and/or grower (نامي) bags, each with a
  * per-bag price. One `feed` row per non-empty phase, each stamped with its phase
  * (migration 013) so nothing downstream has to infer it back. Increases
  * العلف المتوفر.
+ *
+ * Counts land on the half bag, which is how feed is actually bought (017).
  */
 export async function addFeedPurchase(input: {
   badiBags: number;
@@ -180,12 +198,12 @@ export async function addFeedPurchase(input: {
     [
       {
         phase: "badi",
-        bags: Math.trunc(input.badiBags),
+        bags: toHalfBags(input.badiBags),
         price: Number(input.badiPrice),
       },
       {
         phase: "nami",
-        bags: Math.trunc(input.namiBags),
+        bags: toHalfBags(input.namiBags),
         price: Number(input.namiPrice),
       },
     ] as const
@@ -214,15 +232,23 @@ export async function addFeedPurchase(input: {
 
 /**
  * Record a feed withdrawal — the admin opened a bag (A-13 "سحب شكارة"). One row =
- * one 50kg شكارة (`bags` defaults to 1). `withdrawnOn` is the day the bag was
+ * one opening: a whole 50kg شكارة, or half of one. `withdrawnOn` is the day it was
  * opened (`yyyy-mm-dd`); it lights that day's square on the consumption grid and
  * lowers العلف المتوفر. The day must sit inside the cycle (≥ start, not future) so
  * it maps to a real grid cell (FR-22, see D-17).
+ *
+ * `phase` is which feed came out. The popup fills it in from the quota rule and
+ * the admin can override it; whatever he confirms is what is stored (017), so no
+ * reader has to guess it back.
  */
 export async function addFeedWithdrawal(input: {
   withdrawnOn: string;
   /** `HH:mm` the bag was opened; shown on the bag-detail popup. Optional. */
   withdrawnAt?: string;
+  /** How much came out — `1` or `0.5`. Defaults to a whole bag. */
+  bags?: number;
+  /** بادي or نامي, as confirmed in the popup. */
+  phase: FeedPhase;
 }): Promise<ActionResult> {
   const { farm, cycle } = await activeCycle();
   if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
@@ -244,6 +270,7 @@ export async function addFeedWithdrawal(input: {
     return { ok: false, error: "مينفعش تختار يوم في المستقبل." };
   }
 
+  const bags = input.bags === 0.5 ? 0.5 : 1;
   const supabase = await createClient();
 
   // A bag comes out of the store, so there has to be one in it. Checked here and
@@ -251,16 +278,31 @@ export async function addFeedWithdrawal(input: {
   // old, and two taps on a slow connection would otherwise open the same last bag
   // twice — which quietly puts العلف المتوفر into a hole nothing can climb out of.
   const [{ data: purchases }, { data: withdrawals }] = await Promise.all([
-    supabase.from("feed").select("bags").eq("cycle_id", cycle.id),
-    supabase.from("feed_withdrawal").select("bags").eq("cycle_id", cycle.id),
+    supabase.from("feed").select("bags, phase").eq("cycle_id", cycle.id),
+    supabase
+      .from("feed_withdrawal")
+      .select("bags, phase")
+      .eq("cycle_id", cycle.id),
   ]);
-  if (feedBagsAvailable(purchases ?? [], withdrawals ?? []) < 1) {
+  if (feedBagsAvailable(purchases ?? [], withdrawals ?? []) < bags) {
     return { ok: false, error: NO_FEED_IN_STORE };
+  }
+
+  // The store is not one pile. Opening بادي that was never bought is how العلف
+  // المتوفر stays right while «الباقي للشرا» quietly goes wrong — the popup warns
+  // before he taps, and this is the same check on data that can't be stale.
+  const requiredBadi = expectedFeedBags(cycle.chick_count).badi;
+  const bought = bagsByPhase(purchases ?? [], requiredBadi);
+  const opened = bagsByPhase(withdrawals ?? [], requiredBadi);
+  if (bought[input.phase] - opened[input.phase] < bags) {
+    return { ok: false, error: outOfPhaseFeed(input.phase) };
   }
 
   const { error } = await supabase.from("feed_withdrawal").insert({
     farm_id: farm.farmId,
     cycle_id: cycle.id,
+    bags,
+    phase: input.phase,
     withdrawn_on: input.withdrawnOn,
     withdrawn_at: input.withdrawnAt || null,
   });

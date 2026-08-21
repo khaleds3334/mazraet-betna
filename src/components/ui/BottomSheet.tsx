@@ -21,6 +21,15 @@ import { cn } from "@/lib/utils";
  *   • "full" — covers the screen. A sheet that reads as a page (A-56), so it
  *     drops the rounded top edge that marks a partial sheet.
  *
+ * **It never scrolls sideways.** `overflow-y-auto` on its own does not mean what
+ * it looks like it means: CSS computes the *other* axis from `visible` to `auto`
+ * the moment one axis is scrollable, so a single element one pixel too wide turned
+ * the whole sheet into a horizontal scroller (Khaled, 2026-08-21). `overflow-x-hidden`
+ * settles it here, once, for every sheet in the app — but it hides a mistake
+ * rather than fixing it, so content inside a sheet still has to fit: shrinkable
+ * rows, `min-w-0` on anything holding text, and wrapping where two controls sit
+ * side by side.
+ *
  * `header` is pinned to the top of the sheet while the body scrolls under it.
  * The close button belongs there: a sheet whose only way out scrolls off the
  * screen is a sheet with no way out until you scroll back.
@@ -83,7 +92,7 @@ export function BottomSheet({
         aria-modal="true"
         aria-label={label}
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[430px] flex-col overflow-y-auto border-border bg-background transition-transform duration-300",
+          "fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[430px] flex-col overflow-y-auto overflow-x-hidden border-border bg-background transition-transform duration-300",
           size === "full"
             ? "top-0 border-x"
             : "max-h-[90svh] rounded-t-xl border-t-2",
