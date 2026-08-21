@@ -34,8 +34,15 @@ export function AdminBottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-[430px] items-center justify-between border-t-2 border-border bg-white px-screen pt-2"
-      style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}
+      className="fixed inset-x-0 z-40 mx-auto flex max-w-[430px] items-center justify-between border-t-2 border-border bg-white px-screen py-2"
+      // The bar sits ON TOP of the phone's gesture strip instead of swallowing
+      // it: `bottom` lifts it clear, and the strip underneath is left to the
+      // shell's own `bg-background` (#fbfdfc). Padding it instead made the white
+      // bar run all the way down to the edge of the screen — visible only in the
+      // installed app, since in a browser that strip belongs to the browser
+      // (Khaled, 2026-08-21). What the bar occupies in total is unchanged, so
+      // <main>'s bottom padding still clears it.
+      style={{ bottom: "env(safe-area-inset-bottom)" }}
     >
       {ITEMS.map((item) => {
         const active = isActivePath(pathname, item.href, item.exact);

@@ -4,9 +4,11 @@ import { OrdersToolbar } from "@/components/admin/orders/OrdersToolbar";
 import { OrdersBrowser } from "@/components/admin/orders/OrdersBrowser";
 import { OrdersShell } from "@/components/admin/orders/OrdersShell";
 import { OrdersEmptyState } from "@/components/admin/orders/OrdersEmptyState";
+import { OrdersEmptyHeader } from "@/components/admin/orders/OrdersEmptyHeader";
 import { OrderCard } from "@/components/admin/orders/card/OrderCard";
 import {
   ADMIN_ORDER_TABS,
+  DEFAULT_ADMIN_ORDER_TAB,
   defaultOrdersTab,
   parseTab,
   type AdminOrderTabKey,
@@ -17,6 +19,7 @@ import { listOrdersCycles, pickDefaultCycle } from "@/lib/queries/cycles";
 import { getFarmSettings } from "@/lib/queries/settings";
 import {
   countOrdersByCycle,
+  EMPTY_ORDER_TAB_COUNTS,
   listCycleOrders,
   tallyOrderTabs,
   type OrderListItem,
@@ -54,6 +57,16 @@ function OrdersPanel({
   );
 }
 
+/** The three tabs of a farm with no cycle — each one's own empty sentence. */
+function emptyPanels(): Record<AdminOrderTabKey, React.ReactNode> {
+  return Object.fromEntries(
+    ADMIN_ORDER_TABS.map((group) => [
+      group.key,
+      <OrdersEmptyState key={group.key} tab={group.key} />,
+    ]),
+  ) as Record<AdminOrderTabKey, React.ReactNode>;
+}
+
 /**
  * Admin orders list (A-50). One cycle's orders — the one selling now by default,
  * or whichever the funnel picked — and the screen has two faces depending on
@@ -88,18 +101,47 @@ export default async function AdminOrdersPage({
     cycles.find((option) => option.cycleId === params.cycle) ??
     pickDefaultCycle(cycles);
 
-  // A farm with no cycle yet has no orders and nothing to pick between: no
-  // toolbar, no tabs, just the sentence saying so.
-  if (!cycle) {
-    return (
-      <div className="flex flex-col px-screen pt-4">
-        <OrdersEmptyState tab="new" />
-      </div>
-    );
-  }
+  // The screen for a farm that has no order history to show — no cycle at all, or
+  // a first flock still being raised (see below). It draws the screen's own
+  // chrome inert (`OrdersEmptyHeader`), so it reads as a screen waiting for its
+  // first sale rather than one that failed to load.
+  //
+  // The tabs, though, are the working ones: three lists that are empty for three
+  // different reasons, and tapping one says which — the only thing left on this
+  // screen that can still answer (Khaled, 2026-08-21). Same `OrdersBrowser` as
+  // the selling face, holding three empty states instead of three lists, so the
+  // tab bar behaves identically on both — URL included.
+  const nothingYet = (
+    <div className="flex flex-col">
+      <OrdersBrowser
+        initialTab={parseTab(params.tab) ?? DEFAULT_ADMIN_ORDER_TAB}
+        counts={EMPTY_ORDER_TAB_COUNTS}
+        panels={emptyPanels()}
+        header={<OrdersEmptyHeader />}
+      />
+    </div>
+  );
+
+  if (!cycle) return nothingYet;
 
   const orders = await listCycleOrders(farm.farmId, cycle);
   const counts = tallyOrderTabs(orders);
+
+  // **The first flock, still being raised.** «الدورة الحالية» falls through to a
+  // raising cycle only when the farm has neither a selling cycle nor an ended one
+  // behind it (D-38, rule 3) — so there is no order anywhere on the farm, and no
+  // other cycle the funnel could offer.
+  //
+  // The archive face below would then label that flock «المكتملة» and count its
+  // orders, which says the cycle is over on the day it started (Khaled,
+  // 2026-08-21). It is the same nothing as a farm with no cycle at all, so it
+  // gets the same screen. The order count is still consulted rather than assumed:
+  // if a row somehow sits on that cycle, showing it beats hiding it.
+  const firstFlockRaising =
+    cycle.phase === "raising" &&
+    cycles.every((option) => !option.endedAt && !option.saleOpen);
+
+  if (firstFlockRaising && orders.length === 0) return nothingYet;
 
   // What the funnel is worth offering. A cycle with no orders opens on an empty
   // screen, and a flock still being raised can never have any (D-39) — so the
