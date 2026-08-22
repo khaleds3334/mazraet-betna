@@ -4,7 +4,7 @@
  * side of the cycle, and how the orders are spread across the admin's three
  * tabs (FR-11, FR-12, FR-19, FR-20).
  */
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { availableChickens, averageChickenWeight } from "@/lib/calculations/cycle";
 import { sumInvoices, type InvoiceTotals } from "@/lib/calculations/invoice";
 import {
@@ -140,8 +140,38 @@ export async function countAvailableChickens(
   cycleId: string,
   chickCount: number,
 ): Promise<number> {
-  const supabase = await createClient();
+  return tallyAvailable(await createClient(), cycleId, chickCount);
+}
 
+/**
+ * The same number, read **past RLS** — for the customer's home (FR-25).
+ *
+ * A customer sees his own orders and nothing else, and mortality is admin-only
+ * (002_rls). Counted through his own session the flock therefore looks almost
+ * untouched: a cycle whose hundred birds were all spoken for came back with a
+ * hundred available, and his home said «البيع متوفر» over an empty farm while
+ * the admin's screen said it had sold out (Khaled, 2026-08-22).
+ *
+ * Reaching past RLS is safe here because of what comes back: one number, about
+ * a cycle on the farm his own session already resolved to. It is the same fact
+ * the sale badge on his screen is made of — whether there is anything left to
+ * order — and no row of anyone else's ever leaves this function.
+ */
+export async function countAvailableChickensForCustomer(
+  cycleId: string,
+  chickCount: number,
+): Promise<number> {
+  return tallyAvailable(createAdminClient(), cycleId, chickCount);
+}
+
+type FarmClient = Awaited<ReturnType<typeof createClient>>;
+
+/** The arithmetic, over whichever client the caller is entitled to read with. */
+async function tallyAvailable(
+  supabase: FarmClient,
+  cycleId: string,
+  chickCount: number,
+): Promise<number> {
   const [{ data }, { data: mortality }] = await Promise.all([
     supabase
       .from("orders")

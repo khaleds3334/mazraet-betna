@@ -34,7 +34,7 @@ import {
   type FeedPhase,
 } from "@/lib/constants";
 import { getFarmSettings } from "@/lib/queries/settings";
-import { countAvailableChickens } from "@/lib/queries/selling";
+import { countAvailableChickensForCustomer } from "@/lib/queries/selling";
 import {
   cyclePhase,
   isSellingPhase,
@@ -114,7 +114,12 @@ export async function getActiveSaleState(
     // is open again on its own, with nobody having to notice and flip anything
     // (Khaled, 2026-08-22).
     if (isSellingPhase(cycle)) {
-      const available = await countAvailableChickens(cycle.id, cycle.chick_count);
+      // Past RLS: this runs on the customer's session, which cannot see other
+      // people's orders or any mortality at all — see the function's own note.
+      const available = await countAvailableChickensForCustomer(
+        cycle.id,
+        cycle.chick_count,
+      );
       if (available <= 0) {
         // No date: the sale is over for this flock, and the next one belongs to
         // birds that have not been bought. Zeros are the honest reading.
