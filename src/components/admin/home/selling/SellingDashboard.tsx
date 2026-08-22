@@ -45,7 +45,7 @@ export function SellingDashboard({
   const { flock, money, orders } = stats;
 
   return (
-    <div className="flex flex-1 flex-col gap-4 pb-6">
+    <div className="flex flex-1 flex-col gap-3 pb-6">
       <div className="sticky top-0 z-10 bg-background px-screen pt-4 pb-2">
         <SellingHeader
           ageDays={cycle.ageDays}

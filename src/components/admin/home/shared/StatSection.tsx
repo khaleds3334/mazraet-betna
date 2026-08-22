@@ -11,7 +11,7 @@ export function StatSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col gap-2">
       <h2 className="text-h6 font-bold text-heading">{title}</h2>
       {children}
     </section>
