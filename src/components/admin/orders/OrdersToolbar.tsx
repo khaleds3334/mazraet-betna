@@ -28,6 +28,7 @@ export function OrdersToolbar({
   cycles,
   orderCount,
   allDone,
+  available,
   customers,
   weights,
   defaultCleaning,
@@ -41,6 +42,8 @@ export function OrdersToolbar({
   orderCount: number;
   /** Whether every one of them is delivered or cancelled. */
   allDone: boolean;
+  /** Birds still free to sell on the running cycle — the ceiling on a new order. */
+  available: number;
   customers: CustomerOption[];
   weights: number[];
   defaultCleaning: boolean;
@@ -59,6 +62,7 @@ export function OrdersToolbar({
             salePrice={salePrice}
             cleaningPrice={cleaningPrice}
             saleOpen
+            available={available}
           />
         ) : (
           <OrderTabChip

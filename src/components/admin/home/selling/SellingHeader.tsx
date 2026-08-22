@@ -24,10 +24,13 @@ export function SellingHeader({
   customers,
   weights,
   defaultCleaning,
+  available,
   cleaningPrice,
 }: {
   ageDays: number;
   salePrice: number;
+  /** Birds still free to sell — the ceiling on a new order (FR-11). */
+  available: number;
   /** Everything «اضافة طلب» needs — see `AddOrderLauncher`. */
   customers: CustomerOption[];
   weights: number[];
@@ -44,6 +47,7 @@ export function SellingHeader({
           salePrice={salePrice}
           cleaningPrice={cleaningPrice}
           saleOpen
+          available={available}
         />
         <SettingsGear />
       </div>

@@ -115,6 +115,27 @@ export async function getSellingStats(
  * does not show. It reads the flock's mortality itself so the one caller that
  * needs it — a server action, with no dashboard in hand — can just ask.
  */
+/**
+ * Birds still free to sell on the farm's running cycle — zero when there is no
+ * cycle, which is also the honest answer to "how many can he book right now".
+ *
+ * The orders screen needs this and has only a cycle *name* to hand; the selling
+ * dashboard already has it as part of the flock tile and passes that instead.
+ */
+export async function countAvailableOnActiveCycle(
+  farmId: string,
+): Promise<number> {
+  const supabase = await createClient();
+  const { data: cycle } = await supabase
+    .from("cycle")
+    .select("id, chick_count")
+    .eq("farm_id", farmId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!cycle) return 0;
+  return countAvailableChickens(cycle.id, cycle.chick_count);
+}
+
 export async function countAvailableChickens(
   cycleId: string,
   chickCount: number,

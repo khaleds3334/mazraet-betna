@@ -12,7 +12,8 @@ import { StepButton } from "./StepButton";
  * The number is still a real input so a far-off value can be typed instead of
  * tapped 40 times; it carries no box or underline, so it looks exactly like the
  * plain number in the design. Digits show Arabic-Indic (FR-3) and typing accepts
- * either digit set. The value never goes below `min`.
+ * either digit set. The value never leaves `min`…`max`, typed or tapped — which
+ * is how the order sheet stops at what is left of the flock.
  */
 export function Stepper({
   value,
@@ -20,14 +21,18 @@ export function Stepper({
   label,
   step = 1,
   min = 0,
+  max,
 }: {
   value: number;
   onChange: (n: number) => void;
   label: string;
   step?: number;
   min?: number;
+  /** Ceiling, when there is one — the birds left in the flock (FR-11). */
+  max?: number;
 }) {
-  const clamp = (n: number) => Math.max(min, n);
+  const clamp = (n: number) =>
+    Math.min(max ?? Number.POSITIVE_INFINITY, Math.max(min, n));
 
   return (
     // Plus first: in this RTL app the first child lands on the right, and the

@@ -18,6 +18,7 @@ import { createOrder, fetchOrder } from "@/lib/actions/orders";
 import type { CustomerOption } from "@/lib/queries/customers";
 import type { OrderListItem } from "@/lib/queries/orders";
 import { useToast } from "@/hooks/useToast";
+import { pluralizeChicken } from "@/lib/format";
 import { SALE_NOT_OPEN } from "@/lib/constants";
 import {
   EMPTY_RECIPIENT,
@@ -71,6 +72,7 @@ export function AddOrderSheet({
   weights,
   defaultCleaning,
   saleOpen,
+  available,
   onWeigh,
 }: {
   open: boolean;
@@ -83,6 +85,13 @@ export function AddOrderSheet({
   defaultCleaning: boolean;
   /** False outside مرحلة البيع — the form says so and refuses to save. */
   saleOpen: boolean;
+  /**
+   * Birds still free to sell on this cycle (FR-11). The stepper stops here and
+   * the form refuses at zero — the flock is finite, and an order for birds that
+   * do not exist is one the admin finds out about at the scale, with the
+   * customer already standing there.
+   */
+  available: number;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -191,11 +200,21 @@ export function AddOrderSheet({
               />
             </div>
           </div>
+          {/* What is left, said where the number is chosen rather than after he
+              taps save. The stepper stops there too, so the ceiling is felt
+              before it is read. */}
+          {available > 0 && (
+            <p className="text-right text-xs text-muted">
+              متبقي {pluralizeChicken(available)} في الدورة
+            </p>
+          )}
+
           <Stepper
             value={count}
             onChange={setCount}
             label="عدد الفراخ"
             min={1}
+            max={available > 0 ? available : 1}
           />
         </div>
 
@@ -270,6 +289,9 @@ export function AddOrderSheet({
         {/* Said before he fills the form in, not after he taps save — the birds
             are weeks from ready and there is nothing to book (FR-11). */}
         {!saleOpen && <InlineError message={SALE_NOT_OPEN} />}
+        {saleOpen && available <= 0 && (
+          <InlineError message="مفيش فراخ متاحة في الدورة دي." />
+        )}
         {error && <InlineError message={error} />}
 
         {/* Follows the form instead of being pushed to the foot of the sheet. The
@@ -280,7 +302,7 @@ export function AddOrderSheet({
         <div className="sticky bottom-0 flex flex-col gap-4 bg-background pt-2 pb-2">
           <Button
             onClick={() => submit()}
-            disabled={!saleOpen}
+            disabled={!saleOpen || available <= 0}
             isLoading={saving}
           >
             اكد الطلب
@@ -289,7 +311,7 @@ export function AddOrderSheet({
           <Button
             variant="outline"
             onClick={() => submit(true)}
-            disabled={saving || !saleOpen}
+            disabled={saving || !saleOpen || available <= 0}
           >
             تأكيد الطلب ووزن الفراخ
           </Button>

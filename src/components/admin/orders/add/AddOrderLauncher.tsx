@@ -21,12 +21,15 @@ export function AddOrderLauncher({
   weights,
   defaultCleaning,
   saleOpen,
+  available,
   salePrice,
   cleaningPrice,
 }: {
   customers: CustomerOption[];
   weights: number[];
   defaultCleaning: boolean;
+  /** Birds still free to sell — the ceiling on the order (FR-11). */
+  available: number;
   /** False outside مرحلة البيع. The button still opens — a dead pill explains
    *  nothing, and the sheet is where the reason fits. */
   saleOpen: boolean;
@@ -53,6 +56,7 @@ export function AddOrderLauncher({
         weights={weights}
         defaultCleaning={defaultCleaning}
         saleOpen={saleOpen}
+        available={available}
       />
 
       {/* Held here, not inside the add sheet: that one has already closed by the

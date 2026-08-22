@@ -17,6 +17,7 @@ import { getCurrentFarm } from "@/lib/queries/admin";
 import { listFarmCustomers } from "@/lib/queries/customers";
 import { listOrdersCycles, pickDefaultCycle } from "@/lib/queries/cycles";
 import { getFarmSettings } from "@/lib/queries/settings";
+import { countAvailableOnActiveCycle } from "@/lib/queries/selling";
 import {
   countOrdersByCycle,
   EMPTY_ORDER_TAB_COUNTS,
@@ -76,13 +77,16 @@ export default async function AdminOrdersPage({
   const farm = await getCurrentFarm();
   if (!farm) redirect("/logout");
 
-  const [params, cycles, orderCounts, customers, settings] = await Promise.all([
-    searchParams,
-    listOrdersCycles(farm.farmId),
-    countOrdersByCycle(farm.farmId),
-    listFarmCustomers(farm.farmId),
-    getFarmSettings(farm.farmId),
-  ]);
+  const [params, cycles, orderCounts, customers, settings, available] =
+    await Promise.all([
+      searchParams,
+      listOrdersCycles(farm.farmId),
+      countOrdersByCycle(farm.farmId),
+      listFarmCustomers(farm.farmId),
+      getFarmSettings(farm.farmId),
+      // The ceiling on «اضافة طلب» — the flock is finite (FR-11).
+      countAvailableOnActiveCycle(farm.farmId),
+    ]);
 
   // Whatever the funnel put in the URL, falling back to «الدورة الحالية» (D-38).
   // An id that isn't this farm's simply doesn't match, and the default stands.
@@ -160,6 +164,7 @@ export default async function AdminOrdersPage({
       cycles={pickable}
       orderCount={orders.length}
       allDone={counts.done === orders.length}
+      available={available}
       customers={customers}
       weights={settings.availableWeights}
       defaultCleaning={settings.defaultCleaning}

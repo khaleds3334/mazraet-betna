@@ -53,6 +53,7 @@ export function SellingDashboard({
           customers={customers}
           weights={weights}
           defaultCleaning={defaultCleaning}
+          available={flock.available}
           cleaningPrice={cleaningPrice}
         />
       </div>

@@ -5,8 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { getFarmSettings } from "@/lib/queries/settings";
 import { getOrder, type OrderListItem } from "@/lib/queries/orders";
+import { countAvailableChickens } from "@/lib/queries/selling";
 import { ORPHAN_MUST_BE_PAID, SALE_NOT_OPEN } from "@/lib/constants";
 import { orderRemaining } from "@/lib/calculations/invoice";
+import { pluralizeChicken } from "@/lib/format";
 
 /**
  * Order actions (admin only). Writes go through the RLS-bound client — the order
@@ -72,7 +74,7 @@ export async function createOrder(
   // the orders screen isn't even looking at (Khaled, 2026-08-20).
   const { data: cycle } = await supabase
     .from("cycle")
-    .select("id, sale_open")
+    .select("id, sale_open, sale_closes_at, chick_count")
     .eq("farm_id", farm.farmId)
     .eq("is_active", true)
     .maybeSingle();
@@ -81,6 +83,28 @@ export async function createOrder(
   }
   if (!cycle.sale_open) {
     return { ok: false, error: SALE_NOT_OPEN };
+  }
+
+  // **The flock is finite.** Nothing used to say so here: an order for six birds
+  // went through on a cycle with four left, and on one with none at all, and the
+  // «الفراخ المتوفرة» tile just sat at zero while orders kept arriving (Khaled,
+  // 2026-08-22). The count already existed — `countAvailableChickens`, the same
+  // one the tile shows and the same one `endCycle` refuses to close over — it was
+  // simply never asked at the one moment birds get promised away.
+  //
+  // The sheet caps its stepper at this number too, so in practice he never
+  // reaches these messages. This is the half that holds when the screen is stale:
+  // two birds can be booked out from under him between opening the sheet and
+  // confirming it.
+  const available = await countAvailableChickens(cycle.id, cycle.chick_count);
+  if (available <= 0) {
+    return { ok: false, error: "مفيش فراخ متاحة في الدورة دي." };
+  }
+  if (count > available) {
+    return {
+      ok: false,
+      error: `متبقي ${pluralizeChicken(available)} بس في الدورة — قلّل العدد.`,
+    };
   }
 
   const settings = await getFarmSettings(farm.farmId);
@@ -130,8 +154,30 @@ export async function createOrder(
     return { ok: false, error: "مقدرناش نسجّل الطلب، حاول تاني." };
   }
 
+  // **Auto-close when the flock runs out** (FR-11). The last order takes the
+  // last bird, and the sale has to be shut before the next customer is offered
+  // one that does not exist — the admin is at the counter, not watching a tile.
+  //
+  // `sale_closes_at` is stamped on the way out if the cycle never had one, for
+  // the same reason a manual close does it (`setSaleOpen`): without a date there
+  // is nothing to tell "closed for now" from "never opened", and the switch in
+  // settings could not bring the sale back if birds turn up — a miscount, or a
+  // cancelled order handing its birds back.
+  if (available - count <= 0) {
+    await supabase
+      .from("cycle")
+      .update({
+        sale_open: false,
+        ...(cycle.sale_closes_at
+          ? {}
+          : { sale_closes_at: new Date().toISOString() }),
+      })
+      .eq("id", cycle.id);
+  }
+
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
+  revalidatePath("/", "layout"); // the customer's home reads the sale state
   return { ok: true, orderId: order.id };
 }
 
