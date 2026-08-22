@@ -178,7 +178,7 @@ export function InstallPrompt({
           </div>
 
           {/* «تحميل» first so it lands on the right, the divider between them. */}
-          <div className="flex items-center justify-between gap-3 px-4">
+          <div className="flex items-center justify-around">
             <button
               type="button"
               onClick={onInstall}
