@@ -13,6 +13,7 @@ import {
   expectedSaleDate,
   raisingSaleStartDate,
   rollingSaleStartDate,
+  saleWindowEnd,
   type CycleEstimateBasis,
 } from "@/lib/calculations/cycle";
 import {
@@ -86,8 +87,21 @@ export async function getActiveSaleState(
   if (cycle) {
     if (cycle.sale_open) {
       // The forecast lives in settings now (migration 024) — one sale is open at
-      // a time, and it is the admin's to move.
-      return { saleOpen: true, targetDate: settings?.sale_closes_at ?? null };
+      // a time, and it is the admin's to move. Cleared, or left behind by a sale
+      // that outran it, it falls back to the default window off the day selling
+      // opened — the same date `startSelling` puts there, worked out again
+      // rather than left blank (Khaled, 2026-08-22).
+      const chosenEnd = settings?.sale_closes_at
+        ? new Date(settings.sale_closes_at)
+        : null;
+
+      return {
+        saleOpen: true,
+        targetDate: (chosenEnd && chosenEnd.getTime() > Date.now()
+          ? chosenEnd
+          : saleWindowEnd(cycle.selling_started_at)
+        ).toISOString(),
+      };
     }
     const ready = expectedSaleDate(
       cycle.start_date,

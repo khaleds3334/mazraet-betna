@@ -8,6 +8,7 @@ import {
   RAISING_PERIOD_DAYS,
   SALE_START_ROLL_DAYS,
   SALE_START_ROLL_STEP_DAYS,
+  SALE_WINDOW_DAYS,
   WEEKLY_TEMPERATURE_C,
 } from "@/lib/constants";
 import { expectedFeedBags } from "@/lib/calculations/feed";
@@ -57,6 +58,33 @@ export function raisingSaleStartDate(
   const ready = expectedSaleDate(startDate, raisingPeriod);
   if (ready.getTime() > today.getTime()) return ready;
   return addDays(ready, daysSince(ready, today) + 1);
+}
+
+/**
+ * When an open sale is expected to stop taking orders, with no date set for it.
+ *
+ * The admin can clear «تاريخ انتهاء البيع» — empty means "you work it out", the
+ * same as the start date does. Working it out is the window a sale runs by
+ * default ({@link SALE_WINDOW_DAYS}) counted from the day selling actually
+ * opened, which is exactly what `startSelling` fills the field with.
+ *
+ * And never a date that has gone by, for the reason every estimate here shares:
+ * a sale that is still taking orders cannot be counting down to zero. Past the
+ * window the target becomes the start of tomorrow and moves with it — the birds
+ * are selling, and it ends when they run out, which no calendar knows.
+ */
+export function saleWindowEnd(
+  sellingStartedAt: Date | string | null,
+  today: Date = new Date(),
+): Date {
+  const opened = sellingStartedAt
+    ? new Date(sellingStartedAt)
+    : // A cycle from before the phase was recorded (migration 023). Nothing to
+      // count from, so it is simply "not today".
+      today;
+  const window = addDays(opened, SALE_WINDOW_DAYS);
+  if (window.getTime() > today.getTime()) return window;
+  return addDays(window, daysSince(window, today) + 1);
 }
 
 /**
