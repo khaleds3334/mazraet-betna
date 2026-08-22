@@ -318,3 +318,18 @@ select,
   mask-repeat: repeat;
   animation: install-crumble 620ms cubic-bezier(0.4, 0, 0.75, 0.2) forwards;
 }
+
+/*
+  The scrim behind the install banner. Its own keyframe rather than the
+  transition the other overlays use, because this one is not opened by a tap:
+  there is no moment to transition *from*, so it fades in on arrival and takes
+  as long as the banner does to rise.
+*/
+@keyframes install-scrim {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
