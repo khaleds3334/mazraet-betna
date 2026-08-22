@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Icon } from "@/components/ui";
 import type { IconName } from "@/lib/icons";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,13 @@ export interface CycleStatCardProps {
   raised?: boolean;
   /** Hides the value behind a blur — the design's "locked" treatment. */
   blurred?: boolean;
+  /**
+   * Makes the whole tile a way into the screen the figure comes from — «الديون»
+   * opens the customers who owe it. A tile that shows a number the admin's next
+   * move depends on should be the way to that move, not a sign pointing at it
+   * (Khaled, 2026-08-22).
+   */
+  href?: string;
   className?: string;
 }
 
@@ -49,16 +57,18 @@ export function CycleStatCard({
   tone,
   raised = true,
   blurred = false,
+  href,
   className,
 }: CycleStatCardProps) {
-  return (
-    <div
-      className={cn(
-        "flex  w-full flex-col items-center justify-between gap-2 rounded-xl border-2 border-disabled-soft bg-surface px-1 py-2 text-center",
-        raised && "shadow-stat",
-        className,
-      )}
-    >
+  const box = cn(
+    "flex  w-full flex-col items-center justify-between gap-2 rounded-xl border-2 border-disabled-soft bg-surface px-1 py-2 text-center",
+    raised && "shadow-stat",
+    href && "transition-transform active:scale-[0.98]",
+    className,
+  );
+
+  const inner = (
+    <>
       <div className="flex flex-col items-center gap-1">
         <Icon name={icon} size={24} className={TONE_TEXT[tone]} aria-hidden />
         <span className="text-sm leading-tight text-muted">{label}</span>
@@ -74,6 +84,18 @@ export function CycleStatCard({
       >
         {value}
       </span>
-    </div>
+    </>
   );
+
+  // `replace`, like every link in the app — the back gesture is kept able to
+  // close it (T-55).
+  if (href) {
+    return (
+      <Link href={href} replace aria-label={label} className={box}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div className={box}>{inner}</div>;
 }

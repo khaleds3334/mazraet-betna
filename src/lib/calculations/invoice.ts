@@ -161,19 +161,30 @@ export interface InvoiceTotals {
 /**
  * Roll every order in a cycle into one money picture. Orders that aren't weighed
  * yet contribute nothing (their lines carry no actual weight), so this reflects
- * real sales only. Cancelled orders must be filtered out before calling.
+ * real sales only.
+ *
+ * **Two things the caller must do first:** drop cancelled orders, and drop house
+ * orders — the family's own birds leave the flock but were never a sale, so they
+ * carry no revenue and no debt (FR-36, D-59).
+ *
+ * Debt is summed **per order**, not netted across the cycle. Someone who
+ * overpaid by a hundred does not settle someone else's hundred, and netting made
+ * this figure disagree with the customers screen, which has always clamped per
+ * order.
  */
 export function sumInvoices(orders: OrderInvoiceInput[]): InvoiceTotals {
   let income = 0;
   let collected = 0;
+  let owed = 0;
   for (const { order, lines, payments } of orders) {
     const invoice = computeInvoice(order, lines, payments);
     income += invoice.total;
     collected += invoice.paid;
+    owed += Math.max(0, invoice.remaining);
   }
   return {
     income: toPiasters(income),
     collected: toPiasters(collected),
-    debt: Math.max(0, toPiasters(income - collected)),
+    debt: toPiasters(owed),
   };
 }

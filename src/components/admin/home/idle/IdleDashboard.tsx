@@ -86,6 +86,7 @@ export function IdleDashboard({
           label="الديون"
           value={formatArabicNumber(farmDebt)}
           tone="tan"
+          href="/admin/customers?debt=1"
         />
       </div>
 

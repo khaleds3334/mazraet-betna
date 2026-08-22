@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { StatItem, Icon } from "@/components/ui";
 import { CycleDetailHeader } from "@/components/admin/cycles/detail/CycleDetailHeader";
@@ -42,13 +43,25 @@ export default async function AdminCycleDetailPage({
       <CycleDetailHeader cycle={cycle} />
 
       <div className="flex flex-col gap-8 px-screen pb-6 pt-2">
-        {/* What the cycle is still owed — the one figure that is not settled. */}
-        <p className="flex items-center gap-2 self-start text-lg text-accent-brown">
-          <Icon name="debt" size={24} className="shrink-0" aria-hidden />
-          {cycle.debt > 0
-            ? `متبقي مبلغ ديون ${formatCurrency(cycle.debt)}`
-            : "لا توجد ديون خاصة بالدورة"}
-        </p>
+        {/* What the cycle is still owed — the one figure that is not settled,
+            and the only one here the admin can still act on. It opens the
+            customers who owe (Khaled, 2026-08-22); with nothing owed there is
+            nowhere to go, so it stays a sentence. */}
+        {cycle.debt > 0 ? (
+          <Link
+            href="/admin/customers?debt=1"
+            replace
+            className="flex min-h-11 items-center gap-2 self-start text-lg text-accent-brown transition-transform active:scale-[0.99]"
+          >
+            <Icon name="debt" size={24} className="shrink-0" aria-hidden />
+            متبقي مبلغ ديون {formatCurrency(cycle.debt)}
+          </Link>
+        ) : (
+          <p className="flex items-center gap-2 self-start text-lg text-accent-brown">
+            <Icon name="debt" size={24} className="shrink-0" aria-hidden />
+            لا توجد ديون خاصة بالدورة
+          </p>
+        )}
 
         <StatSection title="الاحصائيات المالية">
           <div className="flex flex-col gap-3">

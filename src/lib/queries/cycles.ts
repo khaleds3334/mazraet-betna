@@ -681,7 +681,7 @@ export async function listCycles(farmId: string): Promise<CycleListItem[]> {
     supabase
       .from("orders")
       .select(
-        "cycle_id, unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
+        "cycle_id, is_house, unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
       )
       .eq("farm_id", farmId)
       // A cancelled order was never sold and was never owed (FR-15).
@@ -701,9 +701,15 @@ export async function listCycles(farmId: string): Promise<CycleListItem[]> {
   const weightsByCycle = new Map<string, number[]>();
   for (const order of orderRes.data ?? []) {
     const lines = order.order_line ?? [];
-    const bucket = ordersByCycle.get(order.cycle_id) ?? [];
-    bucket.push({ order, lines, payments: order.payment ?? [] });
-    ordersByCycle.set(order.cycle_id, bucket);
+    // House orders are left out of the money entirely — the family's own birds
+    // leave the flock but were never a sale, so no revenue and no debt (FR-36,
+    // D-59). Their weights still count: a bird that went on the scale went on
+    // the scale, whoever ate it.
+    if (!order.is_house) {
+      const bucket = ordersByCycle.get(order.cycle_id) ?? [];
+      bucket.push({ order, lines, payments: order.payment ?? [] });
+      ordersByCycle.set(order.cycle_id, bucket);
+    }
 
     const weights = weightsByCycle.get(order.cycle_id) ?? [];
     for (const line of lines) {

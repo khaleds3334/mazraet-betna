@@ -1737,6 +1737,18 @@ dialog, and the invoice shows what the birds came to and stops there, with no
 Its badge on a delivered card reads **«مش محسوب»** in the settled style — not «تم
 الدفع», which would claim money changed hands, and not a debt owed to nobody.
 
+**And it is out of the cycle's money too** (added 2026-08-22). The selling
+dashboard had always dropped house orders before summing, but the cycle detail
+page and the cycles list had not — so «الديون» on a cycle stood higher than the
+sum of what every customer owed, by exactly the house order's total. A house
+order has a total and no payments, so it counted as both income and debt on the
+two screens that forgot it.
+
+Fixed alongside: `sumInvoices` clamps debt **per order** rather than netting it
+across the cycle. Someone who overpaid by a hundred does not settle someone
+else's hundred — the customers screen had always clamped, and the cycle screens
+had not.
+
 `recordPayment` refuses one outright. Nothing offers it, which is exactly when a
 guard is worth having: a payment against a house order is money arriving from
 nowhere, and it would land in the farm's takings.

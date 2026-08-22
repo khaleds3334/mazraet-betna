@@ -109,6 +109,7 @@ export function SellingDashboard({
               label="الديون"
               value={formatArabicNumber(money.debt)}
               tone="tan"
+              href="/admin/customers?debt=1"
             />
             <CycleStatCard
               icon="cash"

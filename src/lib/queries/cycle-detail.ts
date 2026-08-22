@@ -105,7 +105,7 @@ export async function getCycleDetail(
       supabase
         .from("orders")
         .select(
-          "unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
+          "is_house, unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
         )
         .eq("cycle_id", cycleId)
         .neq("status", "cancelled"),
@@ -124,12 +124,19 @@ export async function getCycleDetail(
   }));
   const orders = orderRes.data ?? [];
 
+  // Birds for the family house leave the flock like any other order, but they
+  // are not a sale: no revenue, no debt (FR-36, D-59). The selling dashboard has
+  // always dropped them here and this page did not, which is why «الديون» on a
+  // cycle could stand higher than the sum of what every customer owed (Khaled,
+  // 2026-08-22).
   const money = sumInvoices(
-    orders.map((order) => ({
-      order,
-      lines: order.order_line ?? [],
-      payments: order.payment ?? [],
-    })),
+    orders
+      .filter((order) => !order.is_house)
+      .map((order) => ({
+        order,
+        lines: order.order_line ?? [],
+        payments: order.payment ?? [],
+      })),
   );
 
   const { expensesTotal, netProfit } = cycleAccounting({
