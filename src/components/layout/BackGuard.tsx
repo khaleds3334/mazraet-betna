@@ -5,8 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
 import { closeTopOverlay, subscribeOverlays } from "@/lib/overlayStack";
 
-/** The flag on a history entry that exists only to catch one back gesture. */
-const GUARD = "__mbBackGuard";
+/** Where an entry sits above the one the app launched on, written into it. */
+const INDEX = "__mbIndex";
 
 /** How long «دوس رجوع تاني» stands — the toast says it for exactly as long. */
 const ARM_MS = 2500;
@@ -36,32 +36,49 @@ function historyState(): Record<string, unknown> {
  *
  * ## How it holds
  *
- * A back press is only observable once it has already happened: `popstate` fires
- * *after* the entry is gone. So the app keeps one spare entry — a **guard** —
- * pushed on top of the real one with no URL of its own. The gesture spends the
- * guard, the URL does not change, nothing re-renders, and this handler is free
- * to decide what the press should have meant. Then it pushes a fresh guard.
+ * A back press is only observable once it has happened: `popstate` fires *after*
+ * the entry is gone. So the app keeps one spare entry — a **guard** — pushed on
+ * top of the real one with no URL of its own. The gesture spends the guard, the
+ * URL does not change, nothing re-renders, and this handler is free to decide
+ * what the press should have meant. Then it pushes a fresh guard.
  *
- * Except on the last press. To close a PWA you cannot call anything — the app
- * exits when the back gesture finds the history empty, and only then. So when
- * the toast goes up the guard is deliberately **not** replaced: the stack is left
- * empty on purpose so the very next press reaches the browser and ends the app.
- * If the toast times out with no second press, the guard goes back up.
+ * Except on the last press. Nothing can close a PWA — it exits when the gesture
+ * finds the history empty, and only then. So when the toast goes up the guard is
+ * deliberately **not** replaced, and the stack is spent in one `go(-index)` that
+ * lands on the entry the app launched on: the manifest's `start_url`, which is
+ * home in both apps, so the collapse is invisible. The next press reaches the
+ * browser and ends the app. If the toast times out, or the admin taps a sheet or
+ * another screen while it is up, the guard goes back and the exit is off.
  *
- * `depth` is how many entries we sit above the one the app launched on, and it
- * is countable only because **nothing in the app pushes** — every link and every
- * router call replaces, and the guard is the one thing that pushes. Keep it that
- * way: a stray `push` leaves this counting short, and the app takes an extra
- * press to close. On the way out that count is spent in one `go(-depth)`, which
- * lands on the launch entry — the manifest's `start_url`, which is home in both
- * apps — so the collapse is invisible and the stack underneath is empty.
+ * ## Two things it is careful about
+ *
+ * **It never asks the history what it did.** Whether a guard is on top, and how
+ * deep the stack is, are held here — because the router owns `history.state` and
+ * rewrites it on its own schedule, dropping foreign keys when it navigates and
+ * keeping them when it restores. The index is still *written* into each entry,
+ * but only as a correction to read back if the browser lands somewhere we did
+ * not put it; between presses the ref is what is trusted.
+ *
+ * **It never navigates from inside the popstate handler.** The router registers
+ * its own `popstate` listener after this one, and answers every press by
+ * restoring the entry that was just popped. A `router.replace` called from in
+ * here is dispatched first and overwritten a moment later, so the press appears
+ * to do nothing at all. Going home is queued for the next task instead, after
+ * that restore has been dispatched, and then it is the one that lands.
+ *
+ * `index` is countable only because **nothing in the app pushes** — every link
+ * and every router call replaces, and the guard is the one thing that pushes.
+ * Keep it that way.
  */
 export function BackGuard({ home }: { home: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const toast = useToast();
 
-  const depth = useRef(0);
+  /** How far above the launch entry we are. */
+  const index = useRef(0);
+  /** Whether the spare entry is on top right now. Ours to know, not history's. */
+  const guarded = useRef(false);
   const armed = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const collapsing = useRef(false);
@@ -75,16 +92,25 @@ export function BackGuard({ home }: { home: string }) {
 
   /** Put a spare entry back on top, unless we are deliberately without one. */
   const rearm = useCallback(() => {
-    if (armed.current) return;
-    const state = historyState();
-    if (state[GUARD] === true) return;
-    // The guard carries a copy of the router's own state — that is what makes
-    // popping it a no-op instead of a navigation. An entry the router has not
-    // stamped yet has nothing to copy, and popping onto one makes Next reload
-    // the page rather than restore it; the retry below comes back for it.
-    if (Object.keys(state).length === 0) return;
-    window.history.pushState({ ...state, [GUARD]: true }, "");
-    depth.current += 1;
+    if (armed.current || guarded.current) return;
+    index.current += 1;
+    // `__NA` is what marks an entry the router is willing to restore rather than
+    // reload. The guard carries over whatever the router has already written
+    // here and says it again, so a guard pushed before the router has stamped
+    // this entry still comes back as a restore.
+    window.history.pushState(
+      { __NA: true, ...historyState(), [INDEX]: index.current },
+      "",
+    );
+    guarded.current = true;
+  }, []);
+
+  /** Write our position into the entry, so a stray landing can be corrected. */
+  const stamp = useCallback(() => {
+    window.history.replaceState(
+      { ...historyState(), [INDEX]: index.current },
+      "",
+    );
   }, []);
 
   const disarm = useCallback(() => {
@@ -105,21 +131,31 @@ export function BackGuard({ home }: { home: string }) {
   }, [rearm, toast]);
 
   useEffect(() => {
-    function onPop() {
-      depth.current = Math.max(0, depth.current - 1);
+    /** Home, but not from inside the handler — see the note above. */
+    const goHome = () => {
+      setTimeout(() => router.replace(home), 0);
+    };
 
-      // Our own `go(-depth)` arriving. We are on the launch entry now, with
+    function onPop() {
+      // Whatever we were standing on is gone.
+      guarded.current = false;
+
+      const stamped = historyState()[INDEX];
+      index.current =
+        typeof stamped === "number" ? stamped : Math.max(0, index.current - 1);
+
+      // Our own `go(-index)` arriving. We are on the launch entry now, with
       // nothing under it — which is the whole point of having come here.
       if (collapsing.current) {
         collapsing.current = false;
-        depth.current = 0;
+        index.current = 0;
         // It should be home; if the app was opened somewhere else entirely (a
         // browser tab, not the installed app) it isn't, and going there beats
         // arming an exit the browser would not honour anyway.
         if (window.location.pathname === home) arm();
         else {
-          router.replace(home);
           rearm();
+          goHome();
         }
         return;
       }
@@ -138,16 +174,16 @@ export function BackGuard({ home }: { home: string }) {
       }
 
       if (here.current !== home) {
-        router.replace(home);
         rearm();
+        goHome();
         return;
       }
 
       // Home already: this press means "leave". Spend the stack in one go so the
       // next press has nothing left to pop and the phone closes the app.
-      if (depth.current > 0) {
+      if (index.current > 0) {
         collapsing.current = true;
-        window.history.go(-depth.current);
+        window.history.go(-index.current);
         return;
       }
 
@@ -159,15 +195,15 @@ export function BackGuard({ home }: { home: string }) {
   }, [home, router, arm, disarm, rearm]);
 
   // A guard on mount, and a fresh one after every route change — a navigation
-  // replaces the entry the guard was sitting on. Both also cancel a pending
-  // exit: the admin who taps something after seeing the toast has answered it.
+  // lands on the entry the guard was sitting on and overwrites it, spare and
+  // all. Both also cancel a pending exit: the admin who taps something after
+  // seeing the toast has answered it.
   useEffect(() => {
+    guarded.current = false;
     disarm();
+    stamp();
     rearm();
-    // On the very first mount the router may not have written its state yet.
-    const retry = setTimeout(rearm, 0);
-    return () => clearTimeout(retry);
-  }, [pathname, disarm, rearm]);
+  }, [pathname, disarm, rearm, stamp]);
 
   // Same for opening a sheet. Without this, a sheet opened in the two seconds
   // the toast is up would close the app instead of closing itself.
