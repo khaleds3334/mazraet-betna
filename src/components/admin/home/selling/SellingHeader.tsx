@@ -26,12 +26,15 @@ export function SellingHeader({
   defaultCleaning,
   available,
   saleOpen,
+  soldOut,
   cleaningPrice,
 }: {
   ageDays: number;
   salePrice: number;
   /** Whether orders are being taken right now — the switch, not the phase. */
   saleOpen: boolean;
+  /** Closed because the flock ran out, not by the admin (migration 025). */
+  soldOut: boolean;
   /** Birds still free to sell — the ceiling on a new order (FR-11). */
   available: number;
   /** Everything «اضافة طلب» needs — see `AddOrderLauncher`. */
@@ -62,17 +65,12 @@ export function SellingHeader({
             which read as a lie the moment the switch went off — or the last bird
             went.
 
-            The flock is read **before** the switch, exactly as the customer's
-            home reads it (D-64): running out is worked out and never stored, so
-            a badge that only consulted `sale_open` said «البيع متوفر» over an
-            empty flock while the customer was already being told it had sold out
-            (Khaled, 2026-08-22). */}
-        <Badge tone={saleOpen && available > 0 ? "primary" : "danger"}>
-          {available <= 0
-            ? "الفراخ خلصت"
-            : saleOpen
-              ? "البيع متوفر"
-              : "البيع مقفول"}
+            «الفراخ خلصت» is read, not recounted (migration 025): the state is
+            stored the moment the last bird is booked, so this screen and the
+            customer's are looking at one answer instead of each deriving their
+            own and disagreeing (Khaled, 2026-08-22). */}
+        <Badge tone={saleOpen ? "primary" : "danger"}>
+          {soldOut ? "الفراخ خلصت" : saleOpen ? "البيع متوفر" : "البيع مقفول"}
         </Badge>
         <Badge tone={saleOpen && available ? "danger": "primary"}>{pluralizeDay(ageDays)}</Badge>
       </div>

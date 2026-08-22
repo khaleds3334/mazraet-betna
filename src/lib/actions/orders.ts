@@ -6,6 +6,7 @@ import { getCurrentFarm } from "@/lib/queries/admin";
 import { getFarmSettings } from "@/lib/queries/settings";
 import { getOrder, type OrderListItem } from "@/lib/queries/orders";
 import { countAvailableChickens } from "@/lib/queries/selling";
+import { reopenSaleIfBirdsReturned } from "@/lib/queries/saleState";
 import { ORPHAN_MUST_BE_PAID, SALE_NOT_OPEN } from "@/lib/constants";
 import { orderRemaining } from "@/lib/calculations/invoice";
 import { pluralizeChicken } from "@/lib/format";
@@ -154,16 +155,26 @@ export async function createOrder(
     return { ok: false, error: "مقدرناش نسجّل الطلب، حاول تاني." };
   }
 
-  // **Nothing is written when the last bird goes** (FR-11). The sale is shut
-  // either way — this action refuses at zero above, and the customer's home
-  // works "sold out" out from the flock (`getActiveSaleState`) — but `sale_open`
-  // stays the admin's own answer and is not touched.
+  // **The order that takes the last bird closes the sale** (FR-11), and says so:
+  // `sale_auto_closed` marks it as the flock's doing rather than the admin's, so
+  // he cannot reopen it by hand — there is nothing to sell — and a cancelled
+  // order reopens it without him (`reopenSaleIfBirdsReturned`).
   //
-  // That is what makes cancelling an order put the sale back: the birds return
-  // to «الفراخ المتوفرة» and the sale is open again on its own, with nobody
-  // having to notice and flip a switch back (Khaled, 2026-08-22). A stored
-  // auto-close would have had to be undone by hand, by an admin who never
-  // pressed it.
+  // Written rather than worked out on each screen. Every screen that recomputed
+  // it got a chance to get it wrong differently, and two of them did in one day:
+  // the admin's badge read `sale_open` alone, and the customer's copy of the
+  // count ran through his own session, where RLS hides other people's orders
+  // (Khaled, 2026-08-22).
+  if (available - count <= 0) {
+    await supabase
+      .from("cycle")
+      .update({
+        sale_open: false,
+        sale_auto_closed: true,
+        selling_ended_at: new Date().toISOString(),
+      })
+      .eq("id", cycle.id);
+  }
 
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
@@ -194,6 +205,10 @@ export async function fetchOrder(
  * "why didn't this customer get his order" is exactly what gets forgotten.
  *
  * The order keeps all its lines and its number; nothing is deleted.
+ *
+ * Its birds go back to the flock, so a sale that closed because the flock ran
+ * out opens again here — by itself, because that close was never the admin's to
+ * undo (`reopenSaleIfBirdsReturned`).
  */
 export async function cancelOrder(
   orderId: string,
@@ -208,7 +223,7 @@ export async function cancelOrder(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: cancelled, error } = await supabase
     .from("orders")
     .update({
       status: "cancelled",
@@ -216,14 +231,19 @@ export async function cancelOrder(
       cancel_reason: trimmed,
     })
     .eq("id", orderId)
-    .eq("farm_id", farm.farmId);
+    .eq("farm_id", farm.farmId)
+    .select("cycle_id")
+    .maybeSingle();
 
   if (error) {
     return { ok: false, error: "مقدرناش نلغي الطلب، حاول تاني." };
   }
 
+  if (cancelled) await reopenSaleIfBirdsReturned(cancelled.cycle_id);
+
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
+  revalidatePath("/", "layout"); // the customer's home may have a sale again
   return { ok: true };
 }
 
@@ -309,7 +329,7 @@ export async function saveWeights(
 
   const { data: order } = await supabase
     .from("orders")
-    .select("id, status, unit_price, cleaning_price")
+    .select("id, cycle_id, status, unit_price, cleaning_price")
     .eq("id", input.orderId)
     .eq("farm_id", farm.farmId)
     .maybeSingle();
@@ -379,8 +399,13 @@ export async function saveWeights(
     .eq("id", order.id);
   if (orderError) return failed;
 
+  // A bird taken off the order at the scale (FR-14ج) is back in the flock, the
+  // same as a cancelled order's — so the same reopener runs.
+  await reopenSaleIfBirdsReturned(order.cycle_id);
+
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 

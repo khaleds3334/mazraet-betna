@@ -34,7 +34,6 @@ import {
   type FeedPhase,
 } from "@/lib/constants";
 import { getFarmSettings } from "@/lib/queries/settings";
-import { countAvailableChickensForCustomer } from "@/lib/queries/selling";
 import {
   cyclePhase,
   isSellingPhase,
@@ -96,7 +95,9 @@ export async function getActiveSaleState(
 
   const { data: cycle } = await supabase
     .from("cycle")
-    .select("id, chick_count, sale_open, selling_started_at, selling_ended_at, start_date")
+    .select(
+      "sale_open, sale_auto_closed, selling_started_at, selling_ended_at, start_date",
+    )
     .eq("farm_id", farmId)
     .eq("is_active", true)
     .maybeSingle();
@@ -108,23 +109,16 @@ export async function getActiveSaleState(
     .maybeSingle();
 
   if (cycle) {
-    // **Sold out is worked out, never written.** Nothing turns `sale_open` off
-    // when the last bird goes: the switch stays the admin's own answer, and this
-    // reads the flock. So cancelling an order hands its birds back and the sale
-    // is open again on its own, with nobody having to notice and flip anything
-    // (Khaled, 2026-08-22).
-    if (isSellingPhase(cycle)) {
-      // Past RLS: this runs on the customer's session, which cannot see other
-      // people's orders or any mortality at all — see the function's own note.
-      const available = await countAvailableChickensForCustomer(
-        cycle.id,
-        cycle.chick_count,
-      );
-      if (available <= 0) {
-        // No date: the sale is over for this flock, and the next one belongs to
-        // birds that have not been bought. Zeros are the honest reading.
-        return { status: "sold-out", saleOpen: false, targetDate: null };
-      }
+    // **The flock closed it** (migration 025). Read, not recounted: this runs
+    // on the customer's own session, where RLS hides other people's orders and
+    // all mortality, so a count taken here came back with a hundred birds
+    // available out of none (T-58). One stored answer, and both halves of the
+    // app read the same one.
+    //
+    // No date: the sale is over for this flock, and the next belongs to birds
+    // nobody has bought. Zeros are the honest reading.
+    if (cycle.sale_auto_closed) {
+      return { status: "sold-out", saleOpen: false, targetDate: null };
     }
 
     if (cycle.sale_open) {
@@ -288,6 +282,8 @@ export interface CycleDashboard {
   /** Whether orders are being taken *right now* — the switch inside مرحلة البيع,
    *  not the phase itself (`@/lib/cyclePhase`). */
   saleOpen: boolean;
+  /** Closed because the flock ran out rather than by the admin (migration 025). */
+  saleAutoClosed: boolean;
   /** True once the birds have reached the selling age (age ≥ raising period). */
   saleReady: boolean;
   /** Live kilo price from settings — the open-sale dialog opens on it, and the
@@ -439,7 +435,7 @@ export async function getActiveCycleDashboard(
   const { data: cycle } = await supabase
     .from("cycle")
     .select(
-      "id, name, chick_count, chick_price, start_date, start_time, sale_open, selling_started_at, is_active, ended_at, estimated_expenses",
+      "id, name, chick_count, chick_price, start_date, start_time, sale_open, sale_auto_closed, selling_started_at, is_active, ended_at, estimated_expenses",
     )
     .eq("farm_id", farmId)
     .eq("is_active", true)
@@ -504,6 +500,7 @@ export async function getActiveCycleDashboard(
     ageDays,
     phase,
     saleOpen: cycle.sale_open,
+    saleAutoClosed: cycle.sale_auto_closed,
     saleReady: ageDays >= SALE_READY_MIN_DAY,
     salePrice: settings.salePrice,
     mortalityCount,

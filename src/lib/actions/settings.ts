@@ -48,7 +48,7 @@ export async function setSaleOpen(open: boolean): Promise<ActionResult> {
 
   const { data: cycle } = await supabase
     .from("cycle")
-    .select("id, sale_open, selling_started_at")
+    .select("id, chick_count, sale_open, sale_auto_closed, selling_started_at")
     .eq("farm_id", farm.farmId)
     .eq("is_active", true)
     .maybeSingle();
@@ -62,14 +62,22 @@ export async function setSaleOpen(open: boolean): Promise<ActionResult> {
     return { ok: false, error: "ابدأ مرحلة البيع للدورة الأول." };
   }
 
+  // A sale the **flock** closed is not his to open (migration 025). There is
+  // nothing to sell, and it opens itself the moment birds come back — a
+  // cancelled order, a bird taken off at the scale.
+  if (open && cycle.sale_auto_closed) {
+    return { ok: false, error: "الفراخ خلصت — البيع هيفتح لوحده لو رجعت فراخ." };
+  }
+
   const { error } = await supabase
     .from("cycle")
-    // The switch, and the record of when it moved. `selling_ended_at` is the
-    // moment this flock actually stopped taking orders (migration 024) — the
-    // forecast of when it would is in settings and is not touched here. Opening
-    // again clears it: selling did not end after all.
+    // The switch, the record of when it moved, and whose decision it was. This
+    // path is always the admin's, so `sale_auto_closed` is false either way —
+    // only the flock running out sets it (migration 025), and only birds coming
+    // back clear it.
     .update({
       sale_open: open,
+      sale_auto_closed: false,
       selling_ended_at: open ? null : new Date().toISOString(),
     })
     .eq("id", cycle.id);

@@ -1748,12 +1748,25 @@ die either — that is a cancelled order, not a mortality row — so the ceiling
 the same «الفراخ المتوفرة». `NumberStepper` gained `max`/`onMax` for it, the way
 `Stepper` did for the order sheet.
 
-**Sold out is worked out, never written** (2026-08-22). Running out of birds
-does not turn `sale_open` off — that switch stays the admin's own answer, and
-the customer's home reads the flock instead (`getActiveSaleState`). So cancelling
-an order hands its birds back and the sale is open again on its own, with nobody
-having to notice and flip a switch they never pressed. A stored auto-close would
-have had to be undone by hand.
+**Running out closes the sale, and says who closed it** (migration 025).
+`sale_auto_closed` is the difference between a close the admin made and one the
+flock made: he reopens his own, and cannot reopen the flock's — there is nothing
+to sell. `selling_ended_at` is stamped either way.
+
+It was derived at first, on the reasoning that a stored auto-close would have to
+be undone by hand. That was wrong twice over. Deriving it meant every screen
+redoing the same reasoning, and two got it wrong the same day — the admin's badge
+read `sale_open` alone, and the customer's copy of the count ran through his own
+session where RLS hides other people's orders (T-58). And the moment the flock
+sold out went unrecorded, so `selling_ended_at` stayed null even after the cycle
+closed (Khaled, 2026-08-22).
+
+Undoing it by hand is not needed either: `reopenSaleIfBirdsReturned` is called by
+everything that hands birds back — a cancelled order, a bird taken off at the
+scale (FR-14ج). **Call it from any future path that returns a bird.** That single
+function is what keeps a stored state from drifting away from the flock, and the
+drift is real: one cycle sat sold-out with a bird available for the minutes
+between the migration and the reopener existing.
 
 **«اضافة فرخة اخري» while weighing is deliberately not capped.** That screen is
 the admin standing over the birds with a customer waiting, and what is on the
@@ -2006,8 +2019,9 @@ farm while the admin's screen — running the same function on his own session �
 said it had sold out. The check was there; the number it read could not be right
 (Khaled, 2026-08-22).
 
-`countAvailableChickensForCustomer` reads it through the service-role client.
-**The rule this sets, for the customer app being built next:** when a screen must
+That instance is gone — the state is stored now (migration 025) and the customer
+reads one flag rather than recounting a flock he cannot see. **The rule stands,
+and the customer app being built next is where it will come up again:** when a screen must
 state a fact *about the farm* rather than about the reader, ask whether the
 reader's own policies can even see the rows it is made of. If they cannot, reach
 past RLS **deliberately and in a named function**, and only where all three hold:

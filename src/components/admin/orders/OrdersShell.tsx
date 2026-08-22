@@ -16,7 +16,7 @@ export function OrdersShell({
 }) {
   return (
     <>
-      <div className="sticky top-0 z-10 flex flex-col gap-4 bg-background pt-4 pb-3">
+      <div className="sticky top-0 z-10 flex flex-col gap-4 bg-background pt-3 pb-3">
         {header}
       </div>
 

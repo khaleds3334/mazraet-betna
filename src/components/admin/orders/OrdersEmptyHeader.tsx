@@ -27,7 +27,7 @@ export function OrdersEmptyHeader({ cycleName }: { cycleName?: string | null }) 
       <div className="flex min-w-0 items-center gap-3">
         <span
           aria-hidden
-          className="pointer-events-none select-none opacity-60"
+          className="pointer-events-none shrink-0 select-none opacity-60"
         >
           <AddButton label="اضافة طلب" icon="addOrder" />
         </span>

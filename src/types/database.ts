@@ -86,6 +86,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string | null
+          sale_auto_closed: boolean
           selling_ended_at: string | null
           selling_started_at: string | null
           sale_open: boolean
@@ -103,6 +104,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string | null
+          sale_auto_closed?: boolean
           selling_ended_at?: string | null
           selling_started_at?: string | null
           sale_open?: boolean
@@ -120,6 +122,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string | null
+          sale_auto_closed?: boolean
           selling_ended_at?: string | null
           selling_started_at?: string | null
           sale_open?: boolean

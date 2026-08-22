@@ -55,6 +55,7 @@ export function SellingDashboard({
           defaultCleaning={defaultCleaning}
           available={flock.available}
           saleOpen={cycle.saleOpen}
+          soldOut={cycle.saleAutoClosed}
           cleaningPrice={cleaningPrice}
         />
       </div>

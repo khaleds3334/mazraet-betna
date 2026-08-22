@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 /** One shape for both modes — the live button and the inert copy of it. */
 const SHAPE =
-  "flex min-h-11 items-center justify-center gap-1.5 rounded-md border border-brand bg-brand px-4 text-base text-surface-page";
+  "flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-brand bg-brand px-4 text-base text-surface-page";
 
 /**
  * The green "add" action at the top of a list screen — «اضافة طلب» (A-50) and
