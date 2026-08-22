@@ -38,6 +38,7 @@ export function RunningCycleControls({
           <EndSellingButton
             openOrders={openOrders}
             availableChickens={availableChickens}
+            leftoverFeed={feed.available}
           />
         </>
       )}

@@ -10,8 +10,9 @@ import {
   Modal,
 } from "@/components/ui";
 import { useToast } from "@/hooks/useToast";
-import { endCycle } from "@/lib/actions/cycles";
+import { endCycle, type LeftoverFeedAnswer } from "@/lib/actions/cycles";
 import { pluralizeChicken, pluralizeOrder } from "@/lib/format";
+import { LeftoverFeedChoice } from "./LeftoverFeedChoice";
 
 const LABEL = "انتهاء فترة البيع";
 
@@ -36,16 +37,25 @@ const LABEL = "انتهاء فترة البيع";
  * Only one message shows at a time, and orders come first: they are the reason he
  * can act on right now, and clearing them is often what empties the flock anyway.
  *
+ * **A third thing asks rather than blocks** (D-62): feed still in the store.
+ * Leftover bags are not a mistake in themselves — but they are either work he
+ * forgot to log or money charged to a flock that never ate it, and only he knows
+ * which. The question appears once the two walls are clear: clearing an order can
+ * open a bag, and asking about a number that is still moving is asking twice.
+ *
  * Failure is an inline error, never a toast (T-09): ending a cycle is critical,
  * and a toast that auto-dismisses unseen would leave him believing it closed.
  */
 export function EndSellingButton({
   openOrders,
   availableChickens,
+  leftoverFeed,
 }: {
   openOrders: number;
   /** Birds still free to sell — «الفراخ المتوفرة» on the selling dashboard. */
   availableChickens: number;
+  /** Bags bought and never opened — «العلف المتوفر» still in the store. */
+  leftoverFeed: number;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -53,6 +63,8 @@ export function EndSellingButton({
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [leftoverAnswer, setLeftoverAnswer] =
+    useState<LeftoverFeedAnswer | null>(null);
 
   // Orders first: clearing them is often what empties the flock too, so leading
   // with the birds would send him to fix the second thing first.
@@ -63,15 +75,18 @@ export function EndSellingButton({
         ? `لسه فيه ${pluralizeChicken(availableChickens)} متوفرة في الدورة، بيعها او سجّلها نافق الأول.`
         : null;
 
+  const asksAboutFeed = blockedReason === null && leftoverFeed > 0;
+
   function close() {
     setOpen(false);
     setError(null);
+    setLeftoverAnswer(null);
   }
 
   async function submit() {
     setError(null);
     setSubmitting(true);
-    const result = await endCycle();
+    const result = await endCycle(leftoverAnswer ?? undefined);
     setSubmitting(false);
 
     if (!result.ok) {
@@ -106,6 +121,15 @@ export function EndSellingButton({
           </p>
 
           {blockedReason && <InlineError message={blockedReason} />}
+
+          {asksAboutFeed && (
+            <LeftoverFeedChoice
+              bags={leftoverFeed}
+              value={leftoverAnswer}
+              onChange={setLeftoverAnswer}
+            />
+          )}
+
           {error && <InlineError message={error} />}
 
           <ConfirmActions
@@ -113,7 +137,9 @@ export function EndSellingButton({
             onConfirm={submit}
             onCancel={close}
             isLoading={submitting}
-            disabled={blockedReason !== null}
+            disabled={
+              blockedReason !== null || (asksAboutFeed && !leftoverAnswer)
+            }
           />
         </div>
       </Modal>

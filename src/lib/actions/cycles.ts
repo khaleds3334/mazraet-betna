@@ -6,9 +6,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { getCycleEstimateBasis, hasActiveCycle } from "@/lib/queries/cycles";
 import { estimatedCycleExpenses } from "@/lib/calculations/cycle";
+import {
+  bagsByPhase,
+  expectedFeedBags,
+  feedBagsAvailable,
+} from "@/lib/calculations/feed";
 import { countOpenCycleOrders } from "@/lib/queries/orders";
 import { countAvailableChickens } from "@/lib/queries/selling";
-import { pluralizeChicken, pluralizeOrder } from "@/lib/format";
+import { pluralizeBags, pluralizeChicken, pluralizeOrder } from "@/lib/format";
 import { SALE_WINDOW_DAYS } from "@/lib/constants";
 
 /**
@@ -192,7 +197,20 @@ export async function startSelling(salePrice: number): Promise<ActionResult> {
  *
  * There is no undo. The confirm dialog is where that is made clear.
  */
-export async function endCycle(): Promise<ActionResult> {
+/**
+ * What the admin says about feed still sitting in the store when he ends a cycle
+ * (FR-22). Bags left over mean one of exactly two things, and only he knows
+ * which — see `endCycle`.
+ */
+export type LeftoverFeedAnswer =
+  /** They were opened and he forgot to log them. Record the withdrawals. */
+  | "withdrawn"
+  /** They were never taken for this flock. Take them off its expenses. */
+  | "not-taken";
+
+export async function endCycle(
+  leftoverFeed?: LeftoverFeedAnswer,
+): Promise<ActionResult> {
   const farm = await getCurrentFarm();
   if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
 
@@ -224,6 +242,93 @@ export async function endCycle(): Promise<ActionResult> {
       ok: false,
       error: `لسه فيه ${pluralizeChicken(available)} متوفرة في الدورة، بيعها او سجّلها نافق الأول.`,
     };
+  }
+
+  // **Feed still in the store** (FR-22). Bags bought and never opened are not a
+  // mistake in themselves — he buys a little over, or the flock eats less than
+  // the forecast — but they cannot follow the cycle into history unexplained.
+  // Left alone they are either work he forgot to log, or money charged to a
+  // flock that never ate it, and both are invisible once the cycle closes
+  // (Khaled, 2026-08-22).
+  //
+  // Only he knows which, so the cycle will not close until he says. Unlike the
+  // two checks above this is a question, not a wall: either answer lets him
+  // through.
+  const [{ data: purchases }, { data: withdrawals }] = await Promise.all([
+    supabase
+      .from("feed")
+      // Newest first: the bags still in the store are the ones bought last.
+      .select("id, bags, phase, purchased_on, created_at")
+      .eq("cycle_id", cycle.id)
+      .order("purchased_on", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase.from("feed_withdrawal").select("bags, phase").eq("cycle_id", cycle.id),
+  ]);
+  const bought = purchases ?? [];
+  const opened = withdrawals ?? [];
+  const leftover = feedBagsAvailable(bought, opened);
+
+  if (leftover > 0) {
+    if (!leftoverFeed) {
+      return {
+        ok: false,
+        error: `لسه فيه ${pluralizeBags(leftover)} علف في المخزن، قوللي اتعملت ايه الأول.`,
+      };
+    }
+
+    const failed = {
+      ok: false,
+      error: "مقدرناش نظبّط العلف المتبقي، حاول تاني.",
+    } as const;
+
+    if (leftoverFeed === "withdrawn") {
+      // Logged as opened today, split the way the store actually holds them —
+      // the two piles are counted apart (D-43), so one lump row would leave
+      // بادي and نامي disagreeing with the grid they draw.
+      const requiredBadi = expectedFeedBags(cycle.chick_count).badi;
+      const boughtByPhase = bagsByPhase(bought, requiredBadi);
+      const openedByPhase = bagsByPhase(opened, requiredBadi);
+      const today = new Date().toISOString().slice(0, 10);
+
+      const rows = (["badi", "nami"] as const)
+        .map((phase) => ({
+          phase,
+          bags: Math.max(0, boughtByPhase[phase] - openedByPhase[phase]),
+        }))
+        .filter((row) => row.bags > 0)
+        .map((row) => ({
+          farm_id: farm.farmId,
+          cycle_id: cycle.id,
+          bags: row.bags,
+          phase: row.phase,
+          withdrawn_on: today,
+        }));
+
+      if (rows.length > 0) {
+        const { error } = await supabase.from("feed_withdrawal").insert(rows);
+        if (error) return failed;
+      }
+    } else {
+      // Never taken, so it was never this cycle's cost. `bought` arrives newest
+      // first, and that order is the point: the bags still in the store are the
+      // ones bought last, so their own price is what comes off. Averaging it
+      // across the cycle would charge this flock for feed at a price it never
+      // paid.
+      let remaining = leftover;
+
+      for (const row of bought) {
+        if (remaining <= 0) break;
+        const take = Math.min(remaining, row.bags);
+        remaining = Math.round((remaining - take) * 100) / 100;
+
+        const rest = Math.round((row.bags - take) * 100) / 100;
+        const { error } =
+          rest > 0
+            ? await supabase.from("feed").update({ bags: rest }).eq("id", row.id)
+            : await supabase.from("feed").delete().eq("id", row.id);
+        if (error) return failed;
+      }
+    }
   }
 
   const { error } = await supabase

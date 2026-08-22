@@ -1841,3 +1841,39 @@ the edge one. The single case left — a phone awake on that exact screen at the
 moment the sale flips — would cost a connection open on every customer's phone all
 day, and the customer discovers it the moment he tries to order.
 **Date:** 2026-08-22
+
+### D-62 — Feed left in the store is a question, not a wall
+Ending a cycle already refuses over an open order (D-36) and over a bird nobody
+took (D-49). Feed still in the store is a third thing, and it is different in
+kind: leftover bags are **not a mistake**. The admin buys a little over, or the
+flock eats less than the forecast allowed for, and both are ordinary.
+
+But they mean one of exactly two things, and only he knows which:
+
+- **they were opened and he forgot to log it** — real consumption missing from
+  the grid and from «العلف المسحوب»;
+- **they were never taken for this flock** — and its expenses are carrying feed
+  it never ate, which lands straight in the cycle's final profit (FR-19).
+
+Both become invisible the moment the cycle closes, so `endCycle` will not close
+one until he answers. Either answer lets him through — that is what makes it a
+question rather than a wall.
+
+**«اتسحبت»** writes withdrawals dated today, split بادي/نامي the way the store
+actually holds them: the two piles are counted apart (D-43), so one lump row
+would leave the phases disagreeing with the grid they draw.
+
+**«مااتاخدتش»** takes the bags off the purchases, **newest first**. The bags
+still in the store are the ones bought last, so their own price is what comes
+off; averaging the cost across the cycle would charge this flock for feed at a
+price it never paid. A purchase reduced to zero is deleted.
+
+The question is asked only once the other two are clear — clearing an order can
+open a bag, and asking about a number that is still moving is asking twice.
+
+**Known limit, deliberately not solved yet:** «مااتاخدتش» removes the money from
+this cycle and does not carry the bags into the next one, because outside a cycle
+there is no store to carry them to. The farm's total spend is therefore
+understated by that purchase until the next cycle records its own. Carrying stock
+between cycles is its own feature.
+**Date:** 2026-08-22
