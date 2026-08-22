@@ -22,6 +22,10 @@ import { InvoiceButton } from "../invoice/InvoiceButton";
  * the birds over is when the money is settled, so that step asks what was paid
  * before it closes the order (FR-17). Unless nothing is owed — then the question
  * has no answer to give, and the order simply closes.
+ *
+ * A house order is always that case. The family's own birds are not a sale
+ * (FR-36), so there is nothing to collect and the dialog would be asking the
+ * admin what he paid himself (Khaled, 2026-08-22).
  */
 const STAGE = {
   weighed: {
@@ -55,7 +59,7 @@ export function OrderStageActions({
   cleaningPrice: number;
 }) {
   const orderId = order.id;
-  const amountDue = Math.max(0, invoice.remaining);
+  const amountDue = order.isHouse ? 0 : Math.max(0, invoice.remaining);
   // Nobody to chase afterwards, so it leaves paid or it doesn't leave (D-42).
   const orphan = !order.customer && !order.isHouse;
   const router = useRouter();

@@ -35,6 +35,11 @@ function DeliveredAt({ at }: { at: string }) {
  *   • delivered— «تعديل» gives way to when the birds actually went
  * and «دفع» is there whenever anything is still owed, from the weighing on
  * (FR-17) — not just at the door.
+ *
+ * A house order shows what the birds came to and stops there: it is the family's
+ * own, never a sale (FR-36), so «المبلغ المدفوع» and «المبلغ المتبقي» are
+ * answers to a question nobody asked, and «دفع» would take money from nobody
+ * (Khaled, 2026-08-22).
  */
 export function InvoiceSheet({
   open,
@@ -55,7 +60,7 @@ export function InvoiceSheet({
   onPay: () => void;
 }) {
   const delivered = order.status === "delivered";
-  const owing = invoice.remaining > 0;
+  const owing = invoice.remaining > 0 && !order.isHouse;
 
   return (
     <BottomSheet
@@ -113,7 +118,7 @@ export function InvoiceSheet({
           invoice={invoice}
           unitPrice={unitPrice}
           cleaningPrice={cleaningPrice}
-          showPayments={invoice.paid > 0 || delivered}
+          showPayments={!order.isHouse && (invoice.paid > 0 || delivered)}
         />
         <WeightsSection invoice={invoice} />
       </div>

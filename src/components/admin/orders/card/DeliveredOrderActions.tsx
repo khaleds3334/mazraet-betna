@@ -12,6 +12,10 @@ import { InvoiceButton } from "../invoice/InvoiceButton";
  * do with it is money: read the invoice, and — while anything is still owed —
  * take another instalment (FR-17). A settled order shows the invoice alone, and
  * it takes the whole row.
+ *
+ * **A house order is never owed.** The family's own birds leave the flock like
+ * any other order but were never a sale (FR-36): no revenue, no debt, nobody to
+ * collect from. «دفع» on one asks the admin to pay himself (Khaled, 2026-08-22).
  */
 export function DeliveredOrderActions({
   order,
@@ -25,7 +29,7 @@ export function DeliveredOrderActions({
   cleaningPrice: number;
 }) {
   const [paying, setPaying] = useState(false);
-  const amountDue = Math.max(0, invoice.remaining);
+  const amountDue = order.isHouse ? 0 : Math.max(0, invoice.remaining);
 
   return (
     <div className="flex items-center gap-4">

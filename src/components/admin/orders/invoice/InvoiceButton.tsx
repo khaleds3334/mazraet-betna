@@ -54,12 +54,17 @@ export function InvoiceButton({
         onPay={() => setPaying(true)}
       />
 
-      <RecordPaymentDialog
-        open={paying}
-        onClose={() => setPaying(false)}
-        orderId={order.id}
-        amountDue={Math.max(0, invoice.remaining)}
-      />
+      {/* Not mounted for a house order: nothing can open it (the sheet has no
+          «دفع» there), and a payment dialog that exists for an order nobody
+          pays for is one refactor away from being reachable. */}
+      {!order.isHouse && (
+        <RecordPaymentDialog
+          open={paying}
+          onClose={() => setPaying(false)}
+          orderId={order.id}
+          amountDue={Math.max(0, invoice.remaining)}
+        />
+      )}
     </>
   );
 }

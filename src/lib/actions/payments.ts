@@ -113,12 +113,20 @@ export async function recordPayment(input: {
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
+      "id, is_house, unit_price, cleaning_price, order_line(id, batch_no, position, actual_weight, cleaning), payment(amount)",
     )
     .eq("id", input.orderId)
     .eq("farm_id", farm.farmId)
     .maybeSingle();
   if (!order) return { ok: false, error: "الطلب ده مش موجود." };
+
+  // The family's own birds are not a sale (FR-36) — no revenue, no debt, nobody
+  // to collect from. A payment against one is money arriving from nowhere, and
+  // it would land in the farm's takings. No screen offers it; this is so none
+  // ever can (Khaled, 2026-08-22).
+  if (order.is_house) {
+    return { ok: false, error: "طلب البيت مالوش دفع." };
+  }
 
   const { remaining } = computeInvoice(
     order,
