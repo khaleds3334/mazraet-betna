@@ -41,7 +41,9 @@ const CRUMBLE_MS = 620;
  * is small and sits low, and without the scrim it read as part of the page it
  * had landed on rather than something asking a question (Khaled, 2026-08-22).
  * The scrim is the `Modal` treatment — dim plus a light blur — because this is a
- * popup, not the sheet the first version made it.
+ * popup, not the sheet the first version made it. **It is the one overlay here
+ * that a tap outside does not close**: the banner asks a question with its two
+ * answers written on it, and a tap on the dimmed page is neither.
  *
  * **«لاحقا» is for this visit only.** Nothing is written to the device: open the
  * app again and the banner is there again (Khaled, 2026-08-22). It stops for good
@@ -117,13 +119,17 @@ export function InstallPrompt({
 
   return createPortal(
     <>
-      {/* Same dim + blur as `Modal`. Tapping it is «لاحقا» — the scrim is the
-          way out of every other overlay here, and this one is not worth making
-          an exception of. It fades rather than crumbling: the specks belong to
-          the thing that came apart, not to the room behind it. */}
+      {/* Same dim + blur as `Modal`, but **it does not close on a tap** — unlike
+          every other overlay here (Khaled, 2026-08-22). The others are things
+          the admin opened and can wave away; this one arrived on its own and
+          asks a question with two answers on it. A tap on the dimmed page is
+          neither of them, and dismissing on one would spend «لاحقا» for a finger
+          that was reaching for the screen underneath.
+
+          It fades rather than crumbling: the specks belong to the thing that
+          came apart, not to the room behind it. */}
       <div
         aria-hidden
-        onClick={() => leave.current()}
         className={cn(
           "fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px]",
           leaving
@@ -182,7 +188,7 @@ export function InstallPrompt({
               <Icon name="download" size={18} aria-hidden />
             </button>
 
-            <span aria-hidden className="h-5 w-px shrink-0 bg-border" />
+            <span aria-hidden className="h-5 w-px shrink-0 bg-foreground/85" />
 
             <button
               type="button"
