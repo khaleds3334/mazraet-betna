@@ -1712,6 +1712,13 @@ so there is one closed-sale state and not two. The switch in settings brings it
 straight back if birds turn up — a miscount, or a cancelled order handing its own
 back.
 
+**«تسجيل نافق» has the same ceiling** (added 2026-08-22). A cycle of fifty that
+had sold forty-two and lost six accepted five more dead and came out having
+produced fifty-three. Birds already sold or promised to an order are not free to
+die either — that is a cancelled order, not a mortality row — so the ceiling is
+the same «الفراخ المتوفرة». `NumberStepper` gained `max`/`onMax` for it, the way
+`Stepper` did for the order sheet.
+
 **«اضافة فرخة اخري» while weighing is deliberately not capped.** That screen is
 the admin standing over the birds with a customer waiting, and what is on the
 scale is more true than what the flock row says. A block there stops real work to

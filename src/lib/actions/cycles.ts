@@ -110,11 +110,28 @@ export async function recordMortality(count: number): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: cycle } = await supabase
     .from("cycle")
-    .select("id")
+    .select("id, chick_count")
     .eq("farm_id", farm.farmId)
     .eq("is_active", true)
     .maybeSingle();
   if (!cycle) return { ok: false, error: "مفيش دورة شغالة دلوقتي." };
+
+  // **A flock cannot lose more birds than it has left.** Nothing said so, so a
+  // cycle with two birds free took five more dead and ended up having produced
+  // more chickens than it bought (Khaled, 2026-08-22). The ceiling is the same
+  // «الفراخ المتوفرة» the order sheet stops at (D-58): birds already sold or
+  // promised to an order are not free to die here — that is a cancelled order,
+  // not a mortality row.
+  const available = await countAvailableChickens(cycle.id, cycle.chick_count);
+  if (available <= 0) {
+    return { ok: false, error: "مفيش فراخ متاحة في الدورة دي." };
+  }
+  if (n > available) {
+    return {
+      ok: false,
+      error: `متبقي ${pluralizeChicken(available)} بس في الدورة.`,
+    };
+  }
 
   const { error } = await supabase
     .from("mortality")

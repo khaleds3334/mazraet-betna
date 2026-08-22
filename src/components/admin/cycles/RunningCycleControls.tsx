@@ -30,7 +30,7 @@ export function RunningCycleControls({
 }) {
   return (
     <div className="relative flex flex-col gap-4 pt-1">
-      <RecordActions feed={feed} />
+      <RecordActions feed={feed} available={availableChickens} />
 
       {phase === "selling" && (
         <>

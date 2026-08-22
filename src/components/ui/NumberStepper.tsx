@@ -13,6 +13,10 @@ import { StepButton } from "./StepButton";
  * sold and opened by the half bag (Khaled, 2026-08-21).
  *
  * Holding the "+" repeats and accelerates — see `StepButton`.
+ *
+ * `max` is a real ceiling and `onMax` is how the screen says why nothing moved.
+ * A "+" that silently refuses looks broken, and this one is held down — the
+ * admin will not read a number that stopped changing under his thumb.
  */
 export function NumberStepper({
   value,
@@ -20,6 +24,8 @@ export function NumberStepper({
   label,
   suffix,
   step = 1,
+  max,
+  onMax,
   tone = "default",
   centerField = false,
 }: {
@@ -28,6 +34,10 @@ export function NumberStepper({
   label: string;
   suffix?: string;
   step?: number;
+  /** Ceiling, when there is one — e.g. the birds still in the flock (FR-23). */
+  max?: number;
+  /** Asked for more than `max`. The caller says why it stopped. */
+  onMax?: () => void;
   /** "danger" recolours the underline + digits red (A-14 mortality field). */
   tone?: "default" | "danger";
   /** Centre the *field itself* (not the field+button pair) by mirroring the
@@ -42,6 +52,17 @@ export function NumberStepper({
   // Adding 0.5 repeatedly drifts in binary floating point; two decimals is well
   // past anything a bag count or a bag price is measured in.
   const clean = (n: number) => Math.round(n * 100) / 100;
+
+  /** Set the value, and speak up when the ceiling is what stopped it. */
+  const set = (wanted: number) => {
+    if (max !== undefined && wanted > max) {
+      onMax?.();
+      onChange(clean(max));
+      return;
+    }
+    onChange(clean(wanted));
+  };
+
   return (
     // Field first, button second in source: in this RTL app the first child
     // lands on the right (same convention as BottomNav) — matches the design,
@@ -49,7 +70,7 @@ export function NumberStepper({
     <div className="flex min-w-0 items-center justify-center gap-3">
       <StepButton
         label={`زيادة ${label}`}
-        onClick={() => onChange(clean(value + step))}
+        onClick={() => set(value + step)}
       />
       <div
         className={`flex min-w-[48px] max-w-full items-center justify-center gap-1 border-b-[3px] py-2 ${underline}`}
@@ -68,11 +89,13 @@ export function NumberStepper({
               // A half-typed "١." is not a number yet — hold the value rather
               // than snapping it back to ٠ under the thumb.
               const parsed = parseDecimal(e.target.value);
-              onChange(parsed === null ? 0 : clean(parsed));
+              if (parsed === null) onChange(0);
+              else set(parsed);
               return;
             }
             const d = toLatinDigits(e.target.value);
-            onChange(d === "" ? 0 : Number(d));
+            if (d === "") onChange(0);
+            else set(Number(d));
           }}
           className={`min-w-0 grow-0 bg-transparent text-center text-h5 font-bold outline-none placeholder:text-disabled-soft ${text}`}
         />

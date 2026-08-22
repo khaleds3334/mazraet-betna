@@ -57,7 +57,12 @@ export function RaisingDashboard({
           />
         </div>
 
-        <RecordActions feed={feed} />
+        {/* Nothing is sold or promised while the flock is being raised (D-39),
+            so what is left of it is simply what has not died. */}
+        <RecordActions
+          feed={feed}
+          available={Math.max(0, data.chickCount - data.mortalityCount)}
+        />
       </div>
 
       <FeedTracker feed={feed} />

@@ -10,13 +10,20 @@ import type { CycleDashboard } from "@/lib/queries/cycles";
  * the same way from either, and there is one arrangement to keep correct.
  *
  * `feed` is what is in the store right now; the expense sheet's العلف form opens
- * on it.
+ * on it. `available` is the birds the flock still has free — the ceiling on what
+ * «تسجيل نافق» will accept (FR-23).
  */
-export function RecordActions({ feed }: { feed: CycleDashboard["feed"] }) {
+export function RecordActions({
+  feed,
+  available,
+}: {
+  feed: CycleDashboard["feed"];
+  available: number;
+}) {
   return (
     <div className="flex items-stretch justify-between gap-3">
       <RecordExpenseButton feed={feed} className="flex-1" />
-      <RecordMortalityButton className="shrink-0" />
+      <RecordMortalityButton available={available} className="shrink-0" />
     </div>
   );
 }
