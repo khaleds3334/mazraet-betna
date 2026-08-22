@@ -15,6 +15,7 @@ import { WeighingHeader } from "./WeighingHeader";
 export function WeighingSheetHeader({
   order,
   unitPrice,
+  priceChanged,
   chickenCount,
   cleaning,
   onCleaningChange,
@@ -25,6 +26,8 @@ export function WeighingSheetHeader({
 }: {
   order: OrderListItem;
   unitPrice: number;
+  /** The kilo price has moved in settings since this order was booked. */
+  priceChanged: boolean;
   chickenCount: number;
   cleaning: boolean;
   onCleaningChange: (cleaning: boolean) => void;
@@ -43,6 +46,7 @@ export function WeighingSheetHeader({
       <WeighingHeader
         order={order}
         unitPrice={unitPrice}
+        priceChanged={priceChanged}
         chickenCount={chickenCount}
         cleaning={cleaning}
         onCleaningChange={onCleaningChange}

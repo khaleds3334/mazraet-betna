@@ -64,7 +64,7 @@ export function SellingHeader({
         <Badge tone={saleOpen ? "primary" : "danger"}>
           {saleOpen ? "البيع متوفر" : "البيع مقفول"}
         </Badge>
-        <Badge tone={}</>>{pluralizeDay(ageDays)}</Badge>
+        <Badge tone={saleOpen ? "danger": "primary"}>{pluralizeDay(ageDays)}</Badge>
       </div>
     </header>
   );

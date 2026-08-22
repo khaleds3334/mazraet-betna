@@ -3,6 +3,7 @@
 import { Toggle } from "@/components/ui";
 import type { OrderListItem } from "@/lib/queries/orders";
 import { formatArabicNumber, pluralizeChicken } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { KnifeGlyph } from "./glyphs";
 
 /** Who the birds are for — the customer, the relative, or nobody yet (FR-13). */
@@ -17,16 +18,27 @@ function orderFor(order: OrderListItem): string {
  *
  * The note is why this band exists at all — "خلي الكبد في كيسة لوحدهم" is the
  * kind of thing the admin has to see while the bird is on the scale, not after.
+ *
+ * The price turns red when this order is not being billed at today's price. An
+ * order carries the price it was quoted at from the moment it was booked (T-15
+ * as amended), so raising the kilo price mid-sale leaves orders behind at what
+ * their customers were promised — correct, and invisible. The admin is about to
+ * read this total out loud to someone standing in front of him, and the one
+ * moment he needs to know the number is not today's is while he is looking at it
+ * (Khaled, 2026-08-22).
  */
 export function WeighingHeader({
   order,
   unitPrice,
+  priceChanged,
   chickenCount,
   cleaning,
   onCleaningChange,
 }: {
   order: OrderListItem;
   unitPrice: number;
+  /** The kilo price has moved in settings since this order was booked. */
+  priceChanged: boolean;
   /** Counted from the rows, so removing a bird updates it live (FR-14ج). */
   chickenCount: number;
   cleaning: boolean;
@@ -44,7 +56,9 @@ export function WeighingHeader({
 
         <div className="flex shrink-0 items-center gap-4 text-sm text-foreground">
           <span>{pluralizeChicken(chickenCount)}</span>
-          <span>{formatArabicNumber(unitPrice)} ج/كجم</span>
+          <span className={cn(priceChanged && "font-bold text-error")}>
+            {formatArabicNumber(unitPrice)} ج/كجم
+          </span>
         </div>
 
         <div className="flex flex-1 basis-0 items-center justify-end gap-1">

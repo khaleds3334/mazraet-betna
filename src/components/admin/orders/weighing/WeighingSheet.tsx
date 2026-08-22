@@ -85,6 +85,9 @@ export function WeighingSheet({
   }, [open, restored, toast]);
 
   const unitPrice = order.weighing.unitPrice ?? salePrice;
+  // Only ever true for an order that carries its own stamped price: one taken
+  // before T-15 falls back to today's, and there is nothing to have moved.
+  const priceChanged = unitPrice !== salePrice;
   const cleaningFee = order.weighing.cleaningPrice ?? cleaningPrice;
 
   // The same function the rest of the app computes invoices with — the sheet
@@ -155,6 +158,7 @@ export function WeighingSheet({
         <WeighingSheetHeader
           order={order}
           unitPrice={unitPrice}
+          priceChanged={priceChanged}
           chickenCount={drafts.length}
           cleaning={cleaning}
           onCleaningChange={setCleaning}
