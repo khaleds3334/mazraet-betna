@@ -258,3 +258,63 @@ select,
     transform: translateY(0);
   }
 }
+
+/*
+  Install sheet — it comes up slowly and on purpose (FR-2). Every other overlay
+  in the app answers a tap and so arrives in 200–300ms; this one arrives
+  uninvited, and something that appears at the speed of a thing you asked for,
+  when you asked for nothing, reads as an error. The long ease is what makes it
+  an offer.
+*/
+@keyframes install-rise {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+  «لاحقا» — the sheet comes apart rather than sliding back down.
+
+  The specks are a fractal-noise SVG used as a mask: where the noise is dark the
+  mask is transparent, so growing `mask-size` pulls the holes open and the sheet
+  breaks into pieces instead of dimming evenly. The blur and the drift carry the
+  pieces off. A browser without `mask-image` still gets the fade, the blur and
+  the drift, which is the same gesture with fewer specks — nothing depends on
+  the mask being there.
+
+  `mask-mode: luminance` is what makes the noise's brightness the alpha; the
+  default (`alpha`) would read the fully-opaque PNG-ish alpha of the SVG and mask
+  nothing at all.
+*/
+@keyframes install-crumble {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+  }
+  to {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(14px) scale(0.97);
+    -webkit-mask-size: 900% 900%;
+    mask-size: 900% 900%;
+  }
+}
+
+@utility install-crumbling {
+  --install-noise: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg'%3e%3cfilter id='n'%3e%3cfeTurbulence type='fractalNoise' baseFrequency='0.06' numOctaves='3'/%3e%3c/filter%3e%3crect width='100%25' height='100%25' filter='url(%23n)'/%3e%3c/svg%3e");
+  -webkit-mask-image: var(--install-noise);
+  mask-image: var(--install-noise);
+  -webkit-mask-mode: luminance;
+  mask-mode: luminance;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  animation: install-crumble 620ms cubic-bezier(0.4, 0, 0.75, 0.2) forwards;
+}

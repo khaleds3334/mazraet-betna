@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Toaster } from "@/components/ui";
 import { AdminBottomNav } from "@/components/layout/AdminBottomNav";
 import { BackGuard } from "@/components/layout/BackGuard";
+import { InstallPrompt } from "@/components/shared/InstallPrompt";
 
 /**
  * The admin half of the site advertises the **second** manifest, so "install"
@@ -54,6 +55,20 @@ export default function AdminLayout({
     >
       <Toaster />
       <BackGuard home="/admin" />
+      {/* ⚠️ الكلام ده مؤقت لحد ما نقرا Figma 3799:4013 — الشكل والنص من التصميم.
+          Every word arrives from here so the customer app can say its own. */}
+      <InstallPrompt
+        app="admin"
+        title="ثبّت لوحة التحكم على موبايلك"
+        body="هتفتحها من على الشاشة الرئيسية على طول، وهتشتغل زي أي تطبيق."
+        installLabel="تثبيت التطبيق"
+        laterLabel="لاحقا"
+        manualSteps={[
+          "دوس على زرار المشاركة تحت",
+          "اختار «إضافة إلى الشاشة الرئيسية»",
+          "دوس «إضافة»",
+        ]}
+      />
       {/* Bottom padding clears the fixed AdminBottomNav (its height + safe area).
           `overscroll-contain` keeps a swipe past the last row from reaching the
           document, which is what invites the browser to retract its address bar. */}
