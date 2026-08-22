@@ -139,7 +139,7 @@ export default async function AdminOrdersPage({
   // if a row somehow sits on that cycle, showing it beats hiding it.
   const firstFlockRaising =
     cycle.phase === "raising" &&
-    cycles.every((option) => !option.endedAt && !option.saleOpen);
+    cycles.every((option) => !option.endedAt && option.phase !== "selling");
 
   if (firstFlockRaising && orders.length === 0) return nothingYet;
 
@@ -152,7 +152,7 @@ export default async function AdminOrdersPage({
   const pickable = cycles.filter(
     (option) =>
       (orderCounts.get(option.cycleId) ?? 0) > 0 ||
-      option.saleOpen ||
+      option.phase === "selling" ||
       option.cycleId === cycle.cycleId,
   );
 
@@ -181,7 +181,13 @@ export default async function AdminOrdersPage({
 
   // An archive: one list, no tabs to choose between (D-41) — but the same search
   // box, because a finished cycle is exactly where he goes looking for one order.
-  if (!cycle.saleOpen) {
+  //
+  // **Ended**, not «البيع مقفول». Closing the sale — by hand for an afternoon, or
+  // because the last bird went (FR-11) — leaves the cycle in مرحلة البيع with its
+  // orders still to weigh and hand over. Reading the switch here turned a working
+  // screen into the archive of a cycle full of pending orders (Khaled,
+  // 2026-08-22).
+  if (cycle.phase === "ended") {
     return (
       <div className="flex flex-col">
         <OrdersBrowser

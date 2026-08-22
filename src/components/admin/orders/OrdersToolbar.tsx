@@ -54,14 +54,17 @@ export function OrdersToolbar({
   return (
     <div className="flex items-center justify-between gap-3 px-screen">
       <div className="flex min-w-0 items-center gap-3">
-        {cycle.saleOpen ? (
+        {/* The phase, not the switch: a sale closed for an afternoon still has
+            orders to add to, and the sheet is where «البيع مقفول» is explained
+            (`AddOrderSheet`) rather than by a button that has disappeared. */}
+        {cycle.phase === "selling" ? (
           <AddOrderLauncher
             customers={customers}
             weights={weights}
             defaultCleaning={defaultCleaning}
             salePrice={salePrice}
             cleaningPrice={cleaningPrice}
-            saleOpen
+            saleOpen={cycle.saleOpen}
             available={available}
           />
         ) : (

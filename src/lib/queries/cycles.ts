@@ -32,6 +32,7 @@ import {
   type FeedPhase,
 } from "@/lib/constants";
 import { getFarmSettings } from "@/lib/queries/settings";
+import { cyclePhase, type CyclePhase } from "@/lib/cyclePhase";
 
 export interface SaleState {
   saleOpen: boolean;
@@ -152,8 +153,9 @@ export async function hasActiveCycle(farmId: string): Promise<boolean> {
   return Boolean(data);
 }
 
-/** Which stage of its life the active cycle is in — drives the admin home. */
-export type CyclePhase = "raising" | "selling" | "ended";
+/** Which stage of its life the active cycle is in — drives the admin home.
+ *  Defined with the rule that decides it, in `@/lib/cyclePhase`. */
+export type { CyclePhase };
 
 /** One opened feed bag, with everything the bag-detail popup (A-13) shows. */
 export interface FeedWithdrawal {
@@ -190,6 +192,9 @@ export interface CycleDashboard {
   chickCount: number;
   ageDays: number;
   phase: CyclePhase;
+  /** Whether orders are being taken *right now* — the switch inside مرحلة البيع,
+   *  not the phase itself (`@/lib/cyclePhase`). */
+  saleOpen: boolean;
   /** True once the birds have reached the selling age (age ≥ raising period). */
   saleReady: boolean;
   /** Live kilo price from settings — the open-sale dialog opens on it, and the
@@ -341,7 +346,7 @@ export async function getActiveCycleDashboard(
   const { data: cycle } = await supabase
     .from("cycle")
     .select(
-      "id, name, chick_count, chick_price, start_date, start_time, sale_open, ended_at, estimated_expenses",
+      "id, name, chick_count, chick_price, start_date, start_time, sale_open, sale_closes_at, is_active, ended_at, estimated_expenses",
     )
     .eq("farm_id", farmId)
     .eq("is_active", true)
@@ -395,11 +400,7 @@ export async function getActiveCycleDashboard(
     otherExpenses,
   });
 
-  const phase: CyclePhase = cycle.ended_at
-    ? "ended"
-    : cycle.sale_open
-      ? "selling"
-      : "raising";
+  const phase = cyclePhase(cycle);
 
   return {
     cycleId: cycle.id,
@@ -409,6 +410,7 @@ export async function getActiveCycleDashboard(
     chickCount: cycle.chick_count,
     ageDays,
     phase,
+    saleOpen: cycle.sale_open,
     saleReady: ageDays >= SALE_READY_MIN_DAY,
     salePrice: settings.salePrice,
     mortalityCount,
@@ -437,7 +439,11 @@ export interface OrdersCycle {
   endedAt: string | null;
   /** True while this is the farm's running cycle (nothing has ended it yet). */
   isActive: boolean;
-  /** True only while customers can order on it — the gate on booking (FR-11). */
+  /**
+   * True only while orders are being taken *right now* (FR-11). Not the same
+   * question as «is this cycle selling» — that is `phase` — because the switch
+   * goes off for an afternoon without the flock leaving مرحلة البيع.
+   */
   saleOpen: boolean;
   phase: CyclePhase;
 }
@@ -455,7 +461,7 @@ export async function listOrdersCycles(
   const supabase = await createClient();
   const { data } = await supabase
     .from("cycle")
-    .select("id, seq, name, start_date, is_active, sale_open, ended_at")
+    .select("id, seq, name, start_date, is_active, sale_open, sale_closes_at, ended_at")
     .eq("farm_id", farmId)
     .order("start_date", { ascending: false });
 
@@ -467,11 +473,7 @@ export async function listOrdersCycles(
     endedAt: cycle.ended_at,
     isActive: cycle.is_active,
     saleOpen: cycle.is_active && cycle.sale_open,
-    phase: (!cycle.is_active || cycle.ended_at
-      ? "ended"
-      : cycle.sale_open
-        ? "selling"
-        : "raising") as CyclePhase,
+    phase: cyclePhase(cycle),
   }));
 }
 
@@ -498,7 +500,10 @@ export async function listOrdersCycles(
  */
 export function pickDefaultCycle(cycles: OrdersCycle[]): OrdersCycle | null {
   return (
-    cycles.find((cycle) => cycle.saleOpen) ??
+    // The cycle in مرحلة البيع, not the one taking orders this minute: closing
+    // the sale for an afternoon must not send the screen back to last cycle's
+    // archive.
+    cycles.find((cycle) => cycle.phase === "selling") ??
     cycles.find((cycle) => cycle.endedAt) ??
     cycles.at(0) ??
     null
@@ -660,7 +665,7 @@ export async function listCycles(farmId: string): Promise<CycleListItem[]> {
   const { data: cycles } = await supabase
     .from("cycle")
     .select(
-      "id, seq, name, chick_count, chick_price, start_date, is_active, sale_open, ended_at",
+      "id, seq, name, chick_count, chick_price, start_date, is_active, sale_open, sale_closes_at, ended_at",
     )
     .eq("farm_id", farmId)
     .order("seq", { ascending: false });
@@ -717,17 +722,13 @@ export async function listCycles(farmId: string): Promise<CycleListItem[]> {
       otherExpenses: expenses.get(cycle.id) ?? 0,
     });
 
-    // A cycle is finished the moment it stops being the farm's active one — the
-    // timestamp is the record of when, not the thing that decides it.
-    const ended = !cycle.is_active || Boolean(cycle.ended_at);
-
     return {
       cycleId: cycle.id,
       seq: cycle.seq ?? 0,
       name: cycle.name,
       startDate: cycle.start_date,
       endedAt: cycle.ended_at,
-      phase: ended ? "ended" : cycle.sale_open ? "selling" : "raising",
+      phase: cyclePhase(cycle),
       chickCount: cycle.chick_count,
       durationDays: cycleDurationDays(cycle.start_date, cycle.ended_at),
       daysSinceEnd: cycle.ended_at ? daysSince(cycle.ended_at) : null,

@@ -27,6 +27,7 @@ import {
   type CyclePhase,
 } from "@/lib/queries/cycles";
 import { EXPENSE_COLUMNS } from "@/lib/queries/expenses";
+import { cyclePhase } from "@/lib/cyclePhase";
 
 export interface CycleDetail {
   cycleId: string;
@@ -75,7 +76,7 @@ export async function getCycleDetail(
   const { data: cycle } = await supabase
     .from("cycle")
     .select(
-      "id, seq, name, chick_count, chick_price, start_date, is_active, sale_open, ended_at",
+      "id, seq, name, chick_count, chick_price, start_date, is_active, sale_open, sale_closes_at, ended_at",
     )
     .eq("id", cycleId)
     .eq("farm_id", farmId)
@@ -153,11 +154,7 @@ export async function getCycleDetail(
     name: cycle.name,
     startDate: cycle.start_date,
     endedAt: cycle.ended_at,
-    phase: !cycle.is_active || cycle.ended_at
-      ? "ended"
-      : cycle.sale_open
-        ? "selling"
-        : "raising",
+    phase: cyclePhase(cycle),
     chickCount: cycle.chick_count,
     durationDays: cycleDurationDays(cycle.start_date, cycle.ended_at),
     mortalityCount: (mortalityRes.data ?? []).reduce(

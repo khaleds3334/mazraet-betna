@@ -6,7 +6,12 @@ import { getCurrentFarm } from "@/lib/queries/admin";
 import { getFarmSettings } from "@/lib/queries/settings";
 import { getOrder, type OrderListItem } from "@/lib/queries/orders";
 import { countAvailableChickens } from "@/lib/queries/selling";
-import { ORPHAN_MUST_BE_PAID, SALE_NOT_OPEN } from "@/lib/constants";
+import { addDays } from "date-fns";
+import {
+  ORPHAN_MUST_BE_PAID,
+  SALE_NOT_OPEN,
+  SALE_WINDOW_DAYS,
+} from "@/lib/constants";
 import { orderRemaining } from "@/lib/calculations/invoice";
 import { pluralizeChicken } from "@/lib/format";
 
@@ -158,11 +163,16 @@ export async function createOrder(
   // last bird, and the sale has to be shut before the next customer is offered
   // one that does not exist — the admin is at the counter, not watching a tile.
   //
-  // `sale_closes_at` is stamped on the way out if the cycle never had one, for
-  // the same reason a manual close does it (`setSaleOpen`): without a date there
-  // is nothing to tell "closed for now" from "never opened", and the switch in
-  // settings could not bring the sale back if birds turn up — a miscount, or a
-  // cancelled order handing its birds back.
+  // **It closes the sale, not the cycle.** The flock stays in مرحلة البيع with
+  // every one of these orders still to weigh and hand over; ending it is
+  // «انهاء فترة البيع», which is `endCycle` and refuses while an order is open.
+  // The switch in settings brings the sale straight back if birds turn up — a
+  // miscount, or a cancelled order handing its own back.
+  //
+  // Byte for byte what a manual close writes (`setSaleOpen`), including the date
+  // stamped on a cycle that never got one: a cycle opened before the window was
+  // dated (2026-08-21) has no `sale_closes_at`, and without it the phase reads
+  // as التربية the moment the switch goes off.
   if (available - count <= 0) {
     await supabase
       .from("cycle")
@@ -170,7 +180,12 @@ export async function createOrder(
         sale_open: false,
         ...(cycle.sale_closes_at
           ? {}
-          : { sale_closes_at: new Date().toISOString() }),
+          : {
+              sale_closes_at: addDays(
+                new Date(),
+                SALE_WINDOW_DAYS,
+              ).toISOString(),
+            }),
       })
       .eq("id", cycle.id);
   }

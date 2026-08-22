@@ -25,10 +25,13 @@ export function SellingHeader({
   weights,
   defaultCleaning,
   available,
+  saleOpen,
   cleaningPrice,
 }: {
   ageDays: number;
   salePrice: number;
+  /** Whether orders are being taken right now — the switch, not the phase. */
+  saleOpen: boolean;
   /** Birds still free to sell — the ceiling on a new order (FR-11). */
   available: number;
   /** Everything «اضافة طلب» needs — see `AddOrderLauncher`. */
@@ -46,7 +49,7 @@ export function SellingHeader({
           defaultCleaning={defaultCleaning}
           salePrice={salePrice}
           cleaningPrice={cleaningPrice}
-          saleOpen
+          saleOpen={saleOpen}
           available={available}
         />
         <SettingsGear />
@@ -54,7 +57,13 @@ export function SellingHeader({
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Badge tone="accent">{formatCurrency(salePrice)}</Badge>
-        <Badge tone="primary">البيع متوفر</Badge>
+        {/* This screen is مرحلة البيع either way; the badge says whether orders
+            are being taken this minute. It used to be pinned to «البيع متوفر»,
+            which read as a lie the moment the switch went off — or the last bird
+            went. */}
+        <Badge tone={saleOpen ? "primary" : "danger"}>
+          {saleOpen ? "البيع متوفر" : "البيع مقفول مؤقتا"}
+        </Badge>
         <Badge tone="danger">{pluralizeDay(ageDays)}</Badge>
       </div>
     </header>

@@ -54,6 +54,7 @@ export function SellingDashboard({
           weights={weights}
           defaultCleaning={defaultCleaning}
           available={flock.available}
+          saleOpen={cycle.saleOpen}
           cleaningPrice={cleaningPrice}
         />
       </div>

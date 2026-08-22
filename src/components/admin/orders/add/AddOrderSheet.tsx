@@ -200,14 +200,6 @@ export function AddOrderSheet({
               />
             </div>
           </div>
-          {/* What is left, said where the number is chosen rather than after he
-              taps save. The stepper stops there too, so the ceiling is felt
-              before it is read. */}
-          {available > 0 && (
-            <p className="text-right text-xs text-muted">
-              متبقي {pluralizeChicken(available)} في الدورة
-            </p>
-          )}
 
           <Stepper
             value={count}
@@ -288,9 +280,13 @@ export function AddOrderSheet({
 
         {/* Said before he fills the form in, not after he taps save — the birds
             are weeks from ready and there is nothing to book (FR-11). */}
-        {!saleOpen && <InlineError message={SALE_NOT_OPEN} />}
-        {saleOpen && available <= 0 && (
+        {/* One reason, the real one. An empty flock closes the sale on its own
+            (FR-11), so both would otherwise appear at once and the one that
+            explains it would be the second. */}
+        {available <= 0 ? (
           <InlineError message="مفيش فراخ متاحة في الدورة دي." />
+        ) : (
+          !saleOpen && <InlineError message={SALE_NOT_OPEN} />
         )}
         {error && <InlineError message={error} />}
 
