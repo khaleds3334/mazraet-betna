@@ -12,11 +12,19 @@ import { countAvailableChickens } from "@/lib/queries/selling";
  * dead took the flock to zero and left «البيع متوفر» standing (Khaled,
  * 2026-08-22). Two half-rules where one rule was needed.
  *
- * **Call this from anything that changes «الفراخ المتوفرة»** — booking an order,
+ * **The database enforces this too** (migration 026): triggers on `order_line`,
+ * `orders` and `mortality` call the same rule, written once more in plpgsql. So
+ * an action that forgets to call this is still covered, and so is a correction
+ * typed straight into the database — which no amount of care in the app could
+ * have reached.
+ *
+ * This copy stays because it is where the reasoning is written in prose, because
+ * it costs one read, and because a belt is worth keeping when the braces are
+ * invisible. Both may run on the same write; the second finds nothing to do.
+ *
+ * Call it from anything that changes «الفراخ المتوفرة» — booking an order,
  * cancelling one, removing a bird at the scale (FR-14ج), recording mortality,
- * and whatever comes next. That is the whole reason it is one function: a stored
- * state drifts away from the flock the moment a writer forgets, and the writer
- * who forgets is always the one added later.
+ * and whatever comes next.
  *
  * ## What it will and will not touch
  *

@@ -1776,8 +1776,23 @@ back two ways; one function has to know all four.
 
 The drift a stored state invites is not theoretical — it happened twice in one
 evening, both times because a writer did not call the sync. The writer that
-forgets is always the one added later, which is why this is one function with its
-own file rather than a rule spread across the actions.
+forgets is always the one added later, and FR-16 (editing an order) is next.
+
+**So the rule also lives in the database** (migration 026). Triggers on
+`order_line`, `orders` and `mortality` run the same logic in plpgsql, so the
+sale follows the flock whatever moved it — an action that forgets to call the
+TypeScript copy, a future writer nobody wired in, or a correction typed straight
+into the table. `private.sync_sale_with_flock` is SECURITY DEFINER for the reason
+the RLS helpers are: it counts rows the caller may not be allowed to see, which
+is the failure in T-58 arriving from the other side.
+
+The TypeScript copy stays. It is where the reasoning is written in prose, it
+costs one read, and a belt is worth keeping when the braces are invisible. Both
+may run on the same write; the second finds nothing to do.
+
+Verified by moving birds in the database with no app involved at all: deleting a
+mortality row reopened the sale, and putting the birds back closed it again and
+stamped `selling_ended_at`.
 
 **«اضافة فرخة اخري» while weighing is deliberately not capped.** That screen is
 the admin standing over the birds with a customer waiting, and what is on the
