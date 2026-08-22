@@ -90,9 +90,12 @@ export function IdleDashboard({
         />
       </div>
 
-      {/* One cycle is not a comparison: measured against itself every bar would
-          stand full height and read as "everything was at its best". */}
-      {history.length > 1 && <CycleComparisonChart cycles={history} />}
+      {/* Shown from the first cycle on. It was held back until there were two,
+          because one cycle measured against itself puts every bar at full
+          height — but that reading only bites when there is a second group
+          beside it to be "better than", and with one group the chart is mostly
+          the way into that cycle's summary anyway (Khaled, 2026-08-22). */}
+      <CycleComparisonChart cycles={history} />
 
       <div className="mt-auto pt-2">
         <CreateCycleLauncher label="انشاء دورة جديدة" basis={basis} />

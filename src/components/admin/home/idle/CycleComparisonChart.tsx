@@ -63,6 +63,12 @@ function barHeight(value: number, seriesMax: number): number {
  * group opens that cycle's summary (A-22), which is where the shapes become
  * figures; the screen-reader caption carries the same numbers, so they are never
  * only a shape.
+ *
+ * **With one cycle every bar stands full height**, because each series is its own
+ * maximum. That is not a claim about the cycle — there is nothing beside it to be
+ * taller than — and the chart is there to be tapped into rather than read
+ * (Khaled, 2026-08-22). Do not add a floor or a fixed height to "fix" it: any
+ * number chosen for a single cycle is invented.
  */
 export function CycleComparisonChart({ cycles }: { cycles: CycleListItem[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
