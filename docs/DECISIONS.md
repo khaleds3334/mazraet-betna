@@ -1673,3 +1673,171 @@ is its own scroll container and chains into it.
 is worse than one not yet priced. The draft is the safety net for that choice, so
 the net has to hold everything the choice puts in it.
 **Date:** 2026-08-21
+
+---
+
+### D-57 — Closing the sale is not ending the cycle
+**مرحلة البيع** is a stage of the flock's life: it opens with «بدء مرحلة البيع» and
+closes when the cycle itself does — «انهاء فترة البيع», which is `endCycle` and
+refuses while any order is open or any bird unsold. **`sale_open`** is a switch
+*inside* that stage: are we taking orders right now.
+
+Six places each derived the phase as `sale_open ? "selling" : "raising"`, which
+collapsed the two. Closing the sale for an afternoon walked the cycle backwards
+into التربية: the raising dashboard appeared on the admin's home for a flock being
+sold, and the orders screen became the archive of a cycle still full of pending
+orders.
+
+The rule lives in `lib/cyclePhase.ts` and every screen reads it there. What marks
+the stage is **`sale_closes_at`**: `startSelling` dates the window as it opens the
+sale, so a cycle carries it from the moment its selling phase begins and keeps it
+through every close and re-open. `sale_open` is still consulted alongside it for
+cycles opened before the window was dated (2026-08-21).
+
+**Why it matters beyond the bug:** any new screen that asks "is this cycle
+selling" must call `cyclePhase`, never read `sale_open`.
+**Date:** 2026-08-22
+
+### D-58 — Booking is capped at the flock; the scale is not
+`createOrder` refuses an order for more birds than are available, and refuses
+entirely at zero — `countAvailableChickens`, the same count the «الفراخ المتوفرة»
+tile shows and the same one `endCycle` will not close over. The add-order sheet
+caps its stepper at that number and says why when «+» stops moving; the action is
+the half that holds when the sheet has gone stale, which it does the moment
+another order is booked while it is open.
+
+**The order that takes the last bird closes the sale** (FR-11). It closes the
+*sale*, not the cycle (D-57), and writes byte for byte what a manual close writes,
+so there is one closed-sale state and not two. The switch in settings brings it
+straight back if birds turn up — a miscount, or a cancelled order handing its own
+back.
+
+**«اضافة فرخة اخري» while weighing is deliberately not capped.** That screen is
+the admin standing over the birds with a customer waiting, and what is on the
+scale is more true than what the flock row says. A block there stops real work to
+defend a number that is already wrong. Booking is where birds get promised, so
+booking is where the promise is checked.
+**Date:** 2026-08-22
+
+### D-59 — A house order carries no money anywhere
+The family's own birds leave the flock like any other order but were never a sale
+(FR-36): no revenue, no debt, nobody to collect from. Its amount due is therefore
+**zero wherever the question is asked** — «دفع» is gone from the delivered card
+and from the invoice sheet, «تم استلام الطلب» closes it without the payment
+dialog, and the invoice shows what the birds came to and stops there, with no
+«المبلغ المدفوع» or «المبلغ المتبقي».
+
+Its badge on a delivered card reads **«مش محسوب»** in the settled style — not «تم
+الدفع», which would claim money changed hands, and not a debt owed to nobody.
+
+`recordPayment` refuses one outright. Nothing offers it, which is exactly when a
+guard is worth having: a payment against a house order is money arriving from
+nowhere, and it would land in the farm's takings.
+**Date:** 2026-08-22
+
+### D-60 — The admin's sale-start date wins while a flock is raised
+«فترة البيع تبدء في» was written to the farm's settings whatever the farm was
+doing, but the customer's home only read it **between** cycles — with a flock
+being raised it counted to the flock's own ready date and nothing else. So the
+date set while raising went nowhere, which is the state the admin is in every time
+he has a reason to set one.
+
+His date wins now, overruled only by dates that are no longer about this flock:
+one falling **before the birds are ready**, and one that has **already passed**.
+The field is floored at the ready date — the picker greys out every earlier day and
+`saveSettings` refuses one anyway, since the date arrives in an action a stale
+screen can still call.
+
+**And the countdown never sits at zero.** The ready date reaches zero and stays
+there while the admin has not opened the sale yet; past it the target becomes the
+start of tomorrow and moves with it. Never more than a day, which is the honest
+size of the wait, and never nothing. Same principle as the between-cycles rolling
+estimate.
+**Date:** 2026-08-22
+
+### D-61 — The settings screen says what it is holding
+Everything on A-70 except the sale switch is edited freely and committed by «حفظ
+الاعدادات», so two things follow from that and are not optional.
+
+**The save button is blurred and inert until something differs** from what the farm
+has — the same "not yet" treatment «بدء مرحلة البيع» wears, shared from
+`buttonStyles`. A live save button on an unchanged screen invites a tap that does
+nothing and teaches the admin the button means nothing.
+
+**Leaving with unsaved work asks first.** A screen registers a `leaveGuard`
+(`lib/leaveGuard.ts`) and both ways out — the back arrow and the phone's back
+gesture — consult it. Three answers: save and go, go and lose it, or dismiss and
+stay with everything still on screen. A refused save keeps him there with the
+error rather than leaving anyway.
+
+The contact number saves with everything else; its own «حفظ رقم التواصل» is gone,
+because a second save button on a screen that already has one only asks which of
+the two he needs.
+**Date:** 2026-08-22
+
+---
+
+### T-55 — Nothing in the app pushes a history entry
+**Every `<Link>` and every router call replaces.** This is a standing constraint,
+not a style preference: it is what lets the phone's back gesture mean something.
+
+`BackGuard` (mounted once per shell) turns back into three answers — close the
+overlay on top, ask a screen holding unsaved work (D-61), go home in one press,
+and on home «دوس رجوع تاني عشان تخرج من التطبيق» before the app closes. It works by
+keeping one spare history entry on top of the real one, with no URL of its own, so
+the gesture spends the guard instead of the page and the handler is free to decide
+what the press meant.
+
+Closing a PWA cannot be called — the app exits when the gesture finds the history
+empty, and only then. So the exit spends the whole stack in one `go(-index)`, and
+that index is countable **only because the guard is the one thing that pushes**. A
+stray `push` leaves the count short and the app takes an extra press to close.
+
+Two traps, both paid for once already:
+- **Never infer the guard from `history.state`.** The router owns that object and
+  rewrites it on its own schedule — dropping foreign keys when it navigates,
+  keeping them when it restores. `BackGuard` holds the answer in a ref.
+- **Never navigate from inside the `popstate` handler.** The router's own listener
+  runs after ours and restores the entry that was just popped, overwriting a
+  `router.replace` dispatched from in there — the press appears to do nothing.
+  Going home is queued for the next task.
+
+Overlays register themselves in `lib/overlayStack.ts` from inside `BottomSheet`,
+`Modal` and `Sidebar`, never at a call site, so every overlay in the app answers
+the gesture without any screen asking. Registration order is stacking order.
+**Date:** 2026-08-22
+
+### T-56 — Writes to the `farm` table go through the service-role client
+`farm` carries a select policy and **nothing else** (002_rls), deliberately: an
+update policy there would also reach the browser's own token through PostgREST,
+and `owner_phone` lives on that table — an admin could move his own login number
+without the PIN check and without the auth account moving with it, which is the
+lockout `changeLoginPhone` exists to make impossible.
+
+The trap: an RLS-bound update against a table with no update policy **is not an
+error**. It matches no rows, writes nothing, and comes back clean. That is how the
+contact number reported a save that never happened for as long as it existed.
+
+So farm writes use `createAdminClient()` — safe because the id is
+`getCurrentFarm`'s answer about who is signed in, never one that arrived with the
+request — and they read their row back, so a write that touches nothing is refused
+out loud instead of congratulated.
+**Date:** 2026-08-22
+
+### T-57 — The customer's home re-reads on return, not on a timer
+Whether the sale is open, and the date the clock counts to, are server-rendered
+once and then held; the clock itself keeps ticking in the browser. The admin
+opening the sale, closing it, or moving the start date never reached a copy of the
+page already sitting on someone's phone.
+
+`RefreshOnReturn` calls `router.refresh()` when the app comes back to the front
+after twenty seconds away — long enough that glancing at a notification does not
+count, short enough that putting the phone down does. Server components re-run and
+client state is left alone, so nothing typed or open is lost.
+
+**Deliberately not a poll and not a socket.** These customers are elderly and
+rarely close anything, so returning to an app left open is the normal case, not
+the edge one. The single case left — a phone awake on that exact screen at the
+moment the sale flips — would cost a connection open on every customer's phone all
+day, and the customer discovers it the moment he tries to order.
+**Date:** 2026-08-22
