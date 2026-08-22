@@ -44,6 +44,7 @@ export function OrderStatLink({
   return (
     <Link
       href={`/admin/orders?tab=${tab}`}
+      replace
       aria-label={`${label} — افتح شاشة الطلبات`}
       className="flex transition-transform active:scale-[0.98]"
     >

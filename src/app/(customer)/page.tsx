@@ -48,7 +48,7 @@ export default async function CustomerHomePage() {
 
         <div className="flex flex-col gap-6">
           {saleOpen ? (
-            <Link href="/order" className={PRIMARY_ACTION}>
+            <Link href="/order" replace className={PRIMARY_ACTION}>
               اطلب فراخ طازجة دلوقتي
             </Link>
           ) : (
@@ -63,7 +63,7 @@ export default async function CustomerHomePage() {
             </div>
           )}
 
-          <Link href="/history" className={OUTLINE_ACTION}>
+          <Link href="/history" replace className={OUTLINE_ACTION}>
             الطلبات السابقة
           </Link>
         </div>

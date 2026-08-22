@@ -58,7 +58,7 @@ export function CycleRow({
         // a row is six database reads the server can just as well do while he is
         // still looking at the list. Only in production — Next never prefetches
         // from a dev server.
-        <Link href={href} prefetch className="absolute inset-0">
+        <Link href={href} prefetch replace className="absolute inset-0">
           <span className="sr-only">تفاصيل {title}</span>
         </Link>
       )}

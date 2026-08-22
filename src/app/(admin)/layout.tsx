@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui";
 import { AdminBottomNav } from "@/components/layout/AdminBottomNav";
+import { BackGuard } from "@/components/layout/BackGuard";
 
 /**
  * The admin half of the site advertises the **second** manifest, so "install"
@@ -52,6 +53,7 @@ export default function AdminLayout({
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <Toaster />
+      <BackGuard home="/admin" />
       {/* Bottom padding clears the fixed AdminBottomNav (its height + safe area).
           `overscroll-contain` keeps a swipe past the last row from reaching the
           document, which is what invites the browser to retract its address bar. */}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useIsHydrated } from "@/hooks/useIsHydrated";
+import { closeOverlay, openOverlay } from "@/lib/overlayStack";
 import { cn } from "@/lib/utils";
 
 /**
@@ -45,6 +46,20 @@ export function Modal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  // While it is open it is the top of the overlay stack, so the phone's back
+  // gesture closes it instead of leaving the screen behind it (`BackGuard`).
+  // Held in a ref so the registration survives an `onClose` that changes
+  // identity between renders.
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
+  useEffect(() => {
+    if (!open) return;
+    const id = openOverlay(() => close.current());
+    return () => closeOverlay(id);
+  }, [open]);
 
   // Rendered into <body> for the same reason as `BottomSheet` — an overlay must
   // not be ranked inside whatever positioned ancestor its trigger happens to

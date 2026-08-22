@@ -10,6 +10,7 @@ export function SettingsGear({ size = 34 }: { size?: number }) {
   return (
     <Link
       href="/admin/settings"
+      replace
       aria-label="الإعدادات"
       className="flex size-11 items-center justify-center self-end text-foreground"
     >

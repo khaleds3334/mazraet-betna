@@ -22,6 +22,10 @@ export function BackButton({
     <Link
       href={href}
       prefetch
+      // Replaces rather than pushes, like every link in the app: the history
+      // stack is kept one entry deep so the back gesture can close it
+      // (`BackGuard`). This button is the way back — the stack is not.
+      replace
       aria-label="رجوع"
       className={cn(
         "inline-flex items-center justify-center rounded-xl bg-surface p-2",

@@ -52,6 +52,8 @@ export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
           <Link
             key={item.href}
             href={item.href}
+            // Replaces rather than pushes — see the note in `BackGuard`.
+            replace
             aria-current={active ? "page" : undefined}
             className="flex min-h-11 min-w-11 flex-col items-center justify-center gap-1"
           >

@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { RedirectType, redirect } from "next/navigation";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import {
   signInCustomer,
@@ -188,5 +188,9 @@ export async function verifyPin(
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  // `replace`, not the push a server action redirects with by default: the
+  // signed-out screen must not leave the app sitting one entry deep, or the
+  // next sign-in starts above it and the back gesture has one extra step to
+  // spend before it can close the app (`BackGuard`).
+  redirect("/login", RedirectType.replace);
 }

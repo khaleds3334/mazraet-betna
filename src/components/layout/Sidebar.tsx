@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui";
 import { LogoutButton } from "@/components/shared/LogoutButton";
 import type { IconName } from "@/lib/icons";
 import { formatCurrency } from "@/lib/format";
+import { closeOverlay, openOverlay } from "@/lib/overlayStack";
 import { cn, isActivePath } from "@/lib/utils";
 
 /**
@@ -43,6 +45,18 @@ export function Sidebar({
   debtAmount: number;
 }) {
   const pathname = usePathname();
+
+  // The drawer is an overlay like any sheet, so the back gesture closes it
+  // rather than leaving the page under it (`BackGuard`).
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
+  useEffect(() => {
+    if (!open) return;
+    const id = openOverlay(() => close.current());
+    return () => closeOverlay(id);
+  }, [open]);
 
   return (
     <>
@@ -116,6 +130,7 @@ export function Sidebar({
                 <Link
                   key={item.label}
                   href={item.href}
+                  replace
                   onClick={onClose}
                   className={className}
                 >

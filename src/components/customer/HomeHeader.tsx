@@ -45,6 +45,7 @@ export function HomeHeader({
 
       <Link
         href="/notifications"
+        replace
         aria-label="الإشعارات"
         className="relative flex size-11 items-center justify-center text-foreground"
       >

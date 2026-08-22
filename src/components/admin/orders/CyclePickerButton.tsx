@@ -46,7 +46,7 @@ export function CyclePickerButton({
     }
     setChoosing(cycle.cycleId);
     startTransition(() => {
-      router.push(`/admin/orders?cycle=${cycle.cycleId}`);
+      router.replace(`/admin/orders?cycle=${cycle.cycleId}`);
       setOpen(false);
     });
   }

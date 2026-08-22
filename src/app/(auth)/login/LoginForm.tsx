@@ -29,9 +29,9 @@ export function LoginForm() {
         }
 
         if (result.next === "pin") {
-          router.push(`/pin?phone=${result.phone}`);
+          router.replace(`/pin?phone=${result.phone}`);
         } else if (result.next === "register") {
-          router.push(`/register?phone=${result.phone}`);
+          router.replace(`/register?phone=${result.phone}`);
         } else {
           router.replace("/");
           router.refresh();

@@ -58,6 +58,9 @@ export function AdminBottomNav() {
           <Link
             key={item.href}
             href={item.href}
+            // Every link in the app replaces rather than pushes: the back gesture
+            // means "home, then out" now, not "one screen back" (`BackGuard`).
+            replace
             aria-current={active ? "page" : undefined}
             className={
               "flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 " +
