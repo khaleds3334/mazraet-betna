@@ -13,6 +13,7 @@ import {
   expectedSaleDate,
   raisingSaleStartDate,
   rollingSaleStartDate,
+  salePauseEnd,
   saleWindowEnd,
   type CycleEstimateBasis,
 } from "@/lib/calculations/cycle";
@@ -33,9 +34,31 @@ import {
   type FeedPhase,
 } from "@/lib/constants";
 import { getFarmSettings } from "@/lib/queries/settings";
-import { cyclePhase, type CyclePhase } from "@/lib/cyclePhase";
+import { countAvailableChickens } from "@/lib/queries/selling";
+import {
+  cyclePhase,
+  isSellingPhase,
+  type CyclePhase,
+} from "@/lib/cyclePhase";
+
+/**
+ * What the customer's home is looking at (FR-25). Four states, because «مغلق»
+ * covers three different situations and the countdown under it means something
+ * different in each.
+ */
+export type SaleStatus =
+  /** Taking orders. Counting down to when the window closes. */
+  | "open"
+  /** The admin closed the switch himself. Counting down to him reopening it. */
+  | "paused"
+  /** Every bird is spoken for. Nothing left to count — the sale is over. */
+  | "sold-out"
+  /** No sale yet: a flock still growing, or no flock at all. */
+  | "waiting";
 
 export interface SaleState {
+  status: SaleStatus;
+  /** Whether an order can be placed right now — `status === "open"`. */
   saleOpen: boolean;
   /** ISO instant the countdown targets, or null when there's nothing to count to. */
   targetDate: string | null;
@@ -73,7 +96,7 @@ export async function getActiveSaleState(
 
   const { data: cycle } = await supabase
     .from("cycle")
-    .select("sale_open, selling_started_at, start_date")
+    .select("id, chick_count, sale_open, selling_started_at, selling_ended_at, start_date")
     .eq("farm_id", farmId)
     .eq("is_active", true)
     .maybeSingle();
@@ -85,6 +108,20 @@ export async function getActiveSaleState(
     .maybeSingle();
 
   if (cycle) {
+    // **Sold out is worked out, never written.** Nothing turns `sale_open` off
+    // when the last bird goes: the switch stays the admin's own answer, and this
+    // reads the flock. So cancelling an order hands its birds back and the sale
+    // is open again on its own, with nobody having to notice and flip anything
+    // (Khaled, 2026-08-22).
+    if (isSellingPhase(cycle)) {
+      const available = await countAvailableChickens(cycle.id, cycle.chick_count);
+      if (available <= 0) {
+        // No date: the sale is over for this flock, and the next one belongs to
+        // birds that have not been bought. Zeros are the honest reading.
+        return { status: "sold-out", saleOpen: false, targetDate: null };
+      }
+    }
+
     if (cycle.sale_open) {
       // The forecast lives in settings now (migration 024) — one sale is open at
       // a time, and it is the admin's to move. Cleared, or left behind by a sale
@@ -96,11 +133,23 @@ export async function getActiveSaleState(
         : null;
 
       return {
+        status: "open",
         saleOpen: true,
         targetDate: (chosenEnd && chosenEnd.getTime() > Date.now()
           ? chosenEnd
           : saleWindowEnd(cycle.selling_started_at)
         ).toISOString(),
+      };
+    }
+
+    // In its selling phase with the switch off: he closed it himself, and he is
+    // the one who opens it again. Hours, not days — and rolling, because he has
+    // promised no particular hour.
+    if (isSellingPhase(cycle)) {
+      return {
+        status: "paused",
+        saleOpen: false,
+        targetDate: salePauseEnd(cycle.selling_ended_at).toISOString(),
       };
     }
     const ready = expectedSaleDate(
@@ -119,10 +168,15 @@ export async function getActiveSaleState(
       chosen.getTime() >= ready.getTime() &&
       chosen.getTime() > Date.now()
     ) {
-      return { saleOpen: false, targetDate: chosen.toISOString() };
+      return {
+        status: "waiting",
+        saleOpen: false,
+        targetDate: chosen.toISOString(),
+      };
     }
 
     return {
+      status: "waiting",
       saleOpen: false,
       targetDate: raisingSaleStartDate(
         cycle.start_date,
@@ -147,7 +201,11 @@ export async function getActiveSaleState(
     settings?.sale_starts_at &&
     new Date(settings.sale_starts_at).getTime() > Date.now()
   ) {
-    return { saleOpen: false, targetDate: settings.sale_starts_at };
+    return {
+      status: "waiting",
+      saleOpen: false,
+      targetDate: settings.sale_starts_at,
+    };
   }
 
   const { data: lastEnded } = await supabase
@@ -161,6 +219,7 @@ export async function getActiveSaleState(
   if (!lastEnded?.ended_at) return null;
 
   return {
+    status: "waiting",
     saleOpen: false,
     targetDate: rollingSaleStartDate(lastEnded.ended_at).toISOString(),
   };

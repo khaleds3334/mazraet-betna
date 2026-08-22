@@ -8,6 +8,7 @@ import {
   RAISING_PERIOD_DAYS,
   SALE_START_ROLL_DAYS,
   SALE_START_ROLL_STEP_DAYS,
+  SALE_PAUSE_ROLL_HOURS,
   SALE_WINDOW_DAYS,
   WEEKLY_TEMPERATURE_C,
 } from "@/lib/constants";
@@ -58,6 +59,25 @@ export function raisingSaleStartDate(
   const ready = expectedSaleDate(startDate, raisingPeriod);
   if (ready.getTime() > today.getTime()) return ready;
   return addDays(ready, daysSince(ready, today) + 1);
+}
+
+/**
+ * When a sale the admin closed by hand is expected back.
+ *
+ * He closes it for an afternoon and reopens it when he is back, so the honest
+ * unit is hours, not days ({@link SALE_PAUSE_ROLL_HOURS}). And it rolls: a
+ * countdown that runs out promises a sale opening at that exact moment, and he
+ * has promised nothing — he may be another hour, or another day.
+ */
+export function salePauseEnd(
+  closedAt: Date | string | null,
+  today: Date = new Date(),
+): Date {
+  const closed = closedAt ? new Date(closedAt) : today;
+  const step = SALE_PAUSE_ROLL_HOURS * 60 * 60 * 1000;
+  // Whole windows since it closed, always landing ahead of now.
+  const elapsed = Math.max(0, today.getTime() - closed.getTime());
+  return new Date(closed.getTime() + (Math.floor(elapsed / step) + 1) * step);
 }
 
 /**

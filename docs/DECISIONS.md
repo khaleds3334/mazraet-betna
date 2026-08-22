@@ -1748,6 +1748,13 @@ die either — that is a cancelled order, not a mortality row — so the ceiling
 the same «الفراخ المتوفرة». `NumberStepper` gained `max`/`onMax` for it, the way
 `Stepper` did for the order sheet.
 
+**Sold out is worked out, never written** (2026-08-22). Running out of birds
+does not turn `sale_open` off — that switch stays the admin's own answer, and
+the customer's home reads the flock instead (`getActiveSaleState`). So cancelling
+an order hands its birds back and the sale is open again on its own, with nobody
+having to notice and flip a switch they never pressed. A stored auto-close would
+have had to be undone by hand.
+
 **«اضافة فرخة اخري» while weighing is deliberately not capped.** That screen is
 the admin standing over the birds with a customer waiting, and what is on the
 scale is more true than what the flock row says. A block there stops real work to
@@ -1952,4 +1959,31 @@ On iOS «تحميل» has nothing to open — Safari installs from its own share
 it turns the second line into how to do it by hand. The design draws one banner,
 and that is the only shape it has for a thing it cannot do. The banner never
 appears on a browser that can do neither, so the button never lies.
+**Date:** 2026-08-22
+
+### D-64 — «مغلق» is three different states, and the countdown says which
+The customer's home had two readings, open and closed, and the closed one
+counted down to the flock's ready date. For a cycle already selling that date has
+passed, so it rolled to tomorrow — and a sale that had run out of birds told the
+customer it opened tomorrow (Khaled, 2026-08-22).
+
+Four states now, each with its own countdown and its own words:
+
+| | badge | counts down to |
+|---|---|---|
+| `open` | البيع متوفر | the end of the window |
+| `paused` | البيع مقفول مؤقتا | the admin reopening it — 8 hours, rolling |
+| `sold-out` | البيع مغلق, «البيع خلص لهذه الدورة» | nothing: zeros, and no date |
+| `waiting` | البيع مغلق | the next sale starting |
+
+**Paused counts in hours.** He closes the sale for an afternoon — he is out, or
+the birds are not ready to hand over — and reopens it when he is back. Eight
+hours is the honest unit, and it rolls for the same reason every estimate here
+rolls: a countdown that reaches zero promises a sale opening at that moment, and
+he has promised no particular hour.
+
+**Sold out shows zeros on purpose.** It is the one state with nothing to count
+to: this flock is finished and the next belongs to birds nobody has bought. The
+boxes read ٠٠ and the date beside the label is dropped — a dash there would be a
+second way of saying the same nothing.
 **Date:** 2026-08-22

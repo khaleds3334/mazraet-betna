@@ -44,7 +44,10 @@ export default async function CustomerHomePage() {
           <p>لبيع الفراخ البيضاء الطازجة</p>
         </div>
 
-        <SaleStatusCard saleOpen={saleOpen} targetDate={sale?.targetDate ?? null} />
+        <SaleStatusCard
+          status={sale?.status ?? "waiting"}
+          targetDate={sale?.targetDate ?? null}
+        />
 
         <div className="flex flex-col gap-6">
           {saleOpen ? (

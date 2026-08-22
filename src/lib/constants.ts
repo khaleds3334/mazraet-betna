@@ -44,6 +44,18 @@ export const SALE_START_ROLL_STEP_DAYS = 6;
 export const SALE_WINDOW_DAYS = 5;
 
 /**
+ * How long the customer's countdown gives a sale the admin closed **by hand**
+ * before it rolls another one (FR-11). He closes it for an afternoon — he is out,
+ * or the birds are not ready to hand over — and reopens it when he is back, which
+ * is nearer than a day and not something a calendar knows.
+ *
+ * It rolls rather than expiring for the reason every estimate here rolls: a
+ * countdown that reaches zero promises a sale that opens at that moment, and
+ * nobody has promised the customer anything (Khaled, 2026-08-22).
+ */
+export const SALE_PAUSE_ROLL_HOURS = 8;
+
+/**
  * Every weight the farm can put on offer (kg) — the badges on A-70. Which of
  * them a customer actually sees is `settings.available_weights`, the subset the
  * admin has ticked; this is the full row he ticks from.

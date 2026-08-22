@@ -2,6 +2,7 @@
 
 import { useCountdown } from "@/hooks/useCountdown";
 import { formatArabicDate, toArabicDigits } from "@/lib/format";
+import type { SaleStatus } from "@/lib/queries/cycles";
 import { cn } from "@/lib/utils";
 
 /**
@@ -24,13 +25,47 @@ function pad2(value: number): string {
   return toArabicDigits(String(value).padStart(2, "0"));
 }
 
+/**
+ * What the badge and the two lines say in each state. «مغلق» covered three
+ * different situations and the countdown under it meant something different in
+ * each, which is how a sale that had run out of birds came to promise one
+ * tomorrow (Khaled, 2026-08-22).
+ */
+const READING = {
+  open: {
+    badge: "البيع متوفر",
+    heading: "العد التنازلي لانتهاء فترة البيع",
+    when: "فترة البيع تنتهي في",
+  },
+  paused: {
+    badge: "البيع مقفول مؤقتا",
+    heading: "العد التنازلي لعودة البيع",
+    when: "البيع يفتح تاني في",
+  },
+  "sold-out": {
+    badge: "البيع مغلق",
+    heading: "البيع خلص لهذه الدورة",
+    when: "الفراخ خلصت",
+  },
+  waiting: {
+    badge: "البيع مغلق",
+    heading: "العد التنازلي لبدء فترة البيع",
+    when: "فترة البيع تبدأ في",
+  },
+} as const satisfies Record<
+  SaleStatus,
+  { badge: string; heading: string; when: string }
+>;
+
 export function SaleStatusCard({
-  saleOpen,
+  status,
   targetDate,
 }: {
-  saleOpen: boolean;
+  status: SaleStatus;
   targetDate: string | null;
 }) {
+  const saleOpen = status === "open";
+  const reading = READING[status];
   const countdown = useCountdown(targetDate);
   const values: Record<(typeof UNITS)[number]["key"], number> = {
     days: countdown.days,
@@ -49,19 +84,17 @@ export function SaleStatusCard({
             : "border-error bg-error-soft text-white",
         )}
       >
-        {saleOpen ? "البيع متوفر" : "البيع مغلق"}
+        {reading.badge}
       </span>
 
       <div className="flex w-full flex-col items-center gap-2 text-heading">
-        <p className="text-center text-h6 font-bold">
-          {saleOpen
-            ? "العد التنازلي لانتهاء فترة البيع"
-            : "العد التنازلي لبدء فترة البيع"}
-        </p>
+        <p className="text-center text-h6 font-bold">{reading.heading}</p>
 
         <div className="flex w-full items-center justify-between text-sm">
-          <p>{saleOpen ? "فترة البيع تنتهي في" : "فترة البيع تبدأ في"}</p>
-          <p>{targetDate ? formatArabicDate(targetDate) : "—"}</p>
+          <p>{reading.when}</p>
+          {/* Sold out has no date to give. The boxes below read ٠٠, which is the
+              answer, and a dash beside it would be a second way of saying it. */}
+          {targetDate && <p>{formatArabicDate(targetDate)}</p>}
         </div>
 
         <div className="flex w-full items-center gap-4 font-bold">

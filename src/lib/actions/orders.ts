@@ -6,12 +6,7 @@ import { getCurrentFarm } from "@/lib/queries/admin";
 import { getFarmSettings } from "@/lib/queries/settings";
 import { getOrder, type OrderListItem } from "@/lib/queries/orders";
 import { countAvailableChickens } from "@/lib/queries/selling";
-import { addDays } from "date-fns";
-import {
-  ORPHAN_MUST_BE_PAID,
-  SALE_NOT_OPEN,
-  SALE_WINDOW_DAYS,
-} from "@/lib/constants";
+import { ORPHAN_MUST_BE_PAID, SALE_NOT_OPEN } from "@/lib/constants";
 import { orderRemaining } from "@/lib/calculations/invoice";
 import { pluralizeChicken } from "@/lib/format";
 
@@ -159,26 +154,16 @@ export async function createOrder(
     return { ok: false, error: "مقدرناش نسجّل الطلب، حاول تاني." };
   }
 
-  // **Auto-close when the flock runs out** (FR-11). The last order takes the
-  // last bird, and the sale has to be shut before the next customer is offered
-  // one that does not exist — the admin is at the counter, not watching a tile.
+  // **Nothing is written when the last bird goes** (FR-11). The sale is shut
+  // either way — this action refuses at zero above, and the customer's home
+  // works "sold out" out from the flock (`getActiveSaleState`) — but `sale_open`
+  // stays the admin's own answer and is not touched.
   //
-  // **It closes the sale, not the cycle.** The flock stays in مرحلة البيع with
-  // every one of these orders still to weigh and hand over; ending it is
-  // «انهاء فترة البيع», which is `endCycle` and refuses while an order is open.
-  // The switch in settings brings the sale straight back if birds turn up — a
-  // miscount, or a cancelled order handing its own back.
-  //
-  // Byte for byte what a manual close writes (`setSaleOpen`): the switch, and
-  // the moment this flock stopped taking orders (migration 024). The phase is
-  // `selling_started_at`'s job and is not touched — the cycle is still selling,
-  // it has just run out of birds to sell.
-  if (available - count <= 0) {
-    await supabase
-      .from("cycle")
-      .update({ sale_open: false, selling_ended_at: new Date().toISOString() })
-      .eq("id", cycle.id);
-  }
+  // That is what makes cancelling an order put the sale back: the birds return
+  // to «الفراخ المتوفرة» and the sale is open again on its own, with nobody
+  // having to notice and flip a switch back (Khaled, 2026-08-22). A stored
+  // auto-close would have had to be undone by hand, by an admin who never
+  // pressed it.
 
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
