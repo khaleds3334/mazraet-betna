@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui";
 import { BackGuard } from "@/components/layout/BackGuard";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { RefreshOnReturn } from "@/components/layout/RefreshOnReturn";
 import { getCurrentCustomer } from "@/lib/queries/customers";
 import { countActiveOrders } from "@/lib/queries/orders";
 
@@ -30,6 +31,7 @@ export default async function CustomerLayout({
     >
       <Toaster />
       <BackGuard home="/" />
+      <RefreshOnReturn />
       {/* Bottom padding clears the fixed BottomNav (its height + safe area). */}
       <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[calc(76px+env(safe-area-inset-bottom))]">
         {children}

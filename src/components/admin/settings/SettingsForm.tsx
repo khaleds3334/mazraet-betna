@@ -226,7 +226,7 @@ export function SettingsForm({
           the shell's column width, lifted clear of the gesture strip. <main>
           already reserves the height, so nothing hides underneath it. */}
       <div
-        className="fixed inset-x-0 z-40 mx-auto max-w-[430px] bg-background px-screen py-2"
+        className="fixed inset-x-0 z-40 mx-auto max-w-[430px] bg-background px-screen py-4"
         style={{ bottom: "env(safe-area-inset-bottom)" }}
       >
         <Button onClick={save} isLoading={isSaving}>
