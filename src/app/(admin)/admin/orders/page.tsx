@@ -95,18 +95,25 @@ export default async function AdminOrdersPage({
   // chrome inert (`OrdersEmptyHeader`), so it reads as a screen waiting for its
   // first sale rather than one that failed to load.
   //
-  // The tabs, though, are the working ones: three lists that are empty for three
-  // different reasons, and tapping one says which — the only thing left on this
-  // screen that can still answer (Khaled, 2026-08-21). Same `OrdersBrowser` as
-  // the selling face, holding three empty states instead of three lists, so the
-  // tab bar behaves identically on both — URL included.
+  // The search box and the tabs, though, are the working ones: a box over three
+  // lists that are empty for three different reasons, and tapping one says which
+  // — the only things left on this screen that can still answer (Khaled,
+  // 2026-08-21). Same `OrdersBrowser` as the selling face, holding three empty
+  // states instead of three lists, so they behave identically on both — URL
+  // included — and there is exactly one search box on the screen, this one.
   const nothingYet = (
     <div className="flex flex-col">
       <OrdersBrowser
         initialTab={parseTab(params.tab) ?? DEFAULT_ADMIN_ORDER_TAB}
         counts={EMPTY_ORDER_TAB_COUNTS}
         panels={NO_ENTRIES}
-        header={<OrdersEmptyHeader />}
+        header={
+          // The flock still being raised names itself; a farm with no cycle at
+          // all has nothing to name.
+          <OrdersEmptyHeader
+            cycleName={cycle ? (cycle.name ?? "دورة بدون اسم") : null}
+          />
+        }
       />
     </div>
   );
