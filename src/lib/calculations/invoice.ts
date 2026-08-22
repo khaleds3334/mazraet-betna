@@ -61,8 +61,17 @@ const toPounds = (n: number): number => Math.round(n);
 const toGrams = (n: number): number => Math.round(n * 1000) / 1000;
 
 /**
- * Compute an order's full invoice. Lines with no actual weight yet contribute
- * nothing, so a not-yet-weighed order returns a zero invoice.
+ * Compute an order's full invoice.
+ *
+ * **A bird that has not been on the scale is not charged for at all** — not for
+ * its weight, and not for cleaning. The weight side took care of itself (no
+ * weight, no charge), but cleaning is a flat fee per bird and was being added
+ * the moment the order was booked, so six birds waiting in «الجديدة» put their
+ * cleaning into the cycle's income and into what the customer owed, days before
+ * anything was weighed (Khaled, 2026-08-22).
+ *
+ * Nothing about an order is money until «حفظ الاوزان», and cleaning is no
+ * exception: the bird is cleaned at the scale, in the same minute it is weighed.
  */
 export function computeInvoice(
   order: OrderRow,
@@ -73,9 +82,13 @@ export function computeInvoice(
   const cleaningPrice = order.cleaning_price ?? 0;
 
   const charges: LineCharge[] = lines.map((line) => {
+    // Null means "not weighed yet", which is the whole test — an order carries a
+    // line per bird from the moment it is booked (D-13), and those lines are a
+    // plan until the scale says otherwise.
+    const weighed = line.actual_weight != null;
     const weight = line.actual_weight ?? 0;
     const weightCharge = weight * unitPrice;
-    const cleaningCharge = line.cleaning ? cleaningPrice : 0;
+    const cleaningCharge = weighed && line.cleaning ? cleaningPrice : 0;
     return {
       line,
       weightCharge,
