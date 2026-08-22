@@ -12,6 +12,12 @@ import { cn } from "@/lib/utils";
  * reports that instead: settled in dark green, or the amount still owed in
  * orange. Every tone here now comes from a finished design except "cancelled",
  * which is confirmed when its card is drawn.
+ *
+ * A house order answers that question with «مش محسوب». The family's own birds
+ * are not a sale (FR-36), so «تم الدفع» would be claiming money changed hands
+ * and «متبقي مبلغ» would be a debt owed to nobody — which is what the card said
+ * before (Khaled, 2026-08-22). It wears the settled badge, because that is what
+ * "nothing outstanding here" looks like everywhere else on this screen.
  */
 const TONE: Record<OrderStatus, string> = {
   pending: "bg-warning-surface text-warning",
@@ -25,15 +31,18 @@ export function OrderStatusBadge({
   status,
   viewer = "admin",
   remaining,
+  isHouse = false,
   className,
 }: {
   status: OrderStatus;
   viewer?: "admin" | "customer";
   /** Still owed. Only read on a delivered order, where it is the real state. */
   remaining?: number;
+  /** The family's own birds — never a sale, so never paid and never owed. */
+  isHouse?: boolean;
   className?: string;
 }) {
-  const owing = status === "delivered" && (remaining ?? 0) > 0;
+  const owing = status === "delivered" && !isHouse && (remaining ?? 0) > 0;
 
   return (
     <span
@@ -47,7 +56,9 @@ export function OrderStatusBadge({
         {owing
           ? `متبقي مبلغ ${formatCurrency(remaining ?? 0)}`
           : status === "delivered"
-            ? "تم الدفع"
+            ? isHouse
+              ? "مش محسوب"
+              : "تم الدفع"
             : ORDER_STATUS_LABEL[viewer][status]}
       </span>
     </span>

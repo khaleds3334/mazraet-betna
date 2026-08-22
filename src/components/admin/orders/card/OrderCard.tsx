@@ -89,7 +89,11 @@ export function OrderCard({
             )}
           </p>
         </div>
-        <OrderStatusBadge status={order.status} remaining={amountDue} />
+        <OrderStatusBadge
+          status={order.status}
+          remaining={amountDue}
+          isHouse={order.isHouse}
+        />
       </div>
 
       <div className="flex items-center justify-between gap-2">
