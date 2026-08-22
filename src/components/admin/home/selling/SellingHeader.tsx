@@ -55,7 +55,7 @@ export function SellingHeader({
         <SettingsGear />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between">
         <Badge tone="accent">{formatCurrency(salePrice)}</Badge>
         {/* This screen is مرحلة البيع either way; the badge says whether orders
             are being taken this minute. It used to be pinned to «البيع متوفر»,
