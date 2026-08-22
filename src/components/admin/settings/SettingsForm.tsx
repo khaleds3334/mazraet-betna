@@ -189,7 +189,7 @@ export function SettingsForm({
     : "تاريخ بدء البيع";
 
   return (
-    <div className={cn("flex flex-1 flex-col gap-6 pb-4", className)}>
+    <div className={cn("flex flex-1 flex-col gap-6 pb-6", className)}>
       <FarmSaleCard
         open={saleOpen}
         hint={sale.hint}
@@ -261,14 +261,14 @@ export function SettingsForm({
           open something instead of editing it, and they save on their own. Their
           own space above, matching the gap under them to the sign-out row, so
           the pair reads as its own block and not as the tail of the form. */}
-      <div className="flex flex-col gap-4 pt-2">
+      <div className="flex flex-col gap-4 pt-4">
         <ChangeLoginPhoneFields current={farm.loginPhone} />
         <ChangePinFields />
       </div>
 
       {error && <InlineError message={error} />}
 
-      <div className="pt-">{logout}</div>
+      <div className="pt-2">{logout}</div>
 
       {/* «حفظ الاعدادات» takes the tab bar's place (the bar is hidden on this
           route) so it sits where the thumb already rests, instead of at the end

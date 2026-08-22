@@ -101,12 +101,16 @@ export function WeightsRow({
           — every other section drifting with them. `-mx-screen` + matching
           padding lets it run edge to edge while the rest of the page keeps its
           margin, and `overscroll-x-contain` stops a swipe that runs out of
-          badges from turning into a back-navigation. */}
+          badges from turning into a back-navigation.
+
+          `no-scrollbar` because the arrow above is what says the row continues:
+          the system bar underneath was saying it a second time, in grey, under
+          a row of designed badges. */}
       <div
         ref={row}
         role="group"
         onScroll={measure}
-        className="-mx-screen flex items-center gap-3 overflow-x-auto overscroll-x-contain px-screen pb-1"
+        className="no-scrollbar -mx-screen flex items-center gap-3 overflow-x-auto overscroll-x-contain px-screen pb-1"
       >
         {OFFERED_WEIGHTS.map((weight) => (
           <WeightBadge
