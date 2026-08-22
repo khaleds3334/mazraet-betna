@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button, InlineError, PinInput } from "@/components/ui";
+import {
+  Button,
+  DashedAddButton,
+  InlineError,
+  PinInput,
+} from "@/components/ui";
 import { useToast } from "@/hooks/useToast";
 import { changePin } from "@/lib/actions/settings";
 
@@ -58,15 +63,13 @@ export function ChangePinFields() {
     });
   }
 
+  // Dashed while it is closed, like every other control in the app that opens
+  // something rather than doing it: an outlined button sits at the weight of
+  // «حفظ الاعدادات» and reads as part of the form, when this is a door
+  // (Khaled, 2026-08-22).
   if (!open) {
     return (
-      <Button
-        variant="outline"
-        onClick={() => setOpen(true)}
-        className="justify-center"
-      >
-        تغيير الرقم السري
-      </Button>
+      <DashedAddButton label="تغيير الرقم السري" onClick={() => setOpen(true)} />
     );
   }
 

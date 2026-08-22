@@ -104,11 +104,24 @@ export type SaveSettingsInput = {
    */
   saleDate: string;
   editingSaleEnd: boolean;
+  /**
+   * The number customers ring (FR-30) — kept apart from `owner_phone`, which is
+   * only how the admin's login is routed, so publishing a number never changes
+   * the one he signs in with. Empty hands it back to the login number, which is
+   * what a farm that has never set one already publishes.
+   */
+  contactPhone: string;
 };
 
 /**
- * Save the kilo price, the cleaning fee, the weights on offer, and the date the
- * next sale starts.
+ * Save the kilo price, the cleaning fee, the weights on offer, the date the next
+ * sale starts, and the number customers ring.
+ *
+ * One button for the lot. The contact number used to have its own, on the
+ * reasoning that a phone number can be wrong rather than merely different — but
+ * a second save button on a screen that already has one only asks the admin
+ * which of the two he needs (Khaled, 2026-08-22). It is refused the same way a
+ * bad price is: inline, with nothing written.
  *
  * Changing a price here never touches an order already taken: an order stamps
  * `unit_price` and `cleaning_price` when it is booked (T-15 as amended), so the
@@ -131,6 +144,12 @@ export async function saveSettings(
   }
   if (input.availableWeights.length === 0) {
     return { ok: false, error: "سيب وزن واحد على الأقل، وإلا مفيش حاجة يطلبها." };
+  }
+
+  const contactPhone = normalizePhone(input.contactPhone);
+  if (contactPhone) {
+    const bad = phoneError(contactPhone);
+    if (bad) return { ok: false, error: bad };
   }
 
   const supabase = await createClient();
@@ -194,35 +213,17 @@ export async function saveSettings(
     }
   }
 
-  revalidateFarm();
-  return { ok: true };
-}
-
-/**
- * The number customers ring (FR-30). Kept apart from `owner_phone`, which is
- * only how the admin's login is routed — so changing the number on the app never
- * changes the number he signs in with, and he can publish a different one.
- *
- * Empty hands it back to the login number, which is what a farm that has never
- * set one already publishes.
- */
-export async function saveContactPhone(rawPhone: string): Promise<ActionResult> {
-  const farm = await getCurrentFarm();
-  if (!farm) return { ok: false, error: "حصلت مشكلة، سجّل الدخول تاني." };
-
-  const phone = normalizePhone(rawPhone);
-  if (phone) {
-    const bad = phoneError(phone);
-    if (bad) return { ok: false, error: bad };
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase
+  // The number lives on the farm, not in its settings — it is who the farm is,
+  // not how it sells. Written after the settings row so a refused price never
+  // leaves a published number the admin did not get told about.
+  const { error: farmError } = await supabase
     .from("farm")
-    .update({ contact_phone: phone || null })
+    .update({ contact_phone: contactPhone || null })
     .eq("id", farm.farmId);
 
-  if (error) return { ok: false, error: "مقدرناش نحفظ الرقم، حاول تاني." };
+  if (farmError) {
+    return { ok: false, error: "الاعدادات اتحفظت، بس رقم التواصل لأ. حاول تاني." };
+  }
 
   revalidateFarm();
   return { ok: true };

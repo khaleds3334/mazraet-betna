@@ -56,6 +56,9 @@ export function SettingsForm({
   const [cleaningPrice, setCleaningPrice] = useState(settings.cleaningPrice);
   const [weights, setWeights] = useState<number[]>(settings.availableWeights);
   const [date, setDate] = useState(sale.date);
+  const [contactPhone, setContactPhone] = useState(
+    farm.usesOwnerPhone ? "" : farm.contactPhone,
+  );
 
   const [saleOpen, setSaleOpenState] = useState(sale.open);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +106,7 @@ export function SettingsForm({
           availableWeights: weights,
           saleDate: date,
           editingSaleEnd: sale.editingSaleEnd,
+          contactPhone,
         });
         if (!result.ok) {
           setError(result.error);
@@ -128,7 +132,7 @@ export function SettingsForm({
 
       {/* `Stepper` uses its label for the screen reader only, so the visible
           one is written here — the design puts it above each number. */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-2">
         <p className="text-right text-base text-heading">سعر كيلو الفراخ؟</p>
         <Stepper
           value={salePrice}
@@ -138,7 +142,7 @@ export function SettingsForm({
         />
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-2">
         <p className="text-right text-base text-heading">سعر التنظيف؟</p>
         <Stepper
           value={cleaningPrice}
@@ -147,7 +151,7 @@ export function SettingsForm({
         />
       </div>
 
-      <div className="flex flex-col gap-3.5">
+      <div className="flex flex-col gap-2">
         <p className="text-right text-base text-heading">الاوزان المتوفرة</p>
 
         {/* The row scrolls on its own. Eight 70px badges are wider than a phone,
@@ -199,7 +203,11 @@ export function SettingsForm({
       </div>
 
       <ContactPhoneField
-        initial={farm.usesOwnerPhone ? "" : farm.contactPhone}
+        value={contactPhone}
+        onChange={(phone) => {
+          setContactPhone(phone);
+          if (error) setError(null);
+        }}
         ownerPhone={farm.contactPhone}
         usesOwnerPhone={farm.usesOwnerPhone}
       />

@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button, InlineError, InputField, PinInput } from "@/components/ui";
+import {
+  Button,
+  DashedAddButton,
+  InlineError,
+  InputField,
+  PinInput,
+} from "@/components/ui";
 import { useToast } from "@/hooks/useToast";
 import { changeLoginPhone } from "@/lib/actions/settings";
 
@@ -51,11 +57,10 @@ export function ChangeLoginPhoneFields({ current }: { current: string }) {
     });
   }
 
+  // Dashed while closed — see the note in `ChangePinFields`.
   if (!open) {
     return (
-      <Button variant="outline" onClick={() => setOpen(true)}>
-        تغيير رقم الدخول
-      </Button>
+      <DashedAddButton label="تغيير رقم الدخول" onClick={() => setOpen(true)} />
     );
   }
 
