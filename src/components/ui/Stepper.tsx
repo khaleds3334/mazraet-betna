@@ -14,6 +14,11 @@ import { StepButton } from "./StepButton";
  * plain number in the design. Digits show Arabic-Indic (FR-3) and typing accepts
  * either digit set. The value never leaves `min`…`max`, typed or tapped — which
  * is how the order sheet stops at what is left of the flock.
+ *
+ * A ceiling that only refuses is a broken button. `onMax` fires whenever a tap
+ * or a typed number asks for more than `max`, so the screen can say why nothing
+ * moved — the admin presses «+» a second time to check, not because he missed
+ * it the first time.
  */
 export function Stepper({
   value,
@@ -22,6 +27,7 @@ export function Stepper({
   step = 1,
   min = 0,
   max,
+  onMax,
 }: {
   value: number;
   onChange: (n: number) => void;
@@ -30,9 +36,17 @@ export function Stepper({
   min?: number;
   /** Ceiling, when there is one — the birds left in the flock (FR-11). */
   max?: number;
+  /** Asked for more than `max`. The caller says why it stopped. */
+  onMax?: () => void;
 }) {
   const clamp = (n: number) =>
     Math.min(max ?? Number.POSITIVE_INFINITY, Math.max(min, n));
+
+  /** Set the value, and speak up when the ceiling is what stopped it. */
+  function set(wanted: number) {
+    if (max !== undefined && wanted > max) onMax?.();
+    onChange(clamp(wanted));
+  }
 
   return (
     // Plus first: in this RTL app the first child lands on the right, and the
@@ -41,7 +55,7 @@ export function Stepper({
       <StepButton
         sign="plus"
         label={`زيادة ${label}`}
-        onClick={() => onChange(clamp(value + step))}
+        onClick={() => set(value + step)}
       />
       <input
         inputMode="numeric"
@@ -57,7 +71,8 @@ export function Stepper({
         value={value > 0 ? toArabicDigits(value) : ""}
         onChange={(e) => {
           const digits = toLatinDigits(e.target.value);
-          onChange(digits === "" ? min : clamp(Number(digits)));
+          if (digits === "") onChange(min);
+          else set(Number(digits));
         }}
         className="min-w-[2ch] bg-transparent text-center text-h2 font-bold text-foreground outline-none placeholder:text-disabled-soft"
       />

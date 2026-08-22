@@ -49,7 +49,12 @@ function scheduleVisible() {
   });
 }
 
-function push(type: ToastType, message: string, duration?: number) {
+/**
+ * Returns the toast's id, so a caller that can fire the same message repeatedly
+ * — a stepper refusing the same ceiling on every tap — can dismiss its own last
+ * one instead of queueing five identical toasts behind it.
+ */
+function push(type: ToastType, message: string, duration?: number): number {
   const toast: ToastData = {
     id: ++counter,
     type,
@@ -59,6 +64,7 @@ function push(type: ToastType, message: string, duration?: number) {
   queue = [...queue, toast];
   scheduleVisible();
   emit();
+  return toast.id;
 }
 
 export function dismissToast(id: number) {

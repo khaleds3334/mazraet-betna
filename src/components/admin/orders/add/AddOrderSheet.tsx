@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BottomSheet,
@@ -105,6 +105,21 @@ export function AddOrderSheet({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // «+» stops at what is left of the flock, and a button that just refuses looks
+  // broken — so it says why. The last one is dismissed before the next goes up:
+  // the admin presses again to check, and five identical toasts queued behind
+  // each other would outlast the sheet (Khaled, 2026-08-22).
+  const limitToast = useRef<number | null>(null);
+
+  function sayTheLimit() {
+    if (limitToast.current !== null) toast.dismiss(limitToast.current);
+    limitToast.current = toast.info(
+      available > 0
+        ? `الفراخ المتوفرة حاليا في المزرعة ${pluralizeChicken(available)}`
+        : "مفيش فراخ متاحة في المزرعة دلوقتي",
+    );
+  }
+
   function reset() {
     setRecipient(EMPTY_RECIPIENT);
     setCount(1);
@@ -207,6 +222,7 @@ export function AddOrderSheet({
             label="عدد الفراخ"
             min={1}
             max={available > 0 ? available : 1}
+            onMax={sayTheLimit}
           />
         </div>
 

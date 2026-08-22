@@ -62,9 +62,9 @@ export function SellingHeader({
             which read as a lie the moment the switch went off — or the last bird
             went. */}
         <Badge tone={saleOpen ? "primary" : "danger"}>
-          {saleOpen ? "البيع متوفر" : "البيع مقفول مؤقتا"}
+          {saleOpen ? "البيع متوفر" : "البيع مقفول"}
         </Badge>
-        <Badge tone="danger">{pluralizeDay(ageDays)}</Badge>
+        <Badge tone={}</>>{pluralizeDay(ageDays)}</Badge>
       </div>
     </header>
   );
