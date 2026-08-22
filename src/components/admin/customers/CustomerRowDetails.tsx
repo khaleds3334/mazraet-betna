@@ -84,13 +84,18 @@ export function CustomerRowDetails({
         {/*
           How much of the invoiced total is paid: green is the paid share, tan the
           amount still owed — the same tan that marks a debt everywhere else in the
-          app. It fills from the physical left, under the "مدفوع" label, so
-          `left-0` is deliberate and must not become a logical `start-0`, which
-          would flip it in RTL.
+          app.
+
+          It fills from the **start of the reading**, which in this RTL app is the
+          right. It used to fill from the physical left so that it grew under the
+          "مدفوع" label above it — but a bar that fills away from where the eye
+          starts reads as emptying, not filling (Khaled, 2026-08-22). `start-0`,
+          not `left-0`, so it stays anchored to the reading edge rather than to a
+          side of the screen.
         */}
         <div className="relative h-2 w-full overflow-hidden rounded-full bg-accent-tan">
           <div
-            className="absolute inset-y-0 left-0 rounded-full bg-brand"
+            className="absolute inset-y-0 start-0 rounded-full bg-brand"
             style={{ width: `${paidRatio * 100}%` }}
           />
         </div>
