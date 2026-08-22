@@ -6,9 +6,11 @@ import { WeightDistribution } from "@/components/admin/cycles/detail/WeightDistr
 import { CycleStatCard } from "@/components/admin/home/shared/CycleStatCard";
 import { StatSection } from "@/components/admin/home/shared/StatSection";
 import { FeedGrid } from "@/components/admin/shared/FeedGrid";
+import { FeedPhasePair } from "@/components/admin/shared/FeedPhasePair";
 import { CycleExpensesCard } from "@/components/admin/shared/expenses/CycleExpensesCard";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { getCycleDetail } from "@/lib/queries/cycle-detail";
+import { FEED_PHASE_TEXT } from "@/lib/feedColors";
 import {
   formatArabicNumber,
   formatCurrency,
@@ -122,16 +124,39 @@ export default async function AdminCycleDetailPage({
             <FeedGrid totalDays={feed.totalDays} withdrawals={feed.withdrawals} />
 
             {/* No «المتوفر» here: what is left in the store stops meaning
-                anything once the cycle is over. */}
+                anything once the cycle is over.
+
+                Both tiles read بادي / نامي, the same pair the running cycle shows
+                (A-11/A-44). «المسحوب» was one lump total, which said what the
+                cycle ate but not what it ate *of* — and the grid right above it
+                is coloured by feed, so the tile under it had to name the same two
+                things the same way (Khaled, 2026-08-22).
+
+                No rounding on «المطلوب» either: bags are bought and opened by
+                the half, and this screen printing ٢ / ٦ for the cycle the
+                create sheet quoted as ١.٥ / ٥.٥ makes one of the two wrong. */}
             <div className="grid grid-cols-2 gap-3">
               <StatItem
                 label="العلف المطلوب"
-                value={`${formatArabicNumber(Math.round(feed.requiredBadi))} / ${formatArabicNumber(Math.round(feed.requiredNami))}`}
+                value={
+                  <FeedPhasePair
+                    badi={feed.requiredBadi}
+                    nami={feed.requiredNami}
+                  />
+                }
               />
               <StatItem
                 label="العلف المسحوب"
-                value={formatArabicNumber(feed.withdrawn)}
-                valueClassName="text-accent-tan"
+                value={
+                  /* Each feed in its own colour (D-48), as on the running cycle
+                     — a running total never reddens. */
+                  <FeedPhasePair
+                    badi={feed.withdrawnBadi}
+                    nami={feed.withdrawnNami}
+                    badiClassName={FEED_PHASE_TEXT.badi}
+                    namiClassName={FEED_PHASE_TEXT.nami}
+                  />
+                }
               />
             </div>
           </div>
