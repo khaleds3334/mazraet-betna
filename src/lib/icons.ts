@@ -27,6 +27,7 @@ import {
   Tick02Icon, // the tick inside a ticked checkbox
   FilterIcon, // figma: filter — the funnel that scopes the orders list to a cycle
   LayerAddIcon, // figma: layer-add — the glyph inside the "اضافة طلب" button
+  Download04Icon, // figma: download-04 — «تحميل» on the install banner
   PlusSignIcon,
   MinusSignIcon,
   ArrowRight01Icon,
@@ -112,6 +113,7 @@ export const icons = {
   // "onwards" — into the cycle.
   openDetails: ArrowLeft02Icon,
   arrowDown: ArrowDown01Icon,
+  download: Download04Icon,
   link: Link01Icon,
 
   // Feedback — toast types map here (success/error/warning/info) + loading

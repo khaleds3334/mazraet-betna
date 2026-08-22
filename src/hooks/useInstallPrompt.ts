@@ -12,16 +12,12 @@ interface InstallEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-/** How long «لاحقا» means. Later, not never — he is standing in a shop. */
-const SNOOZE_DAYS = 7;
-
-const snoozeKey = (app: string) => `mb-install-snooze:${app}`;
-
 /**
  * How the app can be installed on the phone it is being read on:
  *
- *   • `null`   — nothing to offer: already installed, snoozed, or a browser with
- *                no way to install at all (a desktop, an in-app webview);
+ *   • `null`   — nothing to offer: already installed, dismissed for this visit,
+ *                or a browser with no way to install at all (a desktop, an
+ *                in-app webview);
  *   • `prompt` — Chrome has an install prompt ready and `install()` opens it;
  *   • `manual` — iOS, which has no API. Safari installs from its own share menu,
  *                so the only thing the app can do is say where.
@@ -48,16 +44,6 @@ function isIosSafari(): boolean {
   return ios && safari;
 }
 
-function snoozedUntil(app: string): number {
-  try {
-    const raw = window.localStorage.getItem(snoozeKey(app));
-    return raw ? Number(raw) : 0;
-  } catch {
-    // Private mode, or storage blocked. Asking again is the lesser mistake.
-    return 0;
-  }
-}
-
 /**
  * Whether to offer installing this app, and how (FR-2).
  *
@@ -67,16 +53,22 @@ function snoozedUntil(app: string): number {
  * install bar after its own heuristics are satisfied, and iOS offers nothing at
  * all — so the app asks.
  *
- * **`app` keys the snooze**, because the two halves are two installed apps with
- * two manifests: putting «لوحة التحكم» on the home screen says nothing about
- * whether the customer app is there.
+ * **«لاحقا» is for this visit only.** Nothing is written to the device: the
+ * banner is dismissed and comes back the next time the site is opened (Khaled,
+ * 2026-08-22). It stops for good only when the app is really installed — which
+ * `appinstalled` catches on this visit and the standalone check catches on every
+ * one after.
+ *
+ * `app` is still carried, because the two halves are two installed apps with two
+ * manifests: putting «لوحة التحكم» on the home screen says nothing about whether
+ * the customer app is there, and the events have to be listened for per shell.
  *
  * The offer is deliberately not shown the instant the page paints — see the
  * component. This hook only answers *whether*.
  */
 export function useInstallPrompt(app: "admin" | "customer"): {
   offer: InstallOffer;
-  snooze: () => void;
+  dismiss: () => void;
 } {
   const [event, setEvent] = useState<InstallEvent | null>(null);
   const [manual, setManual] = useState(false);
@@ -84,7 +76,6 @@ export function useInstallPrompt(app: "admin" | "customer"): {
 
   useEffect(() => {
     if (isStandalone()) return;
-    if (Date.now() < snoozedUntil(app)) return;
 
     setDismissed(false);
     if (isIosSafari()) setManual(true);
@@ -109,17 +100,8 @@ export function useInstallPrompt(app: "admin" | "customer"): {
     };
   }, [app]);
 
-  const snooze = useCallback(() => {
-    setDismissed(true);
-    try {
-      window.localStorage.setItem(
-        snoozeKey(app),
-        String(Date.now() + SNOOZE_DAYS * 24 * 60 * 60 * 1000),
-      );
-    } catch {
-      // Nothing to do — it simply asks again next time.
-    }
-  }, [app]);
+  // Just this visit. Nothing is stored, so opening the app again brings it back.
+  const dismiss = useCallback(() => setDismissed(true), []);
 
   const install = useCallback(async () => {
     if (!event) return;
@@ -138,5 +120,5 @@ export function useInstallPrompt(app: "admin" | "customer"): {
         ? { kind: "manual" }
         : null;
 
-  return { offer, snooze };
+  return { offer, dismiss };
 }

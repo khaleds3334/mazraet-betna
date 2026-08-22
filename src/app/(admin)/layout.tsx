@@ -55,19 +55,15 @@ export default function AdminLayout({
     >
       <Toaster />
       <BackGuard home="/admin" />
-      {/* ⚠️ الكلام ده مؤقت لحد ما نقرا Figma 3799:4013 — الشكل والنص من التصميم.
-          Every word arrives from here so the customer app can say its own. */}
+      {/* Every word arrives from here, so the customer app can say its own
+          (Figma 3799:4013 — C-Comp_PWA_InstallBanner). */}
       <InstallPrompt
         app="admin"
-        title="ثبّت لوحة التحكم على موبايلك"
-        body="هتفتحها من على الشاشة الرئيسية على طول، وهتشتغل زي أي تطبيق."
-        installLabel="تثبيت التطبيق"
-        laterLabel="لاحقا"
-        manualSteps={[
-          "دوس على زرار المشاركة تحت",
-          "اختار «إضافة إلى الشاشة الرئيسية»",
-          "دوس «إضافة»",
-        ]}
+        title="لسهولة الوصول للوحة التحكم"
+        body="يمكنك اضافة لوحة التحكم كتطبيق علي الشاشة الرئيسية"
+        manualBody="من زرار المشاركة تحت، اختار «إضافة إلى الشاشة الرئيسية»"
+        installLabel="تحميل"
+        laterLabel="لاحقاً"
       />
       {/* Bottom padding clears the fixed AdminBottomNav (its height + safe area).
           `overscroll-contain` keeps a swipe past the last row from reaching the
