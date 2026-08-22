@@ -76,7 +76,7 @@ export async function getCycleDetail(
   const { data: cycle } = await supabase
     .from("cycle")
     .select(
-      "id, seq, name, chick_count, chick_price, start_date, is_active, sale_open, sale_closes_at, ended_at",
+      "id, seq, name, chick_count, chick_price, start_date, is_active, sale_open, sale_closes_at, selling_started_at, ended_at",
     )
     .eq("id", cycleId)
     .eq("farm_id", farmId)

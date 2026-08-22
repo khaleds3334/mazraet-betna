@@ -79,7 +79,7 @@ export async function createOrder(
   // the orders screen isn't even looking at (Khaled, 2026-08-20).
   const { data: cycle } = await supabase
     .from("cycle")
-    .select("id, sale_open, sale_closes_at, chick_count")
+    .select("id, sale_open, chick_count")
     .eq("farm_id", farm.farmId)
     .eq("is_active", true)
     .maybeSingle();
@@ -169,24 +169,13 @@ export async function createOrder(
   // The switch in settings brings the sale straight back if birds turn up — a
   // miscount, or a cancelled order handing its own back.
   //
-  // Byte for byte what a manual close writes (`setSaleOpen`), including the date
-  // stamped on a cycle that never got one: a cycle opened before the window was
-  // dated (2026-08-21) has no `sale_closes_at`, and without it the phase reads
-  // as التربية the moment the switch goes off.
+  // Byte for byte what a manual close writes (`setSaleOpen`): the switch, and
+  // nothing else. The phase is `selling_started_at`'s job (migration 023), so
+  // closing touches no date at all.
   if (available - count <= 0) {
     await supabase
       .from("cycle")
-      .update({
-        sale_open: false,
-        ...(cycle.sale_closes_at
-          ? {}
-          : {
-              sale_closes_at: addDays(
-                new Date(),
-                SALE_WINDOW_DAYS,
-              ).toISOString(),
-            }),
-      })
+      .update({ sale_open: false })
       .eq("id", cycle.id);
   }
 

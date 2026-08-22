@@ -186,6 +186,10 @@ export async function startSelling(salePrice: number): Promise<ActionResult> {
     .from("cycle")
     .update({
       sale_open: true,
+      // The cycle has entered مرحلة البيع, and stays there until it ends. This
+      // is the only thing that says so (migration 023) — `sale_closes_at` below
+      // is a date the admin moves, and moving it must not move the phase.
+      selling_started_at: new Date().toISOString(),
       // The window the customer's home counts down to. Dated here so the sale
       // never opens without an end — the admin can move it from settings, but
       // he should not have to before customers can be told anything.

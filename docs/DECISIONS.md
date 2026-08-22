@@ -1689,13 +1689,24 @@ sold, and the orders screen became the archive of a cycle still full of pending
 orders.
 
 The rule lives in `lib/cyclePhase.ts` and every screen reads it there. What marks
-the stage is **`sale_closes_at`**: `startSelling` dates the window as it opens the
-sale, so a cycle carries it from the moment its selling phase begins and keeps it
-through every close and re-open. `sale_open` is still consulted alongside it for
-cycles opened before the window was dated (2026-08-21).
+the stage is **`selling_started_at`** — its own column, written once by «بدء مرحلة
+البيع» and read by nothing else (migration 023).
+
+It was `sale_closes_at` at first, which is also set when the sale opens. That was
+wrong for a reason worth keeping: `sale_closes_at` is the date the customer's
+home counts down to, and the admin moves it freely from settings. A field he
+thinks of as a countdown number must not be able to walk a cycle back into
+التربية (Khaled, 2026-08-22). Two writes existed only to protect that overload —
+a manual close and the auto-close each stamped a made-up end date onto a cycle
+that had none — and both are gone: closing a sale now touches the switch and
+nothing else. The old tests remain inside `isSellingPhase` as a fallback for rows
+migration 023 has not reached, and can only ever say "selling" about a cycle that
+really is.
 
 **Why it matters beyond the bug:** any new screen that asks "is this cycle
-selling" must call `cyclePhase`, never read `sale_open`.
+selling" must call `cyclePhase`, never read `sale_open` — and `sale_closes_at` is
+now what the admin already believed it was: a number for the countdown, deciding
+nothing.
 **Date:** 2026-08-22
 
 ### D-58 — Booking is capped at the flock; the scale is not

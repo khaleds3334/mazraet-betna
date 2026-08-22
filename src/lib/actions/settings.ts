@@ -6,6 +6,7 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
 import { getFarmSettings } from "@/lib/queries/settings";
 import { expectedSaleDate } from "@/lib/calculations/cycle";
+import { isSellingPhase } from "@/lib/cyclePhase";
 import { formatArabicDate } from "@/lib/format";
 import { SALE_WINDOW_DAYS } from "@/lib/constants";
 import { normalizePhone, phoneError } from "@/lib/phone";
@@ -47,7 +48,7 @@ export async function setSaleOpen(open: boolean): Promise<ActionResult> {
 
   const { data: cycle } = await supabase
     .from("cycle")
-    .select("id, sale_open, sale_closes_at")
+    .select("id, sale_open, sale_closes_at, selling_started_at")
     .eq("farm_id", farm.farmId)
     .eq("is_active", true)
     .maybeSingle();
@@ -55,26 +56,19 @@ export async function setSaleOpen(open: boolean): Promise<ActionResult> {
   if (!cycle) {
     return { ok: false, error: "مفيش دورة شغالة دلوقتي." };
   }
-  // A cycle is in its selling phase if the sale is on, or if it is off but the
-  // cycle still carries the window it was closed out of. Re-opening is only ever
-  // un-doing a close — a flock still being raised has no window to re-enter.
-  const isSelling = cycle.sale_open || Boolean(cycle.sale_closes_at);
-  if (!isSelling) {
+  // Re-opening is only ever un-doing a close: a flock still being raised has no
+  // selling phase to be let back into (`lib/cyclePhase`).
+  if (!isSellingPhase(cycle)) {
     return { ok: false, error: "ابدأ مرحلة البيع للدورة الأول." };
   }
 
   const { error } = await supabase
     .from("cycle")
-    .update({
-      sale_open: open,
-      // Closing a cycle that never got a dated window (opened before
-      // 2026-08-21) would leave nothing to tell "closed for now" from "never
-      // opened", and the switch could not bring it back. Give it one on the way
-      // out; a cycle that already has a date keeps it.
-      ...(!open && !cycle.sale_closes_at
-        ? { sale_closes_at: addDays(new Date(), SALE_WINDOW_DAYS).toISOString() }
-        : {}),
-    })
+    // Only the switch. Closing used to stamp a `sale_closes_at` on a cycle that
+    // had none, so the phase would survive being closed — `selling_started_at`
+    // carries that now (migration 023), and stamping a made-up end date on a
+    // sale being closed was a date nobody chose.
+    .update({ sale_open: open })
     .eq("id", cycle.id);
 
   if (error) {
@@ -165,14 +159,13 @@ export async function saveSettings(
   if (!input.editingSaleEnd && date) {
     const { data: cycle } = await supabase
       .from("cycle")
-      .select("start_date, sale_open, sale_closes_at")
+      .select("start_date, sale_open, sale_closes_at, selling_started_at")
       .eq("farm_id", farm.farmId)
       .eq("is_active", true)
       .maybeSingle();
 
-    // Raising: an active cycle that has neither opened nor been closed out of a
-    // window — the same test `getSaleControlState` reads the screen with.
-    if (cycle && !cycle.sale_open && !cycle.sale_closes_at) {
+    // Raising — the same test every other screen reads the phase with.
+    if (cycle && !isSellingPhase(cycle)) {
       const { raisingPeriodDays } = await getFarmSettings(farm.farmId);
       const ready = expectedSaleDate(cycle.start_date, raisingPeriodDays);
       if (new Date(date).getTime() < ready.getTime()) {

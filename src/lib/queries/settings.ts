@@ -6,6 +6,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { expectedSaleDate } from "@/lib/calculations/cycle";
+import { isSellingPhase } from "@/lib/cyclePhase";
 import { RAISING_PERIOD_DAYS } from "@/lib/constants";
 
 export interface FarmSettings {
@@ -95,7 +96,7 @@ export async function getSaleControlState(
   const [{ data: cycle }, settings] = await Promise.all([
     supabase
       .from("cycle")
-      .select("sale_open, sale_closes_at, start_date")
+      .select("sale_open, sale_closes_at, selling_started_at, start_date")
       .eq("farm_id", farmId)
       .eq("is_active", true)
       .maybeSingle(),
@@ -115,8 +116,7 @@ export async function getSaleControlState(
     };
   }
 
-  const isSelling = cycle.sale_open || Boolean(cycle.sale_closes_at);
-  if (!isSelling) {
+  if (!isSellingPhase(cycle)) {
     return {
       open: false,
       canToggle: false,

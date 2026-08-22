@@ -20,14 +20,17 @@
  *
  * ## What marks the stage
  *
- * `sale_closes_at`. `startSelling` dates the window as it opens the sale, so a
- * cycle carries it from the moment its selling phase begins and keeps it through
- * every close and re-open. `sale_open` is still consulted alongside it for
- * cycles opened before the window was dated (2026-08-21): those have the switch
- * on and no date, and testing the date alone would call them raising.
+ * `selling_started_at`, written once by «بدء مرحلة البيع» (migration 023). It is
+ * the whole answer, and it is the only thing on the cycle whose job this is.
  *
- * It is the same test `getSaleControlState` and `setSaleOpen` already used —
- * this only brings the rest of the app to it.
+ * It used to be `sale_closes_at`, which also happened to be set when the sale
+ * opened — but that column is the date the customer's home counts down to, one
+ * the admin moves freely from settings. A field he thinks of as a countdown must
+ * not be able to walk a cycle back into التربية (Khaled, 2026-08-22).
+ *
+ * The two old tests stay as a fallback for rows migration 023 has not reached —
+ * a cycle restored from an older dump, or an environment where it has not been
+ * applied yet. They can only ever say "selling" about a cycle that really is.
  */
 
 export type CyclePhase = "raising" | "selling" | "ended";
@@ -36,6 +39,7 @@ export type CyclePhase = "raising" | "selling" | "ended";
 export interface CyclePhaseInput {
   is_active: boolean;
   ended_at: string | null;
+  selling_started_at: string | null;
   sale_open: boolean;
   sale_closes_at: string | null;
 }
@@ -45,10 +49,16 @@ export interface CyclePhaseInput {
  * taken this minute.
  */
 export function isSellingPhase(cycle: {
+  selling_started_at: string | null;
   sale_open: boolean;
   sale_closes_at: string | null;
 }): boolean {
-  return cycle.sale_open || Boolean(cycle.sale_closes_at);
+  return (
+    Boolean(cycle.selling_started_at) ||
+    // Pre-023 fallback — see the note above.
+    cycle.sale_open ||
+    Boolean(cycle.sale_closes_at)
+  );
 }
 
 export function cyclePhase(cycle: CyclePhaseInput): CyclePhase {
