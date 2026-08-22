@@ -216,12 +216,28 @@ export async function saveSettings(
   // The number lives on the farm, not in its settings — it is who the farm is,
   // not how it sells. Written after the settings row so a refused price never
   // leaves a published number the admin did not get told about.
-  const { error: farmError } = await supabase
+  //
+  // Through the **service-role** client, not the request's. `farm` carries a
+  // select policy and nothing else (002_rls), on purpose: an update policy there
+  // would also let the browser's own token move `owner_phone` straight through
+  // PostgREST, skipping the PIN and the auth-account move — the lockout
+  // `changeLoginPhone` exists to make impossible. An RLS-bound update against a
+  // table with no update policy matches no rows and reports no error, which is
+  // how this number saved silently into nothing (Khaled, 2026-08-22).
+  //
+  // Reaching past RLS is only safe because the id is `getCurrentFarm`'s answer
+  // about who is signed in — never one that arrived with the request. It is the
+  // same route `changeLoginPhone` takes to the same table.
+  const { data: written, error: farmError } = await createAdminClient()
     .from("farm")
     .update({ contact_phone: contactPhone || null })
-    .eq("id", farm.farmId);
+    .eq("id", farm.farmId)
+    .select("id")
+    .maybeSingle();
 
-  if (farmError) {
+  // `written` is the half that matters: a write that quietly touches nothing is
+  // exactly what this looked like, and it must not come back as a success again.
+  if (farmError || !written) {
     return { ok: false, error: "الاعدادات اتحفظت، بس رقم التواصل لأ. حاول تاني." };
   }
 
