@@ -115,9 +115,22 @@ export async function getActiveSaleState(
     };
   }
 
-  // Between cycles. The admin's own date wins — he may know when the next
-  // chicks arrive long before he registers them.
-  if (settings?.sale_starts_at) {
+  // Between cycles. The admin's own date wins — he may know when the next chicks
+  // arrive long before he registers them — but **only while it is still ahead**.
+  //
+  // It is one date field, and it is the last thing on his mind the day a cycle
+  // closes: the one he set for the last sale simply stays there, goes by, and
+  // then wins forever over the estimate that exists for exactly this case. The
+  // customer's home sat on a countdown of zeros with no cycle even registered
+  // (Khaled, 2026-08-22).
+  //
+  // A date that has passed is not a promise he is still making, so the rolling
+  // estimate takes over — and takes over again every time one goes stale, which
+  // is what stops him ever having to remember this field at all.
+  if (
+    settings?.sale_starts_at &&
+    new Date(settings.sale_starts_at).getTime() > Date.now()
+  ) {
     return { saleOpen: false, targetDate: settings.sale_starts_at };
   }
 

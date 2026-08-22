@@ -103,7 +103,17 @@ export async function getSaleControlState(
     getFarmSettings(farmId),
   ]);
 
-  const startDate = toDateInput(settings.saleStartsAt);
+  // A date that has gone by is not in force any more — the countdown falls back
+  // to the rolling estimate the moment it passes (`getActiveSaleState`). So the
+  // field is empty rather than showing a day that has been and gone as though it
+  // were still the answer (Khaled, 2026-08-22). Empty is what «اعمل انت حسابه»
+  // looks like in this field, and it is the honest state.
+  const chosenStart =
+    settings.saleStartsAt &&
+    new Date(settings.saleStartsAt).getTime() > Date.now()
+      ? settings.saleStartsAt
+      : null;
+  const startDate = toDateInput(chosenStart);
 
   if (!cycle) {
     return {
