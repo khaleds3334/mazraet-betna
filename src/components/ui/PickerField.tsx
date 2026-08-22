@@ -19,6 +19,7 @@ export function PickerField({
   type,
   value,
   onChange,
+  min,
   error,
 }: {
   id: string;
@@ -29,6 +30,9 @@ export function PickerField({
   type: "date" | "time";
   value: string;
   onChange: (v: string) => void;
+  /** Earliest value the picker will offer — the OS greys out everything before
+   *  it, so a date that would be refused on save cannot be chosen at all. */
+  min?: string;
   error?: string | null;
 }) {
   const errorId = `${id}-error`;
@@ -67,6 +71,7 @@ export function PickerField({
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           value={value}
+          min={min}
           onChange={(e) => onChange(e.target.value)}
           className="absolute inset-0 cursor-pointer opacity-0"
         />

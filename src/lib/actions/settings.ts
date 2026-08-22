@@ -4,6 +4,9 @@ import { addDays } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
+import { getFarmSettings } from "@/lib/queries/settings";
+import { expectedSaleDate } from "@/lib/calculations/cycle";
+import { formatArabicDate } from "@/lib/format";
 import { SALE_WINDOW_DAYS } from "@/lib/constants";
 import { normalizePhone, phoneError } from "@/lib/phone";
 import { adminCredentials } from "@/lib/auth/session";
@@ -135,6 +138,32 @@ export async function saveSettings(
   // An empty field is not "no sale ever" — it is "you work it out", which is
   // what null means to the countdown.
   const date = input.saleDate ? new Date(input.saleDate).toISOString() : null;
+
+  // «فترة البيع تبدء في» is a promise on the customer's home, and a flock that
+  // is still being raised cannot keep one made for a day before it is ready.
+  // The field is capped at the same day; this is the half a stale form or a
+  // replayed action cannot get around.
+  if (!input.editingSaleEnd && date) {
+    const { data: cycle } = await supabase
+      .from("cycle")
+      .select("start_date, sale_open, sale_closes_at")
+      .eq("farm_id", farm.farmId)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    // Raising: an active cycle that has neither opened nor been closed out of a
+    // window — the same test `getSaleControlState` reads the screen with.
+    if (cycle && !cycle.sale_open && !cycle.sale_closes_at) {
+      const { raisingPeriodDays } = await getFarmSettings(farm.farmId);
+      const ready = expectedSaleDate(cycle.start_date, raisingPeriodDays);
+      if (new Date(date).getTime() < ready.getTime()) {
+        return {
+          ok: false,
+          error: `الفراخ هتجهز يوم ${formatArabicDate(ready)} — مينفعش البيع يبدأ قبل كده.`,
+        };
+      }
+    }
+  }
 
   const { error } = await supabase
     .from("settings")

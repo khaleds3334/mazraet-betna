@@ -37,6 +37,29 @@ export function expectedSaleDate(
 }
 
 /**
+ * When a raising cycle's sale is expected to start — its ready date, and never
+ * a date that has already passed.
+ *
+ * The ready date on its own reaches zero and stays there: the flock passes
+ * `raisingPeriod` days, the admin has not opened the sale yet, and the
+ * customer's home sits on «٠٠ يوم ٠٠ ساعة ٠٠ دقيقة» for as long as it takes him
+ * (Khaled, 2026-08-22). That is not a countdown, it is a stopped clock.
+ *
+ * Past the ready date the birds are there and the sale is a decision away, so
+ * the target becomes the start of tomorrow and moves with it. It never promises
+ * more than a day, which is the honest size of the wait, and it never runs out.
+ */
+export function raisingSaleStartDate(
+  startDate: Date | string,
+  raisingPeriod: number = RAISING_PERIOD_DAYS,
+  today: Date = new Date(),
+): Date {
+  const ready = expectedSaleDate(startDate, raisingPeriod);
+  if (ready.getTime() > today.getTime()) return ready;
+  return addDays(ready, daysSince(ready, today) + 1);
+}
+
+/**
  * When to tell customers the next sale starts, with no cycle to date it from.
  *
  * Anchored on the day the last cycle ended, the estimate sits

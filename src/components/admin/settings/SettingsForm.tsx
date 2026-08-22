@@ -179,7 +179,9 @@ export function SettingsForm({
           <p className="text-xs">
             {sale.editingSaleEnd
               ? "البيع شغال — حدد اخر يوم للطلبات"
-              : "لا توجد دورة نشطة حاليا - حدد متي يبدء البيع"}
+              : sale.minDate
+                ? `الفراخ هتجهز يوم ${formatArabicDate(sale.minDate)} — مينفعش تحدد قبل كده`
+                : "لا توجد دورة نشطة حاليا - حدد متي يبدء البيع"}
           </p>
         </div>
 
@@ -191,6 +193,7 @@ export function SettingsForm({
           type="date"
           value={date}
           display={date ? formatArabicDate(date) : ""}
+          min={sale.minDate || undefined}
           onChange={setDate}
         />
       </div>

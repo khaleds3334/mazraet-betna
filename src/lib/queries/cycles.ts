@@ -11,6 +11,7 @@ import {
   cycleDurationDays,
   daysSince,
   expectedSaleDate,
+  raisingSaleStartDate,
   rollingSaleStartDate,
   type CycleEstimateBasis,
 } from "@/lib/calculations/cycle";
@@ -43,9 +44,17 @@ export interface SaleState {
  * actually answer it:
  *
  *   • a cycle is selling  → the end of the window (`sale_closes_at`);
- *   • a cycle is raising  → its own sale date (start + raising period);
+ *   • a cycle is raising  → the admin's date from A-70 if he has set one, else
+ *     the flock's own ready date (start + raising period);
  *   • no cycle at all     → the admin's date from A-70, and only if he has not
  *     set one, the rolling estimate off the last cycle to end.
+ *
+ * His date wins over the estimate while a flock is being raised, because he is
+ * the one who knows when he will actually open — the estimate only says when the
+ * birds *could* be sold. It is overruled in one case: a date that falls before
+ * they are ready, which is what a date left over from between cycles looks like
+ * once new chicks arrive. The field he set it in is capped at the same day, so
+ * the only way to be holding one is to have set it before the cycle existed.
  *
  * `saleOpen` stays false in every case but the first, so closing the sale from
  * settings takes orders down without touching the cycle: the toggle writes
@@ -77,11 +86,32 @@ export async function getActiveSaleState(
     if (cycle.sale_open) {
       return { saleOpen: true, targetDate: cycle.sale_closes_at };
     }
-    const target = expectedSaleDate(
+    const ready = expectedSaleDate(
       cycle.start_date,
       settings?.raising_period_days,
     );
-    return { saleOpen: false, targetDate: target.toISOString() };
+    const chosen = settings?.sale_starts_at
+      ? new Date(settings.sale_starts_at)
+      : null;
+
+    // Not a date that has already come and gone, either: the day he named can
+    // pass with the sale still shut, and a target in the past is the same
+    // stopped clock the rolling date below exists to avoid.
+    if (
+      chosen &&
+      chosen.getTime() >= ready.getTime() &&
+      chosen.getTime() > Date.now()
+    ) {
+      return { saleOpen: false, targetDate: chosen.toISOString() };
+    }
+
+    return {
+      saleOpen: false,
+      targetDate: raisingSaleStartDate(
+        cycle.start_date,
+        settings?.raising_period_days,
+      ).toISOString(),
+    };
   }
 
   // Between cycles. The admin's own date wins — he may know when the next

@@ -5,6 +5,7 @@
  */
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { expectedSaleDate } from "@/lib/calculations/cycle";
 import { RAISING_PERIOD_DAYS } from "@/lib/constants";
 
 export interface FarmSettings {
@@ -66,6 +67,16 @@ export interface SaleControlState {
   editingSaleEnd: boolean;
   /** The date the field starts on, `YYYY-MM-DD`, or "" when none is set. */
   date: string;
+  /**
+   * The earliest day «فترة البيع تبدء في» may name, `YYYY-MM-DD` — the day this
+   * flock is ready, i.e. its start date plus the raising period. "" when there
+   * is no flock to be early for.
+   *
+   * A sale date before the birds are ready is a promise on the customer's home
+   * that the farm cannot keep on the day it comes due (Khaled, 2026-08-22). The
+   * field caps at it and `saveSettings` refuses past it.
+   */
+  minDate: string;
 }
 
 /** `YYYY-MM-DD` in local time — what a native date input expects. */
@@ -84,7 +95,7 @@ export async function getSaleControlState(
   const [{ data: cycle }, settings] = await Promise.all([
     supabase
       .from("cycle")
-      .select("sale_open, sale_closes_at")
+      .select("sale_open, sale_closes_at, start_date")
       .eq("farm_id", farmId)
       .eq("is_active", true)
       .maybeSingle(),
@@ -100,6 +111,7 @@ export async function getSaleControlState(
       hint: "لا توجد دورة بيع حاليا",
       editingSaleEnd: false,
       date: startDate,
+      minDate: "",
     };
   }
 
@@ -111,6 +123,15 @@ export async function getSaleControlState(
       hint: "الدورة لسه في مرحلة التربية — ابدأ البيع من صفحة الدورات",
       editingSaleEnd: false,
       date: startDate,
+      // He can still say when this flock's sale starts, and that date is what
+      // the customer's home counts down to — the switch above is the only thing
+      // the raising phase takes away from him.
+      minDate: toDateInput(
+        expectedSaleDate(
+          cycle.start_date,
+          settings.raisingPeriodDays,
+        ).toISOString(),
+      ),
     };
   }
 
@@ -124,6 +145,7 @@ export async function getSaleControlState(
     date: cycle.sale_open
       ? toDateInput(cycle.sale_closes_at)
       : startDate,
+    minDate: "",
   };
 }
 
