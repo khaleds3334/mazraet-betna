@@ -12,3 +12,12 @@ export const actionPrimary = "border-primary-hover bg-primary";
 
 /** Outline on the page surface — the secondary action. */
 export const actionOutline = "border-brand bg-surface-page";
+
+/**
+ * The "not yet" treatment for a primary action that is on the screen but has
+ * nothing to do — «بدء مرحلة البيع» before the flock is old enough, «حفظ
+ * الاعدادات» with nothing changed. Blurred rather than greyed out, which is how
+ * the design draws it: the button is real and waiting on something, not broken.
+ */
+export const actionLocked =
+  "pointer-events-none select-none opacity-90 blur-[3px]";

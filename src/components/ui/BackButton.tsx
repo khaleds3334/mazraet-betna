@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { askBeforeLeaving } from "@/lib/leaveGuard";
 import { cn } from "@/lib/utils";
 import { Icon } from "./Icon";
 
@@ -10,6 +14,11 @@ import { Icon } from "./Icon";
  * Prefetched in full: the way back is the one destination you can be sure will be
  * asked for, so the server may as well have it ready while the screen is being
  * read. (Production only — Next never prefetches from a dev server.)
+ *
+ * It asks the screen first. A screen with unsaved work registers a `leaveGuard`,
+ * and if one answers, the tap is cancelled and that screen takes over — it will
+ * navigate here itself once the user has said what to do about the work. Nothing
+ * is registered on most screens, so most taps go straight through.
  */
 export function BackButton({
   href,
@@ -18,6 +27,8 @@ export function BackButton({
   href: string;
   className?: string;
 }) {
+  const router = useRouter();
+
   return (
     <Link
       href={href}
@@ -26,6 +37,9 @@ export function BackButton({
       // stack is kept one entry deep so the back gesture can close it
       // (`BackGuard`). This button is the way back — the stack is not.
       replace
+      onClick={(event) => {
+        if (askBeforeLeaving(() => router.replace(href))) event.preventDefault();
+      }}
       aria-label="رجوع"
       className={cn(
         "inline-flex items-center justify-center rounded-xl bg-surface p-2",

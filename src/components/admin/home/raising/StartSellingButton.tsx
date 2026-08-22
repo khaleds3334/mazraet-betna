@@ -10,7 +10,11 @@ import {
   Modal,
   Stepper,
 } from "@/components/ui";
-import { actionBase, actionPrimary } from "@/components/ui/buttonStyles";
+import {
+  actionBase,
+  actionLocked,
+  actionPrimary,
+} from "@/components/ui/buttonStyles";
 import { useToast } from "@/hooks/useToast";
 import { startSelling } from "@/lib/actions/cycles";
 import { cn } from "@/lib/utils";
@@ -50,11 +54,7 @@ export function StartSellingButton({
     return (
       <div
         aria-disabled
-        className={cn(
-          actionBase,
-          actionPrimary,
-          "pointer-events-none select-none opacity-90 blur-[3px]",
-        )}
+        className={cn(actionBase, actionPrimary, actionLocked)}
       >
         {LABEL}
       </div>

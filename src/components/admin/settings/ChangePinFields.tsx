@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from "react";
 import {
-  Button,
+  BottomSheet,
+  CloseButton,
+  ConfirmActions,
   DashedAddButton,
   InlineError,
   PinInput,
@@ -13,10 +15,13 @@ import { changePin } from "@/lib/actions/settings";
 /**
  * Change the admin PIN from settings (FR-1ب).
  *
- * Collapsed behind a button. It is the one thing on this screen that can lock
- * the admin out of his own farm, and there is no recovery — a forgotten PIN is
- * reset from the database (D-12) — so it does not sit open where a hand over a
- * scale can start typing into it.
+ * Behind a sheet, not a panel that unfolds into the page. It is the one thing on
+ * this screen that can lock the admin out of his own farm, and there is no
+ * recovery — a forgotten PIN is reset from the database (D-12) — so it does not
+ * sit open where a hand over a scale can start typing into it. It used to expand
+ * in place, which put three PIN boxes into the middle of a settings list and left
+ * «حفظ الاعدادات» hovering over a form it had nothing to do with; the sheet gives
+ * it the whole screen and one way out (Khaled, 2026-08-22).
  *
  * The current PIN is asked for and checked server-side inside the same call that
  * writes the new one: a phone left unlocked should not be enough to take the
@@ -38,11 +43,13 @@ export function ChangePinFields() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, startSaving] = useTransition();
 
-  function reset() {
+  function close() {
+    if (isSaving) return;
     setCurrent("");
     setNext("");
     setConfirm("");
     setError(null);
+    setOpen(false);
   }
 
   function save() {
@@ -54,7 +61,9 @@ export function ChangePinFields() {
           setError(result.error);
           return;
         }
-        reset();
+        setCurrent("");
+        setNext("");
+        setConfirm("");
         setOpen(false);
         toast.success("الرقم السري اتغير");
       } catch {
@@ -63,74 +72,77 @@ export function ChangePinFields() {
     });
   }
 
-  // Dashed while it is closed, like every other control in the app that opens
-  // something rather than doing it: an outlined button sits at the weight of
-  // «حفظ الاعدادات» and reads as part of the form, when this is a door
-  // (Khaled, 2026-08-22).
-  if (!open) {
-    return (
-      <DashedAddButton label="تغيير الرقم السري" onClick={() => setOpen(true)} />
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-right text-base text-heading">تغيير الرقم السري</p>
+    <>
+      {/* Dashed while closed, like every other control in the app that opens
+          something rather than doing it: an outlined button sits at the weight
+          of «حفظ الاعدادات» and reads as part of the form, when this is a door
+          (Khaled, 2026-08-22). */}
+      <DashedAddButton label="تغيير الرقم السري" onClick={() => setOpen(true)} />
 
-      <Field label="الرقم السري الحالي" id="pin-current">
-        <PinInput
-          id="pin-current"
-          value={current}
-          disabled={isSaving}
-          onChange={(v) => {
-            setCurrent(v);
-            if (error) setError(null);
-          }}
-        />
-      </Field>
+      <BottomSheet
+        open={open}
+        onClose={close}
+        label="تغيير الرقم السري"
+        header={
+          <div className="flex items-center justify-between gap-2 px-screen pt-4 pb-2">
+            <p className="text-h6 font-bold text-heading">تغيير الرقم السري</p>
+            <CloseButton onClick={close} size="md" />
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-4 px-screen pb-2">
+          <p className="text-right text-sm text-heading">
+            اكتب رقمك السري الحالي، وبعده الجديد مرتين. لو نسيته مش هينفع نرجّعه.
+          </p>
 
-      <Field label="الرقم السري الجديد" id="pin-new">
-        <PinInput
-          id="pin-new"
-          value={next}
-          disabled={isSaving}
-          onChange={(v) => {
-            setNext(v);
-            if (error) setError(null);
-          }}
-        />
-      </Field>
+          <Field label="الرقم السري الحالي" id="pin-current">
+            <PinInput
+              id="pin-current"
+              value={current}
+              disabled={isSaving}
+              onChange={(v) => {
+                setCurrent(v);
+                if (error) setError(null);
+              }}
+            />
+          </Field>
 
-      <Field label="اكتب الجديد تاني" id="pin-confirm">
-        <PinInput
-          id="pin-confirm"
-          value={confirm}
-          disabled={isSaving}
-          onChange={(v) => {
-            setConfirm(v);
-            if (error) setError(null);
-          }}
-        />
-      </Field>
+          <Field label="الرقم السري الجديد" id="pin-new">
+            <PinInput
+              id="pin-new"
+              value={next}
+              disabled={isSaving}
+              onChange={(v) => {
+                setNext(v);
+                if (error) setError(null);
+              }}
+            />
+          </Field>
 
-      {error && <InlineError message={error} />}
+          <Field label="اكتب الجديد تاني" id="pin-confirm">
+            <PinInput
+              id="pin-confirm"
+              value={confirm}
+              disabled={isSaving}
+              onChange={(v) => {
+                setConfirm(v);
+                if (error) setError(null);
+              }}
+            />
+          </Field>
 
-      <div className="flex gap-3">
-        <Button onClick={save} isLoading={isSaving} className="flex-1">
-          حفظ الرقم الجديد
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            reset();
-            setOpen(false);
-          }}
-          className="flex-1"
-        >
-          إلغاء
-        </Button>
-      </div>
-    </div>
+          {error && <InlineError message={error} />}
+
+          <ConfirmActions
+            confirmLabel="حفظ الرقم الجديد"
+            onConfirm={save}
+            onCancel={close}
+            isLoading={isSaving}
+          />
+        </div>
+      </BottomSheet>
+    </>
   );
 }
 

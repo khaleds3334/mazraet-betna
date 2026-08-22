@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
+import { askBeforeLeaving } from "@/lib/leaveGuard";
 import { closeTopOverlay, subscribeOverlays } from "@/lib/overlayStack";
 
 /** Where an entry sits above the one the app launched on, written into it. */
@@ -25,8 +26,10 @@ function historyState(): Record<string, unknown> {
  * customer one — and it turns three different presses into three answers:
  *
  * 1. **A sheet, dialog or drawer is open** → it closes, and nothing else moves.
- * 2. **Anywhere but home** → home, in one press.
- * 3. **Home** → «دوس رجوع تاني عشان تخرج من التطبيق», then the next press closes
+ * 2. **A screen with unsaved work** → it asks, and decides for itself what the
+ *    press meant once the user has answered (`leaveGuard`).
+ * 3. **Anywhere but home** → home, in one press.
+ * 4. **Home** → «دوس رجوع تاني عشان تخرج من التطبيق», then the next press closes
  *    the app. The same two-step Instagram uses, and for the same reason: leaving
  *    should take a decision, not a stray swipe.
  *
@@ -169,6 +172,15 @@ export function BackGuard({ home }: { home: string }) {
       }
 
       if (closeTopOverlay()) {
+        rearm();
+        return;
+      }
+
+      // A screen holding unsaved work gets to ask first. The guard opens its own
+      // dialog and calls back if the user says go — which is why the press is
+      // spent here either way, and why the guard is asked after the overlay
+      // check: the next press should close that dialog, not re-ask.
+      if (askBeforeLeaving(goHome)) {
         rearm();
         return;
       }

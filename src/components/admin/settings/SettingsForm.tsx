@@ -1,31 +1,55 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
 import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
+import {
+  ActionButton,
   Button,
+  CloseButton,
   FarmSaleCard,
   InlineError,
+  Modal,
   PickerField,
   Stepper,
-  WeightBadge,
 } from "@/components/ui";
 import { useToast } from "@/hooks/useToast";
 import { ChangeLoginPhoneFields } from "./ChangeLoginPhoneFields";
 import { ChangePinFields } from "./ChangePinFields";
 import { ContactPhoneField } from "./ContactPhoneField";
+import { WeightsRow } from "./WeightsRow";
 import { saveSettings, setSaleOpen } from "@/lib/actions/settings";
 import { formatArabicDate } from "@/lib/format";
+import { setLeaveGuard } from "@/lib/leaveGuard";
 import type { CurrentFarm } from "@/lib/queries/admin";
 import type { FarmSettings } from "@/lib/queries/settings";
 import type { SaleControlState } from "@/lib/queries/settings";
-import { OFFERED_WEIGHTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+
+/** The same weights, whatever order they happened to be tapped in. */
+function sameWeights(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  const left = [...a].sort((x, y) => x - y);
+  const right = [...b].sort((x, y) => x - y);
+  return left.every((weight, i) => weight === right[i]);
+}
 
 /**
  * The body of A-70. Everything except the sale switch is edited freely and
  * committed by «حفظ الاعدادات»; the switch writes the moment it is tapped,
  * because closing the sale is visible to every customer and must not sit
  * unsaved on a screen the admin has walked away from.
+ *
+ * Because everything else *is* held, two things follow. «حفظ الاعدادات» is
+ * blurred and inert until something on the screen differs from what the farm
+ * has — a live save button on an unchanged screen invites a tap that does
+ * nothing and teaches him the button means nothing. And leaving with work on
+ * the screen asks first: walking away is how that work gets thrown out, and
+ * nothing on the next screen would tell him it had been (Khaled, 2026-08-22).
  *
  * Failures are inline, not toasts: settings decide what customers are charged
  * and whether they can order at all, so a missed auto-dismissed message would
@@ -42,10 +66,7 @@ export function SettingsForm({
   settings: FarmSettings;
   sale: SaleControlState;
   /** Only what this screen edits — the number customers ring. */
-  farm: Pick<
-    CurrentFarm,
-    "contactPhone" | "usesOwnerPhone" | "loginPhone"
-  >;
+  farm: Pick<CurrentFarm, "contactPhone" | "usesOwnerPhone" | "loginPhone">;
   /** The sign-out row, rendered by the page so this stays a pure form. */
   logout: ReactNode;
   className?: string;
@@ -64,6 +85,40 @@ export function SettingsForm({
   const [error, setError] = useState<string | null>(null);
   const [isSaving, startSaving] = useTransition();
   const [isToggling, startToggling] = useTransition();
+
+  // The difference between what is on the screen and what the farm actually has.
+  // It clears itself after a save: the action revalidates, the page hands these
+  // values back down as props, and the comparison stops finding anything.
+  const dirty =
+    salePrice !== settings.salePrice ||
+    cleaningPrice !== settings.cleaningPrice ||
+    date !== sale.date ||
+    contactPhone !== (farm.usesOwnerPhone ? "" : farm.contactPhone) ||
+    !sameWeights(weights, settings.availableWeights);
+
+  // Read from inside the leave guard, which is registered once and would
+  // otherwise close over whatever `dirty` was on the first render.
+  const dirtyRef = useRef(dirty);
+  useEffect(() => {
+    dirtyRef.current = dirty;
+  }, [dirty]);
+
+  /** Where the admin was heading when we stopped him. */
+  const leaveTo = useRef<(() => void) | null>(null);
+  const [asking, setAsking] = useState(false);
+
+  // Anything that takes him off this screen — the back arrow, the phone's back
+  // gesture — asks here first, and only gets an answer while there is something
+  // to lose.
+  useEffect(() => {
+    setLeaveGuard((proceed) => {
+      if (!dirtyRef.current) return false;
+      leaveTo.current = proceed;
+      setAsking(true);
+      return true;
+    });
+    return () => setLeaveGuard(null);
+  }, []);
 
   function toggleWeight(weight: number) {
     setWeights((current) =>
@@ -95,7 +150,8 @@ export function SettingsForm({
     });
   }
 
-  function save() {
+  /** `then` runs only on a clean save — it is how «احفظ واخرج» gets to leave. */
+  function save(then?: () => void) {
     setError(null);
 
     startSaving(async () => {
@@ -113,13 +169,24 @@ export function SettingsForm({
           return;
         }
         toast.success("الاعدادات اتحفظت");
+        then?.();
       } catch {
         setError("مفيش اتصال دلوقتي، اتأكد من النت وحاول تاني.");
       }
     });
   }
 
-  const dateLabel = sale.editingSaleEnd ? "تاريخ انتهاء البيع" : "تاريخ بدء البيع";
+  /** Take the pending destination, so a refused save cannot leave twice. */
+  function claimDestination(): (() => void) | null {
+    const go = leaveTo.current;
+    leaveTo.current = null;
+    setAsking(false);
+    return go;
+  }
+
+  const dateLabel = sale.editingSaleEnd
+    ? "تاريخ انتهاء البيع"
+    : "تاريخ بدء البيع";
 
   return (
     <div className={cn("flex flex-1 flex-col gap-6 pb-4", className)}>
@@ -151,29 +218,7 @@ export function SettingsForm({
         />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <p className="text-right text-base text-heading">الاوزان المتوفرة</p>
-
-        {/* The row scrolls on its own. Eight 70px badges are wider than a phone,
-            and left in the page flow they made the whole screen scroll sideways
-            — every other section drifting with them. `-mx-screen` + matching
-            padding lets it run edge to edge while the rest of the page keeps its
-            margin, and `overscroll-x-contain` stops a swipe that runs out of
-            badges from turning into a back-navigation. */}
-        <div
-          role="group"
-          className="-mx-screen flex items-center gap-3 overflow-x-auto overscroll-x-contain px-screen pb-1"
-        >
-          {OFFERED_WEIGHTS.map((weight) => (
-            <WeightBadge
-              key={weight}
-              weight={weight}
-              selected={weights.includes(weight)}
-              onSelect={() => toggleWeight(weight)}
-            />
-          ))}
-        </div>
-      </div>
+      <WeightsRow selected={weights} onToggle={toggleWeight} />
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5 text-right text-heading">
@@ -212,13 +257,18 @@ export function SettingsForm({
         usesOwnerPhone={farm.usesOwnerPhone}
       />
 
-      <ChangeLoginPhoneFields current={farm.loginPhone} />
-
-      <ChangePinFields />
+      {/* The two credentials keep company: they are the only controls here that
+          open something instead of editing it, and they save on their own. Their
+          own space above, matching the gap under them to the sign-out row, so
+          the pair reads as its own block and not as the tail of the form. */}
+      <div className="flex flex-col gap-4 pt-2">
+        <ChangeLoginPhoneFields current={farm.loginPhone} />
+        <ChangePinFields />
+      </div>
 
       {error && <InlineError message={error} />}
 
-      <div className="pt-2">{logout}</div>
+      <div className="pt-">{logout}</div>
 
       {/* «حفظ الاعدادات» takes the tab bar's place (the bar is hidden on this
           route) so it sits where the thumb already rests, instead of at the end
@@ -226,13 +276,61 @@ export function SettingsForm({
           the shell's column width, lifted clear of the gesture strip. <main>
           already reserves the height, so nothing hides underneath it. */}
       <div
-        className="fixed inset-x-0 z-40 mx-auto max-w-[430px] bg-background px-screen py-4"
+        className="fixed inset-x-0 z-40 mx-auto max-w-[430px] bg-background border-t-2 border-border px-screen py-4"
         style={{ bottom: "env(safe-area-inset-bottom)" }}
       >
-        <Button onClick={save} isLoading={isSaving}>
+        <Button onClick={() => save()} isLoading={isSaving} locked={!dirty}>
           حفظ الاعدادات
         </Button>
       </div>
+
+      <Modal
+        open={asking}
+        onClose={() => setAsking(false)}
+        label="فيه تعديلات مش متحفوظة"
+        header={
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-h6 font-bold text-heading">
+              فيه تعديلات مش متحفوظة
+            </p>
+            {/* Dismissing is the third answer, and the safest one: he stays on
+                the screen with everything he changed still on it. */}
+            <CloseButton onClick={() => setAsking(false)} size="sm" />
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-5 pt-4">
+          <p className="text-right text-base text-heading">
+            غيّرت حاجات في الاعدادات ولسه محفظتهاش. لو خرجت دلوقتي هتضيع.
+          </p>
+
+          {/* Stacked rather than side by side: «اخرج من غير حفظ» is too long to
+              share a 320px row with anything, and this is a question worth
+              reading one line at a time. */}
+          <div className="flex flex-col gap-3">
+            <ActionButton
+              variant="primary"
+              isLoading={isSaving}
+              onClick={() => {
+                const go = claimDestination();
+                save(() => go?.());
+              }}
+              className="w-full"
+            >
+              احفظ واخرج
+            </ActionButton>
+
+            <ActionButton
+              variant="danger"
+              disabled={isSaving}
+              onClick={() => claimDestination()?.()}
+              className="w-full"
+            >
+              اخرج من غير حفظ
+            </ActionButton>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
