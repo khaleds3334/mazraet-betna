@@ -1982,8 +1982,41 @@ hours is the honest unit, and it rolls for the same reason every estimate here
 rolls: a countdown that reaches zero promises a sale opening at that moment, and
 he has promised no particular hour.
 
+**Both sides read the flock before the switch.** The admin's badge said «البيع
+متوفر» over an empty flock for a while after this landed, because it was still
+reading `sale_open` — which nothing turns off any more. A state that is worked
+out has to be worked out everywhere it is shown, or the two halves of the app
+disagree in front of the same farm.
+
 **Sold out shows zeros on purpose.** It is the one state with nothing to count
 to: this flock is finished and the next belongs to birds nobody has bought. The
 boxes read ٠٠ and the date beside the label is dropped — a dash there would be a
 second way of saying the same nothing.
+**Date:** 2026-08-22
+
+### T-58 — A fact the customer is entitled to may have to be read past RLS
+The customer's home says whether the farm has anything left to sell. That is one
+number — «الفراخ المتوفرة» — and it cannot be counted through the customer's own
+session, because RLS is doing its job: he sees his own orders and nobody else's,
+and `mortality` is admin-only (002_rls).
+
+So counted through his session, a cycle whose hundred birds were all spoken for
+came back with a hundred available, and his home said «البيع متوفر» over an empty
+farm while the admin's screen — running the same function on his own session —
+said it had sold out. The check was there; the number it read could not be right
+(Khaled, 2026-08-22).
+
+`countAvailableChickensForCustomer` reads it through the service-role client.
+**The rule this sets, for the customer app being built next:** when a screen must
+state a fact *about the farm* rather than about the reader, ask whether the
+reader's own policies can even see the rows it is made of. If they cannot, reach
+past RLS **deliberately and in a named function**, and only where all three hold:
+
+- the answer is an aggregate — a count, a total, a yes/no — never rows;
+- it concerns the farm the reader's session already resolved to, never an id
+  that arrived with the request;
+- the reader is already being shown that fact anyway, so nothing new is exposed.
+
+A silent wrong number is the worse failure. It has no error, no empty state, and
+no way to notice — it just quietly disagrees with the other half of the app.
 **Date:** 2026-08-22
