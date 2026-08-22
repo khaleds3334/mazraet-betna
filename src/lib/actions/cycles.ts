@@ -13,6 +13,7 @@ import {
 } from "@/lib/calculations/feed";
 import { countOpenCycleOrders } from "@/lib/queries/orders";
 import { countAvailableChickens } from "@/lib/queries/selling";
+import { syncSaleWithFlock } from "@/lib/queries/saleState";
 import { pluralizeBags, pluralizeChicken, pluralizeOrder } from "@/lib/format";
 import { SALE_WINDOW_DAYS } from "@/lib/constants";
 
@@ -139,7 +140,15 @@ export async function recordMortality(count: number): Promise<ActionResult> {
 
   if (error) return { ok: false, error: "مقدرناش نسجّل النفوق، حاول تاني." };
 
+  // Birds leave the flock two ways, and this is the other one. A death can take
+  // «الفراخ المتوفرة» to zero exactly as the last order can, and the sale has to
+  // close either way — it did not, and «البيع متوفر» stood over an empty farm
+  // (Khaled, 2026-08-22).
+  await syncSaleWithFlock(cycle.id);
+
   revalidatePath("/admin");
+  revalidatePath("/admin/orders");
+  revalidatePath("/", "layout"); // the customer's home reads the sale state
   return { ok: true };
 }
 

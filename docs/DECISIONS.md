@@ -1761,12 +1761,23 @@ session where RLS hides other people's orders (T-58). And the moment the flock
 sold out went unrecorded, so `selling_ended_at` stayed null even after the cycle
 closed (Khaled, 2026-08-22).
 
-Undoing it by hand is not needed either: `reopenSaleIfBirdsReturned` is called by
-everything that hands birds back — a cancelled order, a bird taken off at the
-scale (FR-14ج). **Call it from any future path that returns a bird.** That single
-function is what keeps a stored state from drifting away from the flock, and the
-drift is real: one cycle sat sold-out with a bird available for the minutes
-between the migration and the reopener existing.
+Undoing it by hand is not needed either. **`syncSaleWithFlock` settles it in
+both directions and is the only place either happens** — it closes the sale when
+the flock reaches zero and opens it when birds come back, and it never touches a
+sale the admin closed himself.
+
+**Call it from anything that changes «الفراخ المتوفرة».** Today that is booking
+an order, cancelling one, weighing (a bird removed under FR-14ج, or one added),
+and recording mortality. It started as two half-rules — an order closed the sale,
+a cancellation opened it — and the half that was missing showed up within the
+hour: a bird recorded as dead took the flock to zero and left «البيع متوفر»
+standing over an empty farm (Khaled, 2026-08-22). Birds leave two ways and come
+back two ways; one function has to know all four.
+
+The drift a stored state invites is not theoretical — it happened twice in one
+evening, both times because a writer did not call the sync. The writer that
+forgets is always the one added later, which is why this is one function with its
+own file rather than a rule spread across the actions.
 
 **«اضافة فرخة اخري» while weighing is deliberately not capped.** That screen is
 the admin standing over the birds with a customer waiting, and what is on the
