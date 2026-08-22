@@ -62,7 +62,7 @@ export default async function AdminCyclesPage() {
       : 0;
 
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="flex flex-col gap-4 pt-3">
       {!running && <CyclesToolbar basis={basis} />}
 
       <ul className="flex flex-col gap-2">
