@@ -60,11 +60,21 @@ export function SellingHeader({
         {/* This screen is مرحلة البيع either way; the badge says whether orders
             are being taken this minute. It used to be pinned to «البيع متوفر»,
             which read as a lie the moment the switch went off — or the last bird
-            went. */}
-        <Badge tone={saleOpen ? "primary" : "danger"}>
-          {saleOpen ? "البيع متوفر" : "البيع مقفول"}
+            went.
+
+            The flock is read **before** the switch, exactly as the customer's
+            home reads it (D-64): running out is worked out and never stored, so
+            a badge that only consulted `sale_open` said «البيع متوفر» over an
+            empty flock while the customer was already being told it had sold out
+            (Khaled, 2026-08-22). */}
+        <Badge tone={saleOpen && available > 0 ? "primary" : "danger"}>
+          {available <= 0
+            ? "الفراخ خلصت"
+            : saleOpen
+              ? "البيع متوفر"
+              : "البيع مقفول"}
         </Badge>
-        <Badge tone={saleOpen ? "danger": "primary"}>{pluralizeDay(ageDays)}</Badge>
+        <Badge tone={saleOpen && available ? "danger": "primary"}>{pluralizeDay(ageDays)}</Badge>
       </div>
     </header>
   );

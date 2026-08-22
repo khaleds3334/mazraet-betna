@@ -7,6 +7,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { expectedSaleDate } from "@/lib/calculations/cycle";
 import { isSellingPhase } from "@/lib/cyclePhase";
+import { countAvailableChickens } from "@/lib/queries/selling";
 import { RAISING_PERIOD_DAYS } from "@/lib/constants";
 
 export interface FarmSettings {
@@ -101,7 +102,7 @@ export async function getSaleControlState(
   const [{ data: cycle }, settings] = await Promise.all([
     supabase
       .from("cycle")
-      .select("sale_open, selling_started_at, start_date")
+      .select("id, chick_count, sale_open, selling_started_at, start_date")
       .eq("farm_id", farmId)
       .eq("is_active", true)
       .maybeSingle(),
@@ -150,12 +151,20 @@ export async function getSaleControlState(
     };
   }
 
+  // The flock before the switch (D-64): running out is worked out and never
+  // stored, so a hint that only read `sale_open` would offer to close a sale
+  // that has nothing left to sell.
+  const available = await countAvailableChickens(cycle.id, cycle.chick_count);
+
   return {
     open: cycle.sale_open,
     canToggle: true,
-    hint: cycle.sale_open
-      ? "البيع مفتوح — اقفله عشان توقف الطلبات مؤقتا"
-      : "البيع مقفول مؤقتا — العملاء مش بيقدروا يطلبوا",
+    hint:
+      available <= 0
+        ? "الفراخ خلصت — العملاء شايفين ان البيع خلص للدورة دي"
+        : cycle.sale_open
+          ? "البيع مفتوح — اقفله عشان توقف الطلبات مؤقتا"
+          : "البيع مقفول مؤقتا — العملاء مش بيقدروا يطلبوا",
     editingSaleEnd: cycle.sale_open,
     // Both dates live in settings now (migration 024) — the field writes to one
     // table whichever it is showing.
