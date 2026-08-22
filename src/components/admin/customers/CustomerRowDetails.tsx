@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatCurrency, pluralizeOrder } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { CustomerSummary } from "@/lib/queries/customers";
 import { CustomerOrdersSheet } from "./CustomerOrdersSheet";
 
@@ -50,11 +51,11 @@ export function CustomerRowDetails({
   const [open, setOpen] = useState(false);
 
   const money = customer.inCycle;
-  // Nothing invoiced yet means nothing to show as paid — and no division by zero.
-  const paidRatio =
-    money.invoiceTotal > 0
-      ? Math.min(1, money.paidTotal / money.invoiceTotal)
-      : 0;
+  // No orders this cycle — which is not the same as owing all of it.
+  const nothingBought = money.invoiceTotal <= 0;
+  const paidRatio = nothingBought
+    ? 0
+    : Math.min(1, money.paidTotal / money.invoiceTotal);
 
   return (
     <div id={id} className="relative flex flex-col gap-1.5">
@@ -92,12 +93,25 @@ export function CustomerRowDetails({
           starts reads as emptying, not filling (Khaled, 2026-08-22). `start-0`,
           not `left-0`, so it stays anchored to the reading edge rather than to a
           side of the screen.
+
+          **A customer with no orders this cycle gets neither colour.** Tan was an
+          alarm on someone who owes nothing, and green would have claimed he paid
+          for something he never bought — both are statements about money that
+          does not exist. Grey says the only true thing: there is nothing here
+          (Khaled, 2026-08-22).
         */}
-        <div className="relative h-2 w-full overflow-hidden rounded-full bg-accent-tan">
-          <div
-            className="absolute inset-y-0 start-0 rounded-full bg-brand"
-            style={{ width: `${paidRatio * 100}%` }}
-          />
+        <div
+          className={cn(
+            "relative h-2 w-full overflow-hidden rounded-full",
+            nothingBought ? "bg-border" : "bg-accent-tan",
+          )}
+        >
+          {!nothingBought && (
+            <div
+              className="absolute inset-y-0 start-0 rounded-full bg-brand"
+              style={{ width: `${paidRatio * 100}%` }}
+            />
+          )}
         </div>
       </div>
 
