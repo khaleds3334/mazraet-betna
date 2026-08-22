@@ -1896,3 +1896,31 @@ there is no store to carry them to. The farm's total spend is therefore
 understated by that purchase until the next cycle records its own. Carrying stock
 between cycles is its own feature.
 **Date:** 2026-08-22
+
+### D-63 — «لاحقاً» on the install banner is for this visit only
+The banner that offers to put the app on the home screen (FR-2, Figma 3799:4013)
+dismisses without writing anything to the device. Open the site again and it is
+there again.
+
+It first shipped with a week-long snooze, on the reasoning that being asked every
+visit is nagging. It is not the same thing here: this is the one action that
+makes the app usable the way it was designed to be — a home-screen icon, no URL
+bar, a full-height screen for an admin standing over a scale — and a user who
+puts it off is a user who has not got there yet, not one who has said no
+(Khaled, 2026-08-22).
+
+It stops for good only when the app is really installed: `appinstalled` catches
+that during the visit, and the standalone check catches it on every visit after.
+Nothing else silences it, which is the point.
+
+**The banner is one component for both apps.** Every word arrives as a prop —
+title, body, the iOS line, and both labels — because the two halves are two
+installed apps with two manifests and two icons, and each has to say its own
+thing about its own. Mounted on the admin shell; the customer's copy comes with
+that app.
+
+On iOS «تحميل» has nothing to open — Safari installs from its own share menu — so
+it turns the second line into how to do it by hand. The design draws one banner,
+and that is the only shape it has for a thing it cannot do. The banner never
+appears on a browser that can do neither, so the button never lies.
+**Date:** 2026-08-22
