@@ -176,7 +176,14 @@ export async function startSelling(salePrice: number): Promise<ActionResult> {
 
   const { error: priceError } = await supabase
     .from("settings")
-    .update({ sale_price: salePrice })
+    .update({
+      sale_price: salePrice,
+      // The window the customer's home counts down to. Dated here so the sale
+      // never opens without an end — the admin can move it from settings, but he
+      // should not have to before customers can be told anything. A forecast,
+      // which is why it lives here and not on the cycle (migration 024).
+      sale_closes_at: addDays(new Date(), SALE_WINDOW_DAYS).toISOString(),
+    })
     .eq("farm_id", farm.farmId);
   if (priceError) {
     return { ok: false, error: "مقدرناش نحفظ السعر، حاول تاني." };
@@ -186,14 +193,11 @@ export async function startSelling(salePrice: number): Promise<ActionResult> {
     .from("cycle")
     .update({
       sale_open: true,
-      // The cycle has entered مرحلة البيع, and stays there until it ends. This
-      // is the only thing that says so (migration 023) — `sale_closes_at` below
-      // is a date the admin moves, and moving it must not move the phase.
+      // The cycle has entered مرحلة البيع and stays there until it ends. This is
+      // the only thing that says so (migration 023).
       selling_started_at: new Date().toISOString(),
-      // The window the customer's home counts down to. Dated here so the sale
-      // never opens without an end — the admin can move it from settings, but
-      // he should not have to before customers can be told anything.
-      sale_closes_at: addDays(new Date(), SALE_WINDOW_DAYS).toISOString(),
+      // Selling is running again, so it has not ended.
+      selling_ended_at: null,
     })
     .eq("id", cycle.id);
 

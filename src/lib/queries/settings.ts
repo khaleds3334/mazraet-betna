@@ -28,6 +28,13 @@ export interface FarmSettings {
    * the cycle itself dates the sale.
    */
   saleStartsAt: string | null;
+  /**
+   * The admin's answer to «فترة البيع تنتهي في» — when the sale is expected to
+   * stop taking orders. Dated five days out when the sale opens and moved freely
+   * from here; a forecast, not a record (migration 024). What actually happened
+   * is `cycle.selling_ended_at`.
+   */
+  saleClosesAt: string | null;
 }
 
 /** Sensible values when a farm has no settings row yet — the UI never shows NaN. */
@@ -39,6 +46,7 @@ const FALLBACK: FarmSettings = {
   pickupTimes: [],
   raisingPeriodDays: RAISING_PERIOD_DAYS,
   saleStartsAt: null,
+  saleClosesAt: null,
 };
 
 /**
@@ -50,12 +58,9 @@ const FALLBACK: FarmSettings = {
  *     phase is started from the cycle, not from here;
  *   • selling               — the switch closes and re-opens orders.
  *
- * A cycle counts as selling when `sale_open` is on, or when it is off but the
- * cycle carries a `sale_closes_at` — a window it can be let back into.
- *
- * Both halves are needed. Cycles opened before the sale window was dated
- * (2026-08-21) have `sale_open = true` and no `sale_closes_at`, so testing the
- * date alone called a cycle that was actively selling "still being raised".
+ * Whether a cycle counts as selling is `lib/cyclePhase`'s answer, not this
+ * file's: `selling_started_at` says so and keeps saying so through every close
+ * and re-open (migration 023).
  */
 export interface SaleControlState {
   /** Orders are being taken right now. */
@@ -96,7 +101,7 @@ export async function getSaleControlState(
   const [{ data: cycle }, settings] = await Promise.all([
     supabase
       .from("cycle")
-      .select("sale_open, sale_closes_at, selling_started_at, start_date")
+      .select("sale_open, selling_started_at, start_date")
       .eq("farm_id", farmId)
       .eq("is_active", true)
       .maybeSingle(),
@@ -152,9 +157,9 @@ export async function getSaleControlState(
       ? "البيع مفتوح — اقفله عشان توقف الطلبات مؤقتا"
       : "البيع مقفول مؤقتا — العملاء مش بيقدروا يطلبوا",
     editingSaleEnd: cycle.sale_open,
-    date: cycle.sale_open
-      ? toDateInput(cycle.sale_closes_at)
-      : startDate,
+    // Both dates live in settings now (migration 024) — the field writes to one
+    // table whichever it is showing.
+    date: cycle.sale_open ? toDateInput(settings.saleClosesAt) : startDate,
     minDate: "",
   };
 }
@@ -169,7 +174,7 @@ export const getFarmSettings = cache(
     const { data } = await supabase
       .from("settings")
       .select(
-        "sale_price, cleaning_price, default_cleaning, available_weights, pickup_times, raising_period_days, sale_starts_at",
+        "sale_price, cleaning_price, default_cleaning, available_weights, pickup_times, raising_period_days, sale_starts_at, sale_closes_at",
       )
       .eq("farm_id", farmId)
       .maybeSingle();
@@ -183,6 +188,7 @@ export const getFarmSettings = cache(
       pickupTimes: data.pickup_times,
       raisingPeriodDays: data.raising_period_days,
       saleStartsAt: data.sale_starts_at,
+      saleClosesAt: data.sale_closes_at,
     };
   },
 );

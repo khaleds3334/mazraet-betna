@@ -72,20 +72,22 @@ export async function getActiveSaleState(
 
   const { data: cycle } = await supabase
     .from("cycle")
-    .select("sale_open, sale_closes_at, start_date")
+    .select("sale_open, selling_started_at, start_date")
     .eq("farm_id", farmId)
     .eq("is_active", true)
     .maybeSingle();
 
   const { data: settings } = await supabase
     .from("settings")
-    .select("raising_period_days, sale_starts_at")
+    .select("raising_period_days, sale_starts_at, sale_closes_at")
     .eq("farm_id", farmId)
     .maybeSingle();
 
   if (cycle) {
     if (cycle.sale_open) {
-      return { saleOpen: true, targetDate: cycle.sale_closes_at };
+      // The forecast lives in settings now (migration 024) — one sale is open at
+      // a time, and it is the admin's to move.
+      return { saleOpen: true, targetDate: settings?.sale_closes_at ?? null };
     }
     const ready = expectedSaleDate(
       cycle.start_date,
@@ -359,7 +361,7 @@ export async function getActiveCycleDashboard(
   const { data: cycle } = await supabase
     .from("cycle")
     .select(
-      "id, name, chick_count, chick_price, start_date, start_time, sale_open, sale_closes_at, selling_started_at, is_active, ended_at, estimated_expenses",
+      "id, name, chick_count, chick_price, start_date, start_time, sale_open, selling_started_at, is_active, ended_at, estimated_expenses",
     )
     .eq("farm_id", farmId)
     .eq("is_active", true)
@@ -475,7 +477,7 @@ export async function listOrdersCycles(
   const { data } = await supabase
     .from("cycle")
     .select(
-      "id, seq, name, start_date, is_active, sale_open, sale_closes_at, selling_started_at, ended_at",
+      "id, seq, name, start_date, is_active, sale_open, selling_started_at, ended_at",
     )
     .eq("farm_id", farmId)
     .order("start_date", { ascending: false });
@@ -680,7 +682,7 @@ export async function listCycles(farmId: string): Promise<CycleListItem[]> {
   const { data: cycles } = await supabase
     .from("cycle")
     .select(
-      "id, seq, name, chick_count, chick_price, start_date, is_active, sale_open, sale_closes_at, selling_started_at, ended_at",
+      "id, seq, name, chick_count, chick_price, start_date, is_active, sale_open, selling_started_at, ended_at",
     )
     .eq("farm_id", farmId)
     .order("seq", { ascending: false });

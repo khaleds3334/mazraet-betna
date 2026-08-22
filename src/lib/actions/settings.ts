@@ -48,7 +48,7 @@ export async function setSaleOpen(open: boolean): Promise<ActionResult> {
 
   const { data: cycle } = await supabase
     .from("cycle")
-    .select("id, sale_open, sale_closes_at, selling_started_at")
+    .select("id, sale_open, selling_started_at")
     .eq("farm_id", farm.farmId)
     .eq("is_active", true)
     .maybeSingle();
@@ -64,11 +64,14 @@ export async function setSaleOpen(open: boolean): Promise<ActionResult> {
 
   const { error } = await supabase
     .from("cycle")
-    // Only the switch. Closing used to stamp a `sale_closes_at` on a cycle that
-    // had none, so the phase would survive being closed — `selling_started_at`
-    // carries that now (migration 023), and stamping a made-up end date on a
-    // sale being closed was a date nobody chose.
-    .update({ sale_open: open })
+    // The switch, and the record of when it moved. `selling_ended_at` is the
+    // moment this flock actually stopped taking orders (migration 024) — the
+    // forecast of when it would is in settings and is not touched here. Opening
+    // again clears it: selling did not end after all.
+    .update({
+      sale_open: open,
+      selling_ended_at: open ? null : new Date().toISOString(),
+    })
     .eq("id", cycle.id);
 
   if (error) {
@@ -91,10 +94,12 @@ export type SaveSettingsInput = {
    *
    * Which date this *is* depends on what the farm is doing, because the screen
    * only ever shows one: while a sale is open it is when that sale ends
-   * (`cycle.sale_closes_at`); otherwise it is when the next one starts
-   * (`settings.sale_starts_at`). `editingSaleEnd` says which, rather than
-   * letting this action re-derive it — the admin saves the field he was shown,
-   * even if the sale closed underneath him while he was typing.
+   * (`settings.sale_closes_at`); otherwise it is when the next one starts
+   * (`settings.sale_starts_at`). Both are forecasts and both live here since
+   * migration 024, so this writes one row either way. `editingSaleEnd` says
+   * which column, rather than letting this action re-derive it — the admin saves
+   * the field he was shown, even if the sale closed underneath him while he was
+   * typing.
    */
   saleDate: string;
   editingSaleEnd: boolean;
@@ -159,7 +164,7 @@ export async function saveSettings(
   if (!input.editingSaleEnd && date) {
     const { data: cycle } = await supabase
       .from("cycle")
-      .select("start_date, sale_open, sale_closes_at, selling_started_at")
+      .select("start_date, sale_open, selling_started_at")
       .eq("farm_id", farm.farmId)
       .eq("is_active", true)
       .maybeSingle();
@@ -185,26 +190,18 @@ export async function saveSettings(
       // Stored smallest-first so every screen offering them reads one order,
       // whatever order they were tapped in.
       available_weights: [...input.availableWeights].sort((a, b) => a - b),
-      ...(input.editingSaleEnd ? {} : { sale_starts_at: date }),
+      // One field on the screen, one table underneath (migration 024). Which of
+      // the two forecasts it is still rides along from the screen rather than
+      // being re-derived — he saves the field he was shown, even if the sale
+      // closed underneath him while he was typing.
+      ...(input.editingSaleEnd
+        ? { sale_closes_at: date }
+        : { sale_starts_at: date }),
       updated_at: new Date().toISOString(),
     })
     .eq("farm_id", farm.farmId);
 
   if (error) return { ok: false, error: "مقدرناش نحفظ الاعدادات، حاول تاني." };
-
-  // The end of an open sale lives on the cycle, not on the farm — it belongs to
-  // this flock, and the next one starts its own window.
-  if (input.editingSaleEnd && date) {
-    const { error: cycleError } = await supabase
-      .from("cycle")
-      .update({ sale_closes_at: date })
-      .eq("farm_id", farm.farmId)
-      .eq("is_active", true);
-
-    if (cycleError) {
-      return { ok: false, error: "الأسعار اتحفظت، بس تاريخ انتهاء البيع لأ. حاول تاني." };
-    }
-  }
 
   // The number lives on the farm, not in its settings — it is who the farm is,
   // not how it sells. Written after the settings row so a refused price never

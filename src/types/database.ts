@@ -86,7 +86,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string | null
-          sale_closes_at: string | null
+          selling_ended_at: string | null
           selling_started_at: string | null
           sale_open: boolean
           seq: number
@@ -103,7 +103,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string | null
-          sale_closes_at?: string | null
+          selling_ended_at?: string | null
           selling_started_at?: string | null
           sale_open?: boolean
           seq?: number
@@ -120,7 +120,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string | null
-          sale_closes_at?: string | null
+          selling_ended_at?: string | null
           selling_started_at?: string | null
           sale_open?: boolean
           seq?: number
@@ -617,6 +617,7 @@ export type Database = {
           pickup_times: string[]
           raising_period_days: number
           sale_price: number
+          sale_closes_at: string | null
           sale_starts_at: string | null
           updated_at: string
         }
@@ -629,6 +630,7 @@ export type Database = {
           pickup_times?: string[]
           raising_period_days?: number
           sale_price?: number
+          sale_closes_at?: string | null
           sale_starts_at?: string | null
           updated_at?: string
         }
@@ -641,6 +643,7 @@ export type Database = {
           pickup_times?: string[]
           raising_period_days?: number
           sale_price?: number
+          sale_closes_at?: string | null
           sale_starts_at?: string | null
           updated_at?: string
         }

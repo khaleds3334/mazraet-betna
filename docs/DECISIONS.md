@@ -1703,10 +1703,28 @@ nothing else. The old tests remain inside `isSellingPhase` as a fallback for row
 migration 023 has not reached, and can only ever say "selling" about a cycle that
 really is.
 
+**And the forecast moved out of the cycle entirely** (migration 024, same day).
+`sale_closes_at` was a prediction sitting among facts: dated five days out when
+the sale opens, moved freely from settings, and never a record of anything. It
+now lives in `settings` beside `sale_starts_at`, where the other forecast already
+was, and the cycle gained `selling_ended_at` — the moment this flock actually
+stopped taking orders, written by the manual close and by the auto-close alike.
+
+The split is by **kind**, not by owner:
+
+| | forecast, editable | fact, written once |
+|---|---|---|
+| next sale opens | `settings.sale_starts_at` | `cycle.selling_started_at` |
+| this sale closes | `settings.sale_closes_at` | `cycle.selling_ended_at` |
+
+That is what killed the real confusion: the one date field on A-70 was writing to
+**two different tables** depending on whether a sale was open, which is why an
+`editingSaleEnd` flag had to travel from the screen to the action to say which.
+It still says which *column*, but the second write — a whole update against
+`cycle` — is gone.
+
 **Why it matters beyond the bug:** any new screen that asks "is this cycle
-selling" must call `cyclePhase`, never read `sale_open` — and `sale_closes_at` is
-now what the admin already believed it was: a number for the countdown, deciding
-nothing.
+selling" must call `cyclePhase`, never read `sale_open`.
 **Date:** 2026-08-22
 
 ### D-58 — Booking is capped at the flock; the scale is not

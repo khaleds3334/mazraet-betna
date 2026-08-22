@@ -28,9 +28,9 @@
  * the admin moves freely from settings. A field he thinks of as a countdown must
  * not be able to walk a cycle back into التربية (Khaled, 2026-08-22).
  *
- * The two old tests stay as a fallback for rows migration 023 has not reached —
- * a cycle restored from an older dump, or an environment where it has not been
- * applied yet. They can only ever say "selling" about a cycle that really is.
+ * `sale_open` is still read alongside it, as a fallback for rows migration 023
+ * has not reached — a cycle restored from an older dump. It can only ever say
+ * "selling" about a cycle that really is.
  */
 
 export type CyclePhase = "raising" | "selling" | "ended";
@@ -41,7 +41,6 @@ export interface CyclePhaseInput {
   ended_at: string | null;
   selling_started_at: string | null;
   sale_open: boolean;
-  sale_closes_at: string | null;
 }
 
 /**
@@ -51,14 +50,9 @@ export interface CyclePhaseInput {
 export function isSellingPhase(cycle: {
   selling_started_at: string | null;
   sale_open: boolean;
-  sale_closes_at: string | null;
 }): boolean {
-  return (
-    Boolean(cycle.selling_started_at) ||
-    // Pre-023 fallback — see the note above.
-    cycle.sale_open ||
-    Boolean(cycle.sale_closes_at)
-  );
+  // `sale_open` is the pre-023 fallback — see the note above.
+  return Boolean(cycle.selling_started_at) || cycle.sale_open;
 }
 
 export function cyclePhase(cycle: CyclePhaseInput): CyclePhase {

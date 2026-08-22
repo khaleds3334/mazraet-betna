@@ -170,12 +170,13 @@ export async function createOrder(
   // miscount, or a cancelled order handing its own back.
   //
   // Byte for byte what a manual close writes (`setSaleOpen`): the switch, and
-  // nothing else. The phase is `selling_started_at`'s job (migration 023), so
-  // closing touches no date at all.
+  // the moment this flock stopped taking orders (migration 024). The phase is
+  // `selling_started_at`'s job and is not touched — the cycle is still selling,
+  // it has just run out of birds to sell.
   if (available - count <= 0) {
     await supabase
       .from("cycle")
-      .update({ sale_open: false })
+      .update({ sale_open: false, selling_ended_at: new Date().toISOString() })
       .eq("id", cycle.id);
   }
 
