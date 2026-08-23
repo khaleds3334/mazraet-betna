@@ -71,7 +71,7 @@ export default async function AdminCyclesPage() {
           // nothing under it to be divided from.
           <li
             key={cycle.cycleId}
-            className="border-b-2 border-primary last:border-b-0"
+            className="border-b-2 border-border last:border-b-0"
           >
             <CycleRow cycle={cycle} href={rowHref(cycle)}>
               {cycle.cycleId === running?.cycleId && dashboard && (

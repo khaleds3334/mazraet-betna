@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui";
 /** One placeholder cycle row: identity line, meta line, figures, debt line. */
 function CycleRowSkeleton() {
   return (
-    <div className="flex flex-col gap-2 border-b-2 border-primary bg-surface-page px-screen py-4">
+    <div className="flex flex-col gap-2 border-b-2 border-border bg-surface-page px-screen py-4">
       <div className="flex items-center justify-between">
         <Skeleton className="h-6 w-48" />
         <Skeleton className="h-6 w-12" />
