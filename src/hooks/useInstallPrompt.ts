@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 /**
  * The event Chrome fires instead of showing its own install bar. It is not in
@@ -26,6 +26,9 @@ export type InstallOffer =
   | { kind: "prompt"; install: () => Promise<void> }
   | { kind: "manual" }
   | null;
+
+/** Neither of the two facts below ever changes while the page is open. */
+const subscribeNever = () => () => {};
 
 /** Already running as an installed app — both spellings, iOS has its own. */
 function isStandalone(): boolean {
@@ -71,15 +74,20 @@ export function useInstallPrompt(app: "admin" | "customer"): {
   dismiss: () => void;
 } {
   const [event, setEvent] = useState<InstallEvent | null>(null);
-  const [manual, setManual] = useState(false);
-  const [dismissed, setDismissed] = useState(true); // assume hidden until checked
+  const [dismissed, setDismissed] = useState(false);
+  /** Set once the app installs itself while this page is open. */
+  const [installed, setInstalled] = useState(false);
+
+  // Both of these read the browser, so neither can be answered while rendering
+  // on the server. `useSyncExternalStore` is React's own way to say that: the
+  // server snapshot is the safe answer, the client's is the real one, and the
+  // switch between them happens as part of hydration rather than as a `setState`
+  // inside an effect — which cascades a second render and is what the
+  // `set-state-in-effect` rule is about.
+  const standalone = useSyncExternalStore(subscribeNever, isStandalone, () => true);
+  const manual = useSyncExternalStore(subscribeNever, isIosSafari, () => false);
 
   useEffect(() => {
-    if (isStandalone()) return;
-
-    setDismissed(false);
-    if (isIosSafari()) setManual(true);
-
     function onBeforeInstall(e: Event) {
       // Chrome shows its own bar unless this is called, and its bar is a strip
       // at the bottom of a browser these users do not read.
@@ -88,8 +96,7 @@ export function useInstallPrompt(app: "admin" | "customer"): {
     }
     function onInstalled() {
       setEvent(null);
-      setManual(false);
-      setDismissed(true);
+      setInstalled(true);
     }
 
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
@@ -112,13 +119,16 @@ export function useInstallPrompt(app: "admin" | "customer"): {
     setDismissed(true);
   }, [event]);
 
-  const offer: InstallOffer = dismissed
-    ? null
-    : event
-      ? { kind: "prompt", install }
-      : manual
-        ? { kind: "manual" }
-        : null;
+  // Nothing to offer on a phone that already has it, on the server's first pass,
+  // or once «لاحقا» has been tapped for this visit.
+  const offer: InstallOffer =
+    standalone || installed || dismissed
+      ? null
+      : event
+        ? { kind: "prompt", install }
+        : manual
+          ? { kind: "manual" }
+          : null;
 
   return { offer, dismiss };
 }

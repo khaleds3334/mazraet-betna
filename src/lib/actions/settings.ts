@@ -1,6 +1,5 @@
 "use server";
 
-import { addDays } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getCurrentFarm } from "@/lib/queries/admin";
@@ -8,7 +7,6 @@ import { getFarmSettings } from "@/lib/queries/settings";
 import { expectedSaleDate } from "@/lib/calculations/cycle";
 import { isSellingPhase } from "@/lib/cyclePhase";
 import { formatArabicDate } from "@/lib/format";
-import { SALE_WINDOW_DAYS } from "@/lib/constants";
 import { normalizePhone, phoneError } from "@/lib/phone";
 import { adminCredentials } from "@/lib/auth/session";
 import type { ActionResult } from "./cycles";

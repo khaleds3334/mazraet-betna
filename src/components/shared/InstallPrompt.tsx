@@ -86,16 +86,24 @@ export function InstallPrompt({
 
   // Held in a ref so the overlay registration below can call the current one
   // without re-registering the banner every render.
+  //
+  // Written in an effect rather than during render: a ref is not a render value,
+  // and assigning one on the way past makes the two passes of a Strict-mode or
+  // interrupted render disagree about what it holds. The effect runs after every
+  // render, which lands long before anything can call it — the only caller is a
+  // back gesture.
   const leave = useRef(() => {});
-  leave.current = () => {
-    if (leaving) return;
-    setLeaving(true);
-    timer.current = setTimeout(() => {
-      setShown(false);
-      setLeaving(false);
-      dismiss();
-    }, CRUMBLE_MS);
-  };
+  useEffect(() => {
+    leave.current = () => {
+      if (leaving) return;
+      setLeaving(true);
+      timer.current = setTimeout(() => {
+        setShown(false);
+        setLeaving(false);
+        dismiss();
+      }, CRUMBLE_MS);
+    };
+  });
 
   // The back gesture dismisses it like any other overlay (T-55).
   useEffect(() => {
