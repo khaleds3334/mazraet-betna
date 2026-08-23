@@ -97,12 +97,12 @@ export function SaleStatusCard({
           {targetDate && <p>{formatArabicDate(targetDate)}</p>}
         </div>
 
-        <div className="flex w-full items-center gap-4 font-bold">
+        <div className="flex w-full items-center justify-between gap-2 font-bold">
           {UNITS.map((unit) => (
             <div
               key={unit.key}
               className={cn(
-                "flex min-w-0 flex-1 basis-0 flex-col items-center justify-end rounded-md px-2 py-2 text-primary-foreground",
+                "flex min-w-0 flex-1 basis-0 flex-col items-center justify-end rounded-md px-3 pt-2 pb-3 text-heading gap-1",
                 saleOpen ? "bg-primary" : "bg-error-muted",
               )}
             >

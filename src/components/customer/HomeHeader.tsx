@@ -25,7 +25,7 @@ export function HomeHeader({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <header className="flex h-[99px] items-center justify-between px-screen pt-2">
+    <header className="flex h-[99px] items-center justify-between px-screen">
       <button
         type="button"
         onClick={() => setSidebarOpen(true)}
