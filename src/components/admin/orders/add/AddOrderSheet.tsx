@@ -6,14 +6,12 @@ import {
   BottomSheet,
   Button,
   CloseButton,
-  DashedAddButton,
-  Icon,
   InlineError,
   Stepper,
-  TextareaField,
   Toggle,
-  WeightBadge,
 } from "@/components/ui";
+import { OrderNote } from "@/components/shared/OrderNote";
+import { WeightChoice } from "@/components/shared/WeightChoice";
 import { createOrder, fetchOrder } from "@/lib/actions/orders";
 import type { CustomerOption } from "@/lib/queries/customers";
 import type { OrderListItem } from "@/lib/queries/orders";
@@ -25,13 +23,6 @@ import {
   OrderRecipient,
   type Recipient,
 } from "./OrderRecipient";
-
-/**
- * Long enough for a phone keyboard to finish sliding up and the viewport to
- * settle at its new height — scrolling before that measures a screen that is
- * about to change.
- */
-const KEYBOARD_SETTLE_MS = 350;
 
 /**
  * "انشاء طلب باسم عميل" (A-56) — a sheet that fills the screen, so it reads as a
@@ -53,17 +44,9 @@ const KEYBOARD_SETTLE_MS = 350;
  * The form is only cleared once the save lands. A failed save keeps every field,
  * because the alternative is retyping an order in front of a waiting customer.
  *
- * **The note is folded away behind «اضافة ملاحظة»** — the dashed control (Khaled,
- * 2026-08-21), the same one «اضافة فرخة اخري» uses on the weighing sheet. Most
- * orders have nothing to say, and a three-line box sitting open for all of them
- * pushed the buttons off a short screen. A disclosure button rather than a
- * checkbox: a checkbox records an answer, and this records nothing — it decides
- * whether a field is on screen.
- *
- * **Closing it clears what was typed**, on purpose. A note that is saved while
- * hidden is a note he cannot check before he taps, and this form already has one
- * of those in the notes' own example («فرختين لوحدهم»). Nothing this sheet sends
- * is ever off screen.
+ * **The note is folded away behind «اضافة ملاحظة»** — `shared/OrderNote`, the
+ * same disclosure the customer's order screen uses (Khaled, 2026-08-21 and
+ * 2026-08-23).
  */
 export function AddOrderSheet({
   open,
@@ -226,73 +209,14 @@ export function AddOrderSheet({
           />
         </div>
 
-        <div className="flex flex-col gap-3">
-          <p className="text-right text-base text-heading">
-            اختار الوزن المطلوب في حدود كام بالكجم؟
-          </p>
-          <div
-            role="radiogroup"
-            aria-label="الوزن المطلوب"
-            className="no-scrollbar flex items-center justify-between overflow-x-auto"
-          >
-            {weights.map((option) => (
-              <WeightBadge
-                key={option}
-                weight={option}
-                selected={weight === option}
-                onSelect={() => setWeight(option)}
-              />
-            ))}
-          </div>
-        </div>
+        <WeightChoice weights={weights} value={weight} onChange={setWeight} />
 
-        {noteOpen ? (
-          <div className="flex flex-col gap-2">
-            {/* Mounted only when open, so `autoFocus` lands on the tap that
-                opened it — no ref, no effect.
-
-                `scroll-mb-44` is what keeps it off the keyboard. The browser
-                scrolls a focused field just barely into view, and "in view" here
-                includes the strip the confirm buttons are pinned over — so the
-                note landed underneath them. `scroll-margin-bottom` is the browser's
-                own way of being told to leave room, and it applies to the scroll
-                the browser does by itself; the `onFocus` nudge is for the second
-                one, after the keyboard has finished opening and the viewport has
-                changed size under it (Khaled, 2026-08-21). */}
-            <TextareaField
-              id="order-notes"
-              label="اي ملاحظات"
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="مثلا: عاوز فرختين لوحدهم و ٣ لوحدهم..."
-              autoFocus
-              className="scroll-mb-44"
-              onFocus={(event) => {
-                const field = event.currentTarget;
-                window.setTimeout(
-                  () => field.scrollIntoView({ block: "center" }),
-                  KEYBOARD_SETTLE_MS,
-                );
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setNoteOpen(false);
-                setNotes("");
-              }}
-              className="flex min-h-11 items-center gap-1 self-end px-1 text-sm text-muted"
-            >
-              <Icon name="close" size={16} aria-hidden />
-              شيل الملاحظة
-            </button>
-          </div>
-        ) : (
-          <DashedAddButton
-            label="اضافة ملاحظة"
-            onClick={() => setNoteOpen(true)}
-          />
-        )}
+        <OrderNote
+          open={noteOpen}
+          onOpenChange={setNoteOpen}
+          value={notes}
+          onChange={setNotes}
+        />
 
         {/* Said before he fills the form in, not after he taps save — the birds
             are weeks from ready and there is nothing to book (FR-11). */}

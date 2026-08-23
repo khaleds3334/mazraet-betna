@@ -7,6 +7,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { expectedSaleDate } from "@/lib/calculations/cycle";
 import { isSellingPhase } from "@/lib/cyclePhase";
+import { parsePickupSlots, type PickupSlot } from "@/lib/pickupSlots";
 import { RAISING_PERIOD_DAYS } from "@/lib/constants";
 
 export interface FarmSettings {
@@ -18,8 +19,8 @@ export interface FarmSettings {
   defaultCleaning: boolean;
   /** The approximate weights a customer may choose from (kg). */
   availableWeights: number[];
-  /** Pickup slots, stored as `HH:mm`. */
-  pickupTimes: string[];
+  /** The pickup slots a customer may choose from, in order (C-24). */
+  pickupSlots: PickupSlot[];
   /** Days a cycle is raised before it may be sold. */
   raisingPeriodDays: number;
   /**
@@ -37,13 +38,17 @@ export interface FarmSettings {
   saleClosesAt: string | null;
 }
 
-/** Sensible values when a farm has no settings row yet — the UI never shows NaN. */
+/**
+ * What a farm looks like before its settings row is written. Reached only when
+ * there genuinely is no row — never when the read itself failed, which is a
+ * different thing and throws (see `getFarmSettings`).
+ */
 const FALLBACK: FarmSettings = {
   salePrice: 0,
   cleaningPrice: 0,
   defaultCleaning: true,
   availableWeights: [],
-  pickupTimes: [],
+  pickupSlots: [],
   raisingPeriodDays: RAISING_PERIOD_DAYS,
   saleStartsAt: null,
   saleClosesAt: null,
@@ -184,13 +189,33 @@ export async function getSaleControlState(
 export const getFarmSettings = cache(
   async (farmId: string): Promise<FarmSettings> => {
     const supabase = await createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("settings")
       .select(
-        "sale_price, cleaning_price, default_cleaning, available_weights, pickup_times, raising_period_days, sale_starts_at, sale_closes_at",
+        "sale_price, cleaning_price, default_cleaning, available_weights, pickup_slots, raising_period_days, sale_starts_at, sale_closes_at",
       )
       .eq("farm_id", farmId)
       .maybeSingle();
+
+    // **A failed read is not a farm that prices at zero.** This used to fall
+    // through to FALLBACK along with every other empty answer, and the day the
+    // two parted company it cost real money: migration 027 dropped
+    // `pickup_times` while a build that still selected it was live, so every
+    // read errored and A-70 came up «٠ جنيه» for the kilo, «٠ جنيه» for
+    // cleaning, and no weights at all — with no error anywhere on the screen.
+    // The admin saved over his own prices trying to fix it (Khaled, 2026-08-23).
+    //
+    // Throwing sends the screen to `error.tsx`, which says something is wrong
+    // and offers to retry. That is worse than working and far better than a
+    // price of zero that looks exactly like a price he set. A silent wrong
+    // number has no error, no empty state, and no way to notice (T-58).
+    if (error) {
+      console.error("getFarmSettings failed", { farmId, error });
+      throw new Error(`Could not read settings for farm ${farmId}`);
+    }
+
+    // No row is a different thing, and a real one: a farm created before its
+    // settings were written. Zeros are honest there — nothing has been priced.
     if (!data) return FALLBACK;
 
     return {
@@ -198,7 +223,7 @@ export const getFarmSettings = cache(
       cleaningPrice: Number(data.cleaning_price),
       defaultCleaning: data.default_cleaning,
       availableWeights: data.available_weights.map(Number),
-      pickupTimes: data.pickup_times,
+      pickupSlots: parsePickupSlots(data.pickup_slots),
       raisingPeriodDays: data.raising_period_days,
       saleStartsAt: data.sale_starts_at,
       saleClosesAt: data.sale_closes_at,

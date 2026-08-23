@@ -617,7 +617,7 @@ export type Database = {
           default_cleaning: boolean
           farm_id: string
           id: string
-          pickup_times: string[]
+          pickup_slots: Json
           raising_period_days: number
           sale_price: number
           sale_closes_at: string | null
@@ -630,7 +630,7 @@ export type Database = {
           default_cleaning?: boolean
           farm_id: string
           id?: string
-          pickup_times?: string[]
+          pickup_slots?: Json
           raising_period_days?: number
           sale_price?: number
           sale_closes_at?: string | null
@@ -643,7 +643,7 @@ export type Database = {
           default_cleaning?: boolean
           farm_id?: string
           id?: string
-          pickup_times?: string[]
+          pickup_slots?: Json
           raising_period_days?: number
           sale_price?: number
           sale_closes_at?: string | null
@@ -665,6 +665,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      available_chickens: {
+        Args: { _farm_id: string }
+        Returns: number | null
+      }
       create_farm: {
         Args: { _name: string; _owner_phone: string; _pin: string }
         Returns: string | null

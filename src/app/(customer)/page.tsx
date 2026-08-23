@@ -31,7 +31,7 @@ export default async function CustomerHomePage() {
   const saleOpen = sale?.saleOpen ?? false;
 
   return (
-    <div className="flex flex-1 flex-col gap-6">
+    <div className="flex flex-1 flex-col gap-4">
       <HomeHeader
         unreadCount={unreadCount}
         customerName={customer.name}
@@ -49,7 +49,7 @@ export default async function CustomerHomePage() {
           targetDate={sale?.targetDate ?? null}
         />
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5">
           {saleOpen ? (
             <Link href="/order" replace className={PRIMARY_ACTION}>
               اطلب فراخ طازجة دلوقتي

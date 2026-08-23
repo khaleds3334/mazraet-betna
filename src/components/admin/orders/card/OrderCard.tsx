@@ -29,11 +29,16 @@ function Stat({ label, value }: { label: string; value: string }) {
  * When the customer is coming to collect. Orders the admin books himself carry no
  * pickup slot — A-56 doesn't ask for one — so they read "مش محدد" (Khaled,
  * 2026-08-18) rather than an empty gap.
+ *
+ * The slot shows the words the customer actually picked («بعد صلاة العصر»), not
+ * the clock value behind them, so both sides of the farm say the same thing about
+ * the same appointment (migration 027). The query resolves the name; an order
+ * older than the slots falls back to its clock there.
  */
-function pickupLabel(date: string | null, time: string | null): string {
+function pickupLabel(date: string | null, slot: string | null): string {
   if (!date) return "مش محدد";
   const day = formatArabicDate(date, "EEEE d MMMM");
-  return time ? `${day} — ${formatArabicTime(time)}` : day;
+  return slot ? `${day} — ${slot}` : day;
 }
 
 /**
@@ -157,7 +162,7 @@ export function OrderCard({
               />
               <Stat
                 label="ميعاد تجهيز الفراخ"
-                value={pickupLabel(order.pickupDate, order.pickupTime)}
+                value={pickupLabel(order.pickupDate, order.pickupTimeLabel)}
               />
             </div>
           )}

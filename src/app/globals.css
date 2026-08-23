@@ -80,6 +80,14 @@
 
   /* ── Shadows ──────────────────────────────────────────────────────── */
   --shadow-card: 0 2px 6px 0 #3f624626; /* "drop shadow" */
+  /* The faint lift under a warm status card — «حالة البيع للمزرعة» in settings,
+     «الذبح و التنظيف؟» on the order screen. Softer than `--shadow-card`: these
+     sit inside a section rather than floating over one. */
+  --shadow-soft: 0 0 3px 0 #3f624614;
+  /* A panel that drops out of a field — the day strip and the pickup-time list
+     on the order screen. Thrown down and to the inline start, so the field it
+     came from still reads as the thing above it. */
+  --shadow-panel: -8px 8px 16px 4px #3f62461a;
   --shadow-field: inset 0 2px 2px -1px #4a4a681a; /* "Field/Inset" */
   /* The round knob of a `Toggle`: a soft drop plus a hairline under its edge. */
   --shadow-toggle-knob: 0 5.5px 5px -3px #0e0e2c33, inset 0 -1px 0 0 #0e0e2c66;
@@ -188,6 +196,55 @@ select,
 
 @utility px-screen {
   padding-inline: var(--screen-pad);
+}
+
+/*
+  A row that runs edge to edge while the page around it keeps its gutter: pull
+  out by the screen padding, then give it straight back as padding, so the row
+  can scroll to the very edge of the phone but its first item still starts on
+  the page's own margin.
+
+  This replaces `-mx-screen px-screen`, which read correctly and did nothing:
+  there is no `mx-screen` utility, so the negative margin was never generated
+  and the row simply sat inside a second gutter (Khaled, 2026-08-23).
+
+  `--bleed-trim` is subtracted from the padding for rows whose items carry empty
+  space inside themselves — a `WeightBadge` is a 70px box around a glyph that
+  only fills 54 of it, so without the trim the badges' ink starts 8px further in
+  than the heading above them. Set it on the element; it defaults to nothing.
+*/
+@utility bleed-screen {
+  margin-inline: calc(var(--screen-pad) * -1);
+  padding-inline: calc(var(--screen-pad) - var(--bleed-trim, 0px));
+}
+
+/* The same pull-out with no padding given back — for a panel that is meant to
+   run the full width of the phone and carries its own inner spacing. */
+@utility bleed-screen-flush {
+  margin-inline: calc(var(--screen-pad) * -1);
+}
+
+/*
+  The lime scrollbar the pickup-time list is drawn with (Figma 3155:4717): a 6px
+  rail in `--color-primary`. Styling `::-webkit-scrollbar` also opts the element
+  out of Chrome's overlay scrollbars, so the rail is on screen before the list is
+  touched — which is the whole reason the design draws one. Without it the last
+  slot sits below the fold with nothing saying so.
+*/
+@utility lime-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-primary);
+    border-radius: 3px;
+  }
 }
 
 /*

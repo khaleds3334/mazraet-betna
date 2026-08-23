@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BottomSheet, Chip, CloseButton, InlineError, Skeleton } from "@/components/ui";
+import {
+  BottomSheet,
+  Chip,
+  CloseButton,
+  InlineError,
+  Skeleton,
+} from "@/components/ui";
 import { ContactLinks } from "@/components/shared/ContactLinks";
 import { OrderCard } from "@/components/admin/orders/card/OrderCard";
 import { fetchCustomerOrders } from "@/lib/actions/customers";
@@ -26,7 +32,8 @@ type FilterKey = (typeof FILTERS)[number]["key"];
  */
 function debtFor(filter: FilterKey, customer: CustomerSummary): number {
   if (filter === "current") return customer.inCycle.debt;
-  if (filter === "past") return Math.max(0, customer.debt - customer.inCycle.debt);
+  if (filter === "past")
+    return Math.max(0, customer.debt - customer.inCycle.debt);
   return customer.debt;
 }
 

@@ -2060,3 +2060,104 @@ past RLS **deliberately and in a named function**, and only where all three hold
 A silent wrong number is the worse failure. It has no error, no empty state, and
 no way to notice — it just quietly disagrees with the other half of the app.
 **Date:** 2026-08-22
+
+### D-65 — A pickup slot is a name *and* a clock value
+`settings.pickup_slots` is `jsonb`: `[{"time":"16:30","label":"بعد صلاة العصر"}, …]`
+(migration 027, replacing the `pickup_times text[]` of four clock values). The
+**label** is the only half either app ever renders — the customer picks it on
+C-24, and the admin's order card shows the same words back. The **time** is never
+shown; it exists so the slots can be ordered and so the app can tell that one has
+already gone by.
+**Why both:** the design offers «قبل صلاة الظهر», not «١٢:٠٠» — that is how these
+customers name a time of day, and an elderly one should not have to convert. But
+names cannot be compared, and Khaled's requirement was precisely a comparison:
+someone ordering at five in the afternoon must not be offered this morning's slot
+(Khaled, 2026-08-23). Storing only names loses that; storing only clock values
+loses the reading.
+**The six slots** come from the design (node 3155:4717): في التاسعة صباحا · قبل
+صلاة الظهر · بعد صلاة الظهر · قبل العصر · بعد صلاة العصر · قبل المغرب.
+**⚠️ The clock anchors are estimates** (09:00 · 11:00 · 13:30 · 15:00 · 16:30 ·
+17:30). Prayer times move through the year; these are pegs for ordering and for
+"has it passed", not a claim about when Dhuhr is. **Review them.**
+**A slot has no settings UI yet** — A-70 does not edit the list. Deferred.
+**Date:** 2026-08-23
+
+### D-66 — The tray's eleven states are preloaded, not swapped
+The counter's tray illustration (C-20) has eleven images — an empty tray through
+ten birds, with ten also standing for "more than ten" (Khaled's Figma set
+1535:7044 uses one file for variants 10 and 11). All eleven render at once,
+stacked, and only `opacity` changes as the count moves.
+**Why:** swapping one `src` for another makes every tap a fetch the first time
+and a decode every time. On the mid-range Android these customers carry that is a
+visible blink, on the one control the screen is built around. Rendered together
+they load once when the screen opens, and counting up is then a CSS property
+change with nothing to load.
+**Cost:** ~١٤٠ ك.ب for the set — eleven WebP files of about ١٣ ك.ب each, exported
+at 408×324 (the design's 136×108 at 3×). All eleven are exported at exactly the
+same size so they stack to the pixel and nothing shifts as the count moves.
+A sprite sheet was considered and rejected: one request instead of eleven small
+ones on HTTP/2 is not worth losing the ability to re-export a single tray.
+**Date:** 2026-08-23
+
+### T-59 — `available_chickens()` — the customer's count, taken with definer rights
+A `SECURITY DEFINER` function in `public`, granted to `authenticated`, returning
+the birds still free to sell on a farm's active cycle (migration 027). The
+customer's order form caps its counter with it.
+**Why:** counting through the customer's own session returns the whole flock —
+RLS hides other customers' order lines and every mortality row, so the
+subtractions all come out at zero. This is **T-58 arriving from the third side**,
+and it meets that decision's three conditions exactly: the answer is an aggregate
+and never rows; it concerns the farm the session already resolved to; and the
+customer is being shown that number anyway. It refuses outright for a farm the
+caller is neither the admin nor a customer of, so the definer rights buy one
+number and no more.
+**Date:** 2026-08-23
+
+### T-60 — T-09 is about the admin; the customer's order errors use the toast
+Rule 11 / T-09 says a failure in a critical action renders a persistent inline
+error, never a toast. **The customer's order screen is an explicit exception**
+(Khaled, 2026-08-24): validation and save failures on C-20 go through
+`toast.error`.
+**Why the rule doesn't reach here:** T-09's reasoning is about the *admin* — he
+works standing over a scale with his hands busy and may not be looking at the
+phone when a message flashes, so a payment that failed must stay on screen. The
+customer is holding the phone and looking at it.
+**And the inline error failed worse.** On a form this long it rendered at the
+foot of the page — below the fold and behind the fixed confirm bar — so it was
+not merely missable, it was never seen. A message that fades is worse than one
+that stays; a message that never appears is worse than either.
+**What stays inline:** the two *standing states* — «الفراخ خلصت» and the sale
+being closed. Those are not the result of a tap; they sit next to the button they
+are explaining, before anything is filled in.
+**Unchanged:** every admin screen. Weighing, payment, cancelling an order and
+ending a cycle keep their inline errors, for the reason T-09 gives.
+**Date:** 2026-08-24
+
+### T-61 — Time is read on the farm's clock, never the server's
+`lib/pickupSlots.ts` resolves "what day is it" and "has this slot passed" through
+`Intl.DateTimeFormat` on **`Africa/Cairo`** (`farmToday`, `farmClock`), not
+`new Date()`'s local values.
+**Why:** half of these calls run in a Server Component or a Server Action, on a
+machine set to UTC — two hours behind the village, three in summer. Left alone
+the app would have offered a 17:30 pickup at 19:00, and between midnight and 3am
+the day strip would have opened on a date that had already gone. `Intl` also
+knows when the offset changes, so there is no DST table to maintain.
+**Reach:** the day strip's range, the form's opening default, and `placeOrder`'s
+own re-check all read the same clock, so the screen and the action can never
+disagree about what day it is.
+**Date:** 2026-08-24
+
+### T-62 — `bleed-screen`, and the dead class it replaced
+A row that runs to the edge of the phone while the page keeps its gutter uses the
+`bleed-screen` utility (`globals.css`). `--bleed-trim` subtracts from its padding
+for rows whose items carry empty space inside them — a `WeightBadge` is a 70px
+box around a 54px glyph, so without an 8px trim the badges' ink starts further in
+than the heading above them.
+**Why it exists:** the pattern was written as `-mx-screen px-screen`, and **there
+is no `mx-screen` utility** — only `px-screen`. The negative margin was never
+generated, so two rows (the weights row in settings, and the day strip) had been
+sitting inside a second gutter with nothing to show for the class (Khaled,
+2026-08-23). It read correctly and did nothing, which is the worst kind of wrong.
+**Lesson:** a Tailwind class that does not exist fails silently. Custom utilities
+only generate the names they declare — negatives are not free.
+**Date:** 2026-08-23

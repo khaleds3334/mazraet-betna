@@ -7,6 +7,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { orderRemaining } from "@/lib/calculations/invoice";
 import { formatOrderNumber } from "@/lib/format";
+import { getFarmSettings } from "@/lib/queries/settings";
+import { pickupSlotLabel, type PickupSlot } from "@/lib/pickupSlots";
 import {
   ADMIN_ORDER_TABS,
   type AdminOrderTabKey,
@@ -145,6 +147,13 @@ export interface OrderListItem {
   onBehalfOf: string | null;
   pickupDate: string | null;
   pickupTime: string | null;
+  /**
+   * The pickup slot in the words the customer chose it by — «بعد صلاة العصر»,
+   * not «٤:٣٠ م» (migration 027). Resolved on read rather than stored, so
+   * renaming a slot in settings renames it on every order at once. Falls back to
+   * the clock for orders taken before the slots existed.
+   */
+  pickupTimeLabel: string | null;
   /** How many birds — one line per bird (D-13). */
   chickenCount: number;
   /** The asked-for weight, or null when the lines don't all share one. */
@@ -234,7 +243,11 @@ interface OrderRow {
  * the orders screen knows it once for the whole list, a customer's history has a
  * different one per order.
  */
-function toOrderListItem(order: OrderRow, cycleSeq: number): OrderListItem {
+function toOrderListItem(
+  order: OrderRow,
+  cycleSeq: number,
+  slots: PickupSlot[],
+): OrderListItem {
   const lines = order.order_line ?? [];
   // The card shows one "الوزن المطلوب". An order booked from A-56 always has a
   // single weight; a customer order may mix them, and then there is no single
@@ -253,6 +266,7 @@ function toOrderListItem(order: OrderRow, cycleSeq: number): OrderListItem {
     onBehalfOf: order.on_behalf_of,
     pickupDate: order.pickup_date,
     pickupTime: order.pickup_time,
+    pickupTimeLabel: pickupSlotLabel(slots, order.pickup_time),
     chickenCount: lines.length,
     approxWeight: weights.size === 1 ? (lines[0].approx_weight ?? null) : null,
     cancelReason: order.cancel_reason,
@@ -296,7 +310,8 @@ export async function getOrder(
     .eq("id", orderId)
     .maybeSingle();
 
-  return data ? toOrderListItem(data, data.cycle?.seq ?? 0) : null;
+  const { pickupSlots } = await getFarmSettings(farmId);
+  return data ? toOrderListItem(data, data.cycle?.seq ?? 0, pickupSlots) : null;
 }
 
 /**
@@ -315,7 +330,10 @@ export async function listCycleOrders(
     .eq("cycle_id", cycle.cycleId)
     .order("created_at", { ascending: false });
 
-  return (data ?? []).map((order) => toOrderListItem(order, cycle.seq));
+  const { pickupSlots } = await getFarmSettings(farmId);
+  return (data ?? []).map((order) =>
+    toOrderListItem(order, cycle.seq, pickupSlots),
+  );
 }
 
 /** An order in a customer's history, tagged with the cycle it belongs to. */
@@ -346,8 +364,9 @@ export async function listCustomerOrders(
     .eq("customer_id", customerId)
     .order("created_at", { ascending: false });
 
+  const { pickupSlots } = await getFarmSettings(farmId);
   return (data ?? []).map((order) => ({
-    ...toOrderListItem(order, order.cycle?.seq ?? 0),
+    ...toOrderListItem(order, order.cycle?.seq ?? 0, pickupSlots),
     inCurrentCycle: order.cycle_id === currentCycleId,
   }));
 }
