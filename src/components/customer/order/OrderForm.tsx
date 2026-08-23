@@ -185,7 +185,7 @@ export function OrderForm({ data }: { data: OrderFormData }) {
       {/* Room for the confirm bar, kept whether or not it is on screen — a
           padding that came and went with it would shift the whole form under a
           reading thumb. */}
-      <div aria-hidden className="h-46 shrink-0" />
+      <div aria-hidden className="h-48 shrink-0" />
 
       <ConfirmBar
         count={count}
