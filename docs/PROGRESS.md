@@ -2224,7 +2224,7 @@ _(فاضي)_
 f812c38  fix(customer): the invoice shows المدفوع/المتبقي only once money has moved
 466db97  fix(customer): the cleaning pill names the stage instead of narrating it
 10dc599  fix(customer): the order card's padding follows the phone, like the gutter
-<آخر>   fix: the auth screens use the shared gutter, not a raw 24
+01b11cd  fix: the auth screens use the shared gutter, not a raw 24
 ```
 
 ## قرارات اتسجّلت
