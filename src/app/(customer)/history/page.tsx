@@ -24,7 +24,7 @@ export default async function HistoryPage() {
   ]);
 
   return (
-    <div className="-mb-nav flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col">
       <PageHeader
         title="طلباتك السابقة"
         backHref="/"

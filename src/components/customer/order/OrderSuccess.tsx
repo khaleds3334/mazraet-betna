@@ -43,29 +43,37 @@ export function OrderSuccess({ orderId }: { orderId: string }) {
         className="px-screen pt-4"
       />
 
-      {/* Centred in whatever is left between the header and the button, which is
-          how the design places it — not at a fixed distance from either. */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-[26px] px-screen text-center">
-        <Image
-          src="/images/order-success.webp"
-          alt="الفلاح بيجهز الفراخ"
-          width={506}
-          height={476}
-          priority
-          className="h-auto w-[73%] max-w-[253px]"
-        />
+      {/* One block, centred in everything left under the header — the same shape
+          and the same rhythm as the empty-orders block (`EmptyOrders`): 24px
+          from the picture down to the words, 10px between the line and the
+          paragraph it belongs to, 40px before the button.
 
-        <h2 className="text-h4 font-bold text-primary-foreground">
-          بنجهزلك احسن فرخة
-        </h2>
+          The button used to be pinned to the bottom edge with the rest centred
+          above it, which read as two screens stuck together and left the middle
+          drifting with the height of the phone (Khaled, 2026-08-24). */}
+      <div className="my-auto flex flex-col items-center gap-10 px-screen text-center">
+        <div className="flex w-full flex-col items-center gap-6">
+          <Image
+            src="/images/order-success.webp"
+            alt="الفلاح بيجهز الفراخ"
+            width={506}
+            height={476}
+            priority
+            className="h-auto w-[73%] max-w-[253px]"
+          />
 
-        <p className="text-base text-muted">
-          استلمنا طلبك و ها يتم وزن الفراخ المطلوبة و ارسال الفاتورة للاطلاع علي
-          السعر و تأكيد عملية الذبح في المعاد المحدد
-        </p>
-      </div>
+          <div className="flex w-full flex-col gap-2.5">
+            <h2 className="text-h4 font-bold text-primary-foreground">
+              بنجهزلك احسن فرخة
+            </h2>
 
-      <div className="px-screen pb-20">
+            <p className="text-base text-muted">
+              استلمنا طلبك و ها يتم وزن الفراخ المطلوبة و ارسال الفاتورة للاطلاع
+              علي السعر و تأكيد عملية الذبح في المعاد المحدد
+            </p>
+          </div>
+        </div>
+
         <Link
           href={`/tracking/${orderId}`}
           replace
