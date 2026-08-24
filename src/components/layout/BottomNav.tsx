@@ -18,8 +18,14 @@ import { cn, isActivePath } from "@/lib/utils";
  */
 type NavIconName = "home" | "order" | "track";
 
-/** Customer screens that hide the bar entirely — see the note in the component. */
+/**
+ * Customer screens walked into rather than tabbed to: a back button at the top
+ * and no bar at all. `/tracking` itself keeps its bar — only one order's page
+ * below it drops it, which is why that one is matched as a sub-route and not
+ * through `isActivePath`.
+ */
 const SCREENS_WITHOUT_NAV = ["/history"];
+const ORDER_DETAIL = /^\/tracking\/[^/]+$/;
 
 interface NavEntry {
   href: string;
@@ -35,7 +41,10 @@ export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
   // «الطلبات السابقة» is walked into, not tabbed to: it has a back button and
   // no bar at all (C-50). The page gives back the room <main> reserves for the
   // bar with `-mb-nav`, so the two have to agree on this list.
-  if (SCREENS_WITHOUT_NAV.some((href) => isActivePath(pathname, href))) {
+  if (
+    SCREENS_WITHOUT_NAV.some((href) => isActivePath(pathname, href)) ||
+    ORDER_DETAIL.test(pathname)
+  ) {
     return null;
   }
 
