@@ -105,6 +105,11 @@
      this value is the FLOOR of the spacing, not the whole of it. */
   --spacing-section: clamp(0.75rem, 3.4svh, 2rem);
 
+  /* Clearance under a page whose «تواصل معنا» pill floats with no bar beneath
+     it: the 46px pill, the 32px it rests above the safe area, and a little air.
+     Used by the order-details screen. */
+  --spacing-contact: 94px;
+
   /* Room kept under the page content for the floating «تواصل معنا» pill: the
      pill is 46px and sits 16px above the nav, so 62px is the real floor. Fluid
      for the same reason as above — a short phone gives back the slack that a

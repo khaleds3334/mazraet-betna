@@ -60,6 +60,7 @@ export function OrderSteps({
     <ol className="flex flex-col">
       {ORDER_STEPS.map((step, index) => {
         const active = index === activeStep;
+        const first = index === 0;
         const last = index === ORDER_STEPS.length - 1;
 
         return (
@@ -67,7 +68,19 @@ export function OrderSteps({
           // the design puts the circles — so the icon column is written first,
           // and inside the header the title before the badge.
           <li key={step.title} className="flex gap-4">
+            {/* The circle sits halfway down its own section: a line segment
+                above and below it, each taking whatever is left, so the two
+                balance whatever the text does. The first stage has nothing
+                above it and the last nothing below, and neither has to know
+                it — the segment is simply left out. */}
             <div className="flex shrink-0 flex-col items-center">
+              <div
+                className={cn(
+                  "w-px flex-1 border-l border-control-border",
+                  first && "invisible",
+                )}
+              />
+
               <div
                 className={cn(
                   "flex size-16 items-center justify-center rounded-full border",
@@ -79,12 +92,17 @@ export function OrderSteps({
                 <Icon name={step.icon} size={36} />
               </div>
 
-              {!last && (
-                <div className="w-px flex-1 self-center border-l border-control-border" />
-              )}
+              <div
+                className={cn(
+                  "w-px flex-1 border-l border-control-border",
+                  last && "invisible",
+                )}
+              />
             </div>
 
-            <div className="flex flex-1 flex-col gap-2 pb-8 pt-1 text-right">
+            {/* 14px top and bottom, so consecutive stages sit 28px apart while
+                the connector still runs unbroken between the circles. */}
+            <div className="flex flex-1 flex-col gap-1 py-3.5 text-right">
               <div className="flex items-center justify-between gap-3">
                 <h2
                   className={cn(

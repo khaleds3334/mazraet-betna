@@ -43,14 +43,17 @@ export default async function OrderTrackingPage({
   const placedAt = new Date(order.createdAt);
 
   return (
-    <div className="-mb-nav flex flex-1 flex-col gap-8 pb-6">
-      <PageHeader
-        title="تفاصيل الطلب"
-        backHref="/tracking"
-        className="px-screen pt-4"
-      />
+    <div className="-mb-nav flex flex-1 flex-col gap-8 pb-contact">
+      {/* Which order you are looking at stays on screen while the stages
+          scroll under it. Its own `bg-background` — without one the content
+          would show through as it passes underneath. */}
+      <div className="sticky top-0 z-20 flex flex-col gap-6 bg-background pb-2">
+        <PageHeader
+          title="تفاصيل الطلب"
+          backHref="/tracking"
+          className="px-screen pt-4"
+        />
 
-      <div className="flex flex-col gap-6 px-screen">
         <div className="flex flex-col gap-1 text-center">
           <p className="text-sm text-accent-tan">طلب رقم {order.number}#</p>
           <p className="text-xs text-timestamp">
@@ -60,7 +63,9 @@ export default async function OrderTrackingPage({
             )}
           </p>
         </div>
+      </div>
 
+      <div className="flex flex-col gap-6 px-screen">
         <dl className="flex flex-col gap-[7px] text-foreground">
           {[
             {
@@ -81,7 +86,7 @@ export default async function OrderTrackingPage({
           ].map((row) => (
             <div key={row.label} className="flex items-center justify-between">
               <dt className="text-base font-bold">{row.label}</dt>
-              <dd className="text-sm">{row.value}</dd>
+              <dd className="text-base font-bold">{row.value}</dd>
             </div>
           ))}
         </dl>
@@ -94,10 +99,15 @@ export default async function OrderTrackingPage({
         />
       </div>
 
-      {/* `justify-end` is the inline end, which in RTL is the left — where the
-          design parks it, same as on the home screen. */}
-      <div className="flex justify-end px-screen">
-        <ContactButton />
+      {/* Floats rather than scrolling away, like the pill on home. Full-width
+          strip so it centres on the app column, `justify-end` to park it at the
+          inline end (the left in RTL), and taps pass through everywhere but the
+          pill itself. */}
+      <div
+        className="pointer-events-none fixed inset-x-0 z-30 mx-auto flex max-w-[430px] justify-end px-screen"
+        style={{ bottom: "calc(2rem + env(safe-area-inset-bottom))" }}
+      >
+        <ContactButton className="pointer-events-auto" />
       </div>
     </div>
   );
