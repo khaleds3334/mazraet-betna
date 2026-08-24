@@ -59,7 +59,7 @@ export default async function TrackingPage() {
   return (
     <div
       className={cn(
-        "flex flex-1 flex-col gap-4 px-screen pb-nav-extra",
+        "flex flex-1 flex-col gap-4 px-screen pb-24",
         // Only the list starts below the top of the screen. A single order is
         // centred, and top padding would push the whole centring region down
         // with it — it measured 56px low before this was conditional.
