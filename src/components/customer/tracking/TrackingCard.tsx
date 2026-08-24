@@ -17,6 +17,8 @@ interface Row {
   value: string;
   /** Counts and money are set in the label's own bold; measurements are not. */
   strong?: boolean;
+  /** The weight breakdown only — it is a sentence, not a figure. */
+  small?: boolean;
 }
 
 /**
@@ -48,13 +50,20 @@ export function TrackingCard({ order }: { order: OrderListItem }) {
   );
 
   const count = pluralizeChicken(order.chickenCount);
+  const onScale = order.weighing.lines.filter(
+    (line) => line.actualWeight != null,
+  ).length;
+  const weighedBirds = {
+    count: onScale,
+    average: onScale > 0 ? invoice.totalWeight / onScale : 0,
+  };
   const { rows, hint, hintCentred } = READING[
     order.status === "pending"
       ? "pending"
       : order.status === "weighed"
         ? "weighed"
         : "ready"
-  ]({ order, invoice, count });
+  ]({ order, invoice, count, weighedBirds });
 
   return (
     <Link
@@ -90,7 +99,15 @@ export function TrackingCard({ order }: { order: OrderListItem }) {
         {rows.map((row) => (
           <div key={row.label} className="flex items-center justify-between">
             <dt className="text-base font-bold">{row.label}</dt>
-            <dd className={row.strong ? "text-base font-bold" : "text-sm"}>
+            <dd
+              className={
+                row.strong
+                  ? "text-base font-bold"
+                  : row.small
+                    ? "text-xs"
+                    : "text-sm"
+              }
+            >
               {row.value}
             </dd>
           </div>
@@ -124,6 +141,8 @@ type ReadingInput = {
   order: OrderListItem;
   invoice: ReturnType<typeof computeInvoice>;
   count: string;
+  /** How many birds actually made it onto the scale, and what they averaged. */
+  weighedBirds: { count: number; average: number };
 };
 
 const READING: Record<
@@ -145,10 +164,17 @@ const READING: Record<
     hint: "يتم الان التأكد من توفر الاوزان المطلوبة",
   }),
 
-  weighed: ({ invoice, count }) => ({
+  weighed: ({ invoice, count, weighedBirds }) => ({
     rows: [
       { label: "عدد الفراخ المطلوبة", value: count, strong: true },
-      { label: "اجمالي الوزن", value: formatWeight(invoice.totalWeight) },
+      {
+        // Birds are weighed one by one and no two match, so the multiplier is
+        // their average — which is the total back again, shown the long way so
+        // the customer can see where it came from.
+        label: "اجمالي الوزن",
+        value: `${pluralizeChicken(weighedBirds.count)} × ${formatWeight(weighedBirds.average, { withUnit: false })} كجم = ${formatWeight(invoice.totalWeight)}`,
+        small: true,
+      },
       {
         label: "السعر النهائي",
         value: formatCurrency(invoice.total),

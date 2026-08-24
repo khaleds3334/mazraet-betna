@@ -7,6 +7,7 @@ import { getCurrentCustomer } from "@/lib/queries/customers";
 import { getActiveSaleState } from "@/lib/queries/cycles";
 import { listCustomerActiveOrders } from "@/lib/queries/orders";
 import type { OrderStatus } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 /** The mark over a single order — the stage it has reached, in one glyph. */
 const STATUS_ICON: Record<OrderStatus, IconName> = {
@@ -56,16 +57,30 @@ export default async function TrackingPage() {
   const single = orders.length === 1 ? orders[0] : null;
 
   return (
-    <div className="flex flex-col gap-4 px-screen pb-24 pt-14">
-      {single && (
-        <div className="flex justify-center pb-5">
-          <IconRing name={STATUS_ICON[single.status]} />
-        </div>
+    <div
+      className={cn(
+        "flex flex-1 flex-col gap-4 px-screen pb-nav-extra",
+        // Only the list starts below the top of the screen. A single order is
+        // centred, and top padding would push the whole centring region down
+        // with it — it measured 56px low before this was conditional.
+        !single && "pt-14",
       )}
-
-      {orders.map((order) => (
-        <TrackingCard key={order.id} order={order} />
-      ))}
+    >
+      {/* A single order sits dead centre of what is left above the bar and its
+          «الطلبات السابقة» button — hence `pb-nav-extra`, which is exactly what
+          that button adds. A list does not centre: it starts at the top and
+          scrolls. `my-auto` collapses to zero when there is no room, so a short
+          screen scrolls instead of hiding the top of the block. */}
+      {single ? (
+        <div className="my-auto flex flex-col gap-9">
+          <div className="flex justify-center">
+            <IconRing name={STATUS_ICON[single.status]} />
+          </div>
+          <TrackingCard order={single} />
+        </div>
+      ) : (
+        orders.map((order) => <TrackingCard key={order.id} order={order} />)
+      )}
     </div>
   );
 }
