@@ -31,7 +31,7 @@ export function TrackingEmpty({ saleOpen }: { saleOpen: boolean }) {
     <div className="flex flex-col items-center gap-10 px-screen">
       <div className="flex w-full flex-col items-center gap-6">
         <Image
-          src="/images/empty-tracking-crate.png"
+          src="/images/wooden-crate.png"
           alt="صندوق فاضي"
           width={220}
           height={152}

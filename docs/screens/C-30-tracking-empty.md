@@ -56,8 +56,8 @@ the block above the scroll.
 
 ## Images
 
-`/images/empty-tracking-crate.png` — 220×152 as rendered. Pulled from the Figma
-component and cropped to the frame the design crops it to.
+`/images/wooden-crate.png` — Khaled's export, 660×456, which is exactly 3× the
+220×152 it renders at, so it stays sharp on a 3x phone.
 
 ## Connected screens
 
