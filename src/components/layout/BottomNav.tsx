@@ -18,6 +18,9 @@ import { cn, isActivePath } from "@/lib/utils";
  */
 type NavIconName = "home" | "order" | "track";
 
+/** Customer screens that hide the bar entirely — see the note in the component. */
+const SCREENS_WITHOUT_NAV = ["/history"];
+
 interface NavEntry {
   href: string;
   label: string;
@@ -28,6 +31,13 @@ interface NavEntry {
 
 export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
   const pathname = usePathname();
+
+  // «الطلبات السابقة» is walked into, not tabbed to: it has a back button and
+  // no bar at all (C-50). The page gives back the room <main> reserves for the
+  // bar with `-mb-nav`, so the two have to agree on this list.
+  if (SCREENS_WITHOUT_NAV.some((href) => isActivePath(pathname, href))) {
+    return null;
+  }
 
   // The tracking section gets a taller bar (see the button below). Matched on
   // the section, not the exact path, so it stays for /tracking/[orderId] too.

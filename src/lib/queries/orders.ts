@@ -18,6 +18,9 @@ import {
 /** Statuses that count as an in-progress order (everything but delivered/cancelled). */
 const ACTIVE_STATUSES: OrderStatus[] = ["pending", "weighed", "ready"];
 
+/** The other half: an order the customer is done with, however it ended. */
+const PAST_STATUSES: OrderStatus[] = ["delivered", "cancelled"];
+
 /**
  * How many of a cycle's orders are still open — waiting, weighed, or ready, but
  * not yet handed over. Ending a cycle is refused while any of them are (D-36):
@@ -47,6 +50,22 @@ export async function countActiveOrders(customerId: string): Promise<number> {
     .select("id", { count: "exact", head: true })
     .eq("customer_id", customerId)
     .in("status", ACTIVE_STATUSES);
+  return count ?? 0;
+}
+
+/**
+ * How many orders the customer has finished with — handed over or cancelled.
+ * Tells «الطلبات السابقة» (C-50) whether it has a list to draw or an empty
+ * state. Cancelled counts: the screen lists it too, so a customer whose only
+ * order was cancelled has a history, not an empty one.
+ */
+export async function countPastOrders(customerId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("customer_id", customerId)
+    .in("status", PAST_STATUSES);
   return count ?? 0;
 }
 

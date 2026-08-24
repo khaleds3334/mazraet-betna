@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { ComingSoon } from "@/components/ui";
-import { TrackingEmpty } from "@/components/customer/TrackingEmpty";
+import { EmptyOrders } from "@/components/customer/EmptyOrders";
 import { getCurrentCustomer } from "@/lib/queries/customers";
 import { getActiveSaleState } from "@/lib/queries/cycles";
 import { countActiveOrders } from "@/lib/queries/orders";
@@ -29,7 +29,10 @@ export default async function TrackingPage() {
           height is left, and collapses to zero rather than overflowing when a
           short screen leaves none — so nothing can end up above the scroll. */}
       <div className="my-auto">
-        <TrackingEmpty saleOpen={sale?.saleOpen ?? false} />
+        <EmptyOrders
+          titleLines={["ليس لديك اي طلبات", "نشطة حاليا"]}
+          saleOpen={sale?.saleOpen ?? false}
+        />
       </div>
     </div>
   );

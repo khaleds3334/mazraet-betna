@@ -4,12 +4,14 @@ import { actionBase, actionOutline } from "@/components/ui/buttonStyles";
 import { cn } from "@/lib/utils";
 
 /**
- * C-30 — what the tracking screen shows when the customer has no order running.
+ * The "you have no orders" block — the crate, a two-line heading, a line of
+ * explanation and one way out. Shared by tracking (C-30) and history (C-50),
+ * which draw the same block and differ only in the second line of the heading.
  *
- * Two readings of the same block, picked by whether the sale is open. The design
- * only draws the open one; the closed one keeps the picture and the heading and
- * changes what it offers, because "order fresh chickens now" is a dead end when
- * there is nothing to order (Khaled, 2026-08-24).
+ * Two readings, chosen by whether the sale is open. The design draws only the
+ * open one; «اطلب فراخ طازجة دلوقتي» is a dead end when there is nothing to
+ * order, so the closed reading changes the sentence and points at home, where
+ * the countdown to the next sale lives (Khaled, 2026-08-24).
  */
 const READING = {
   open: {
@@ -24,7 +26,19 @@ const READING = {
   },
 } as const;
 
-export function TrackingEmpty({ saleOpen }: { saleOpen: boolean }) {
+export function EmptyOrders({
+  /**
+   * The heading, already split into its lines. The design breaks it in a fixed
+   * place, and passing the lines is what keeps that break out of the JSX: a tag
+   * inside a run of Arabic is the one thing an RTL editor reorders on save — it
+   * turned a `<br />` into two attributes once already.
+   */
+  titleLines,
+  saleOpen,
+}: {
+  titleLines: readonly string[];
+  saleOpen: boolean;
+}) {
   const { body, cta, href } = READING[saleOpen ? "open" : "closed"];
 
   return (
@@ -41,13 +55,12 @@ export function TrackingEmpty({ saleOpen }: { saleOpen: boolean }) {
         {/* The design insets the words 10px more than the button, which is what
             decides where the heading wraps onto its second line. */}
         <div className="flex w-full flex-col gap-2.5 px-2.5 text-center">
-          {/* Two blocks rather than a `<br />`: the design breaks the heading
-              here on purpose, and a tag sitting inside a run of Arabic is the
-              one thing an RTL editor reorders on save — it already turned the
-              two words into attributes of the `<br>` once. */}
           <h1 className="text-h4 font-bold text-foreground">
-            <span className="block">ليس لديك اي طلبات</span>
-            <span className="block">نشطة حاليا</span>
+            {titleLines.map((line) => (
+              <span key={line} className="block">
+                {line}
+              </span>
+            ))}
           </h1>
           <p className="text-base text-muted">{body}</p>
         </div>
