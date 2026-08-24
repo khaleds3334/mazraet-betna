@@ -20,6 +20,10 @@ describe the first — which is why C-35 drops it.
 | `pending` | `timer-01` | العدد · الاوزان المطلوبة · معاد التجهيز | يتم الان التأكد من توفر الاوزان المطلوبة |
 | `weighed` | `weight-scale-01` | العدد · اجمالي الوزن · السعر النهائي | انظر الي الفاتورة… |
 | `cleaning` | `knives` | العدد · السعر النهائي · المبلغ المدفوع | يتم الان تنظيف الطلب… |
+
+The pill on that one reads «الذبح و التنظيف» — the stage named, not narrated.
+The design writes «يتم الذبح و التنظيف», which is the line under the figures said
+a second time two lines above it (Khaled, 2026-08-25).
 | `ready` | `tick-double-03` | العدد · السعر النهائي · المبلغ المدفوع | الطلب الان جاهز للاستلام… |
 
 What the card says changes with the status because what matters changes: while

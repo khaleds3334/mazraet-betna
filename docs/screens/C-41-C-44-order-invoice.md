@@ -16,7 +16,7 @@ the bill takes the page.
 | Stage | Pill (customer) | Pill (admin) | Button |
 |---|---|---|---|
 | `weighed` | تم وزن الفراخ | تم وزن الفراخ | **التأكيد و الذبح** |
-| `cleaning` | يتم الذبح و التنظيف | تم تأكيد السعر | — |
+| `cleaning` | الذبح و التنظيف | تم تأكيد السعر | — |
 | `ready` | جاهز للاستلام | جاهز للاستلام | — |
 
 ## The stage that is not a status

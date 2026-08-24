@@ -160,7 +160,10 @@ export const ORDER_STATUS_LABEL: Record<
     // The tracking card says it in full, as the design does — "تم الوزن" alone
     // reads as a step rather than a state.
     weighed: "تم وزن الفراخ",
-    cleaning: "يتم الذبح و التنظيف",
+    // The stage named, not narrated (Khaled, 2026-08-25). On the card the pill
+    // sits two lines above «يتم الان تنظيف الطلب و سيكون جاهز قريبا», and
+    // «يتم الذبح و التنظيف» was the same sentence said twice.
+    cleaning: "الذبح و التنظيف",
     ready: "جاهز للاستلام",
     delivered: "تم التسليم",
     cancelled: "ملغي",
