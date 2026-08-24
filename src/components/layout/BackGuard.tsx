@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
+import { getBackTarget } from "@/lib/backTarget";
 import { askBeforeLeaving } from "@/lib/leaveGuard";
 import { closeTopOverlay, subscribeOverlays } from "@/lib/overlayStack";
 
@@ -28,7 +29,9 @@ function historyState(): Record<string, unknown> {
  * 1. **A sheet, dialog or drawer is open** → it closes, and nothing else moves.
  * 2. **A screen with unsaved work** → it asks, and decides for itself what the
  *    press meant once the user has answered (`leaveGuard`).
- * 3. **Anywhere but home** → home, in one press.
+ * 3. **A screen with a back button** → wherever that button goes, so the swipe
+ *    and the button agree (`backTarget`).
+ * 4. **Anywhere else but home** → home, in one press.
  * 4. **Home** → «دوس رجوع تاني عشان تخرج من التطبيق», then the next press closes
  *    the app. The same two-step Instagram uses, and for the same reason: leaving
  *    should take a decision, not a stray swipe.
@@ -134,9 +137,16 @@ export function BackGuard({ home }: { home: string }) {
   }, [rearm, toast]);
 
   useEffect(() => {
-    /** Home, but not from inside the handler — see the note above. */
-    const goHome = () => {
-      setTimeout(() => router.replace(home), 0);
+    /**
+     * Back, but not from inside the handler — see the note above. A screen that
+     * draws a back button has said where that leads; anything else means home.
+     * A target equal to where we already are is ignored, so a stale one can
+     * never strand the press on the same screen.
+     */
+    const goBack = () => {
+      const target = getBackTarget();
+      const to = target && target !== here.current ? target : home;
+      setTimeout(() => router.replace(to), 0);
     };
 
     function onPop() {
@@ -158,7 +168,7 @@ export function BackGuard({ home }: { home: string }) {
         if (window.location.pathname === home) arm();
         else {
           rearm();
-          goHome();
+          setTimeout(() => router.replace(home), 0);
         }
         return;
       }
@@ -180,14 +190,14 @@ export function BackGuard({ home }: { home: string }) {
       // dialog and calls back if the user says go — which is why the press is
       // spent here either way, and why the guard is asked after the overlay
       // check: the next press should close that dialog, not re-ask.
-      if (askBeforeLeaving(goHome)) {
+      if (askBeforeLeaving(goBack)) {
         rearm();
         return;
       }
 
       if (here.current !== home) {
         rearm();
-        goHome();
+        goBack();
         return;
       }
 

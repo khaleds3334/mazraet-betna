@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { setBackTarget } from "@/lib/backTarget";
 import { askBeforeLeaving } from "@/lib/leaveGuard";
 import { cn } from "@/lib/utils";
 import { Icon } from "./Icon";
@@ -14,6 +16,11 @@ import { Icon } from "./Icon";
  * Prefetched in full: the way back is the one destination you can be sure will be
  * asked for, so the server may as well have it ready while the screen is being
  * read. (Production only — Next never prefetches from a dev server.)
+ *
+ * While it is on screen it also tells the phone's back gesture where "back"
+ * goes, so the swipe and the button agree (`backTarget`). Without that the
+ * gesture means "home" from everywhere, which is right for a tab and wrong for
+ * a screen you walked into.
  *
  * It asks the screen first. A screen with unsaved work registers a `leaveGuard`,
  * and if one answers, the tap is cancelled and that screen takes over — it will
@@ -29,6 +36,8 @@ export function BackButton({
 }) {
   const router = useRouter();
 
+  useEffect(() => setBackTarget(href), [href]);
+
   return (
     <Link
       href={href}
@@ -38,7 +47,8 @@ export function BackButton({
       // (`BackGuard`). This button is the way back — the stack is not.
       replace
       onClick={(event) => {
-        if (askBeforeLeaving(() => router.replace(href))) event.preventDefault();
+        if (askBeforeLeaving(() => router.replace(href)))
+          event.preventDefault();
       }}
       aria-label="رجوع"
       className={cn(

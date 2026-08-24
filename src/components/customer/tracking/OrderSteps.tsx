@@ -104,24 +104,30 @@ export function OrderSteps({
               />
             </div>
 
-            {/* 14px top and bottom, so consecutive stages sit 28px apart while
-                the connector still runs unbroken between the circles. */}
-            <div className="flex flex-1 flex-col gap-1 py-3 text-right">
-              <div className="flex items-center justify-between gap-3">
-                <h2
-                  className={cn(
-                    "text-base font-bold",
-                    active ? "text-primary-foreground" : "text-muted",
-                  )}
-                >
-                  {step.title}
-                </h2>
-                {active && badge}
-              </div>
+            {/* A block, not a column of flex items, so the badge can float and
+                the words run around it: the title and the first line of the
+                description stop short of it, and the line under it takes the
+                full width. That is also what keeps the gap under the title at
+                4px on every stage — with the badge in the flow it was the
+                badge's height that set it here, and this one sat lower than
+                the rest. `self-center` centres the block in the 92px stage. */}
+            <div className="flex-1 self-center py-3 text-right">
+              {active && badge && (
+                <span className="float-end ms-3">{badge}</span>
+              )}
+
+              <h2
+                className={cn(
+                  "text-base font-bold",
+                  active ? "text-primary-foreground" : "text-muted",
+                )}
+              >
+                {step.title}
+              </h2>
 
               <p
                 className={cn(
-                  "text-sm",
+                  "mt-1 text-sm",
                   active ? "text-foreground" : "text-muted",
                 )}
               >
