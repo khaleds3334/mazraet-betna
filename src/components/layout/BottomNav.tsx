@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NavIcon } from "./NavIcon";
 import { CountBadge } from "@/components/ui";
-import { isActivePath } from "@/lib/utils";
+import { actionBase, actionPrimary } from "@/components/ui/buttonStyles";
+import { cn, isActivePath } from "@/lib/utils";
 
 /**
  * The customer bottom navigation (Component 62 in the design). Shared across all
@@ -28,15 +29,24 @@ interface NavEntry {
 export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
   const pathname = usePathname();
 
+  // The tracking section gets a taller bar (see the button below). Matched on
+  // the section, not the exact path, so it stays for /tracking/[orderId] too.
+  const onTracking = isActivePath(pathname, "/tracking");
+
   const items: NavEntry[] = [
     { href: "/", label: "الرئيسية", icon: "home", exact: true },
     { href: "/order", label: "اطلب الان", icon: "order" },
-    { href: "/tracking", label: "تتبع الطلب", icon: "track", badge: activeOrders },
+    {
+      href: "/tracking",
+      label: "تتبع الطلب",
+      icon: "track",
+      badge: activeOrders,
+    },
   ];
 
   return (
     <nav
-      className="fixed inset-x-0 z-40 mx-auto flex max-w-[430px] items-center justify-center gap-8 border-t-2 border-border bg-white px-screen py-2 text-primary-foreground"
+      className="fixed inset-x-0 z-40 mx-auto flex max-w-[430px] flex-col border-t-2 border-border bg-white px-screen py-2 text-primary-foreground"
       // The bar sits ON TOP of the phone's gesture strip instead of swallowing
       // it: `bottom` lifts it clear, and the strip underneath is left to the
       // shell's own `bg-background` (#fbfdfc). Padding it instead made the white
@@ -46,25 +56,41 @@ export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
       // <main>'s bottom padding still clears it.
       style={{ bottom: "env(safe-area-inset-bottom)" }}
     >
-      {items.map((item) => {
-        const active = isActivePath(pathname, item.href, item.exact);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            // Replaces rather than pushes — see the note in `BackGuard`.
-            replace
-            aria-current={active ? "page" : undefined}
-            className="flex min-h-11 min-w-11 flex-col items-center justify-center gap-1"
-          >
-            <span className="relative">
-              <NavIcon name={item.icon} active={active} size={28} />
-              <CountBadge count={item.badge ?? 0} />
-            </span>
-            <span className="text-sm font-bold">{item.label}</span>
-          </Link>
-        );
-      })}
+      {/* On the tracking section the bar carries «الطلبات السابقة» above the
+          tabs — Component 63 in the design, used on every tracking state, not
+          just the empty one. It lives here rather than on the page because the
+          design draws it inside the bar's surface, under the same top border. */}
+      {onTracking && (
+        <Link
+          href="/history"
+          replace
+          className={cn(actionBase, actionPrimary, "mb-4")}
+        >
+          الطلبات السابقة
+        </Link>
+      )}
+
+      <div className="flex items-center justify-center gap-8">
+        {items.map((item) => {
+          const active = isActivePath(pathname, item.href, item.exact);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              // Replaces rather than pushes — see the note in `BackGuard`.
+              replace
+              aria-current={active ? "page" : undefined}
+              className="flex min-h-11 min-w-11 flex-col items-center justify-center gap-1"
+            >
+              <span className="relative">
+                <NavIcon name={item.icon} active={active} size={28} />
+                <CountBadge count={item.badge ?? 0} />
+              </span>
+              <span className="text-sm font-bold">{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

@@ -65,7 +65,7 @@ export function OrderSuccess({ orderId }: { orderId: string }) {
         </p>
       </div>
 
-      <div className="px-screen pb-6">
+      <div className="px-screen pb-20">
         <Link
           href={`/tracking/${orderId}`}
           replace

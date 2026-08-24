@@ -87,6 +87,13 @@
      which left an unexplained 6px and threw off anything measured from it. */
   --spacing-nav: 70px;
 
+  /* What the «الطلبات السابقة» button adds to the bar on the tracking section
+     (Component 63): the 56px action button plus the 16px above the tabs, and
+     the 2px the button's border adds on each edge — measured at 73.6 against a
+     70px plain bar, not assumed. <main> pads for the plain bar, so the tracking
+     page adds this on top. */
+  --spacing-nav-extra: 74px;
+
   /* Breathing room between the blocks on customer home. Fluid on purpose: it
      opens to the design's 32px on a tall phone and tightens to 12px on a short
      one, which is what keeps a small screen from needing to scroll. The blocks
