@@ -488,6 +488,7 @@ export type Database = {
           on_behalf_of: string | null
           pickup_date: string | null
           pickup_time: string | null
+          price_confirmed_at: string | null
           seq: number
           source: Database["public"]["Enums"]["order_source"]
           status: Database["public"]["Enums"]["order_status"]
@@ -511,6 +512,7 @@ export type Database = {
           on_behalf_of?: string | null
           pickup_date?: string | null
           pickup_time?: string | null
+          price_confirmed_at?: string | null
           seq?: number
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
@@ -534,6 +536,7 @@ export type Database = {
           on_behalf_of?: string | null
           pickup_date?: string | null
           pickup_time?: string | null
+          price_confirmed_at?: string | null
           seq?: number
           source?: Database["public"]["Enums"]["order_source"]
           status?: Database["public"]["Enums"]["order_status"]
@@ -668,6 +671,10 @@ export type Database = {
       available_chickens: {
         Args: { _farm_id: string }
         Returns: number | null
+      }
+      confirm_order_price: {
+        Args: { _order_id: string }
+        Returns: string | null
       }
       create_farm: {
         Args: { _name: string; _owner_phone: string; _pin: string }

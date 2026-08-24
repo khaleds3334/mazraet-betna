@@ -7,6 +7,24 @@
 import type { Enums } from "@/types/database";
 
 export type OrderStatus = Enums<"order_status">;
+
+/**
+ * What an order is doing right now, as a person would say it — which is one
+ * thing more than `order_status` has room for.
+ *
+ * Between the scale and the door the customer reads the invoice and releases the
+ * birds for slaughtering (C-41 «التأكيد و الذبح», migration 028). That is a real
+ * stage — the design gives it its own screen (C-42) and its own card — but it is
+ * not a *status*: the four statuses are the four things the **admin** does, and
+ * he does nothing here. Adding a fifth would put a step he never takes into the
+ * middle of his tabs.
+ *
+ * So `status` stays the admin's ladder and the extra stage is derived from a
+ * timestamp on the order — see {@link orderStage}. Every `OrderStatus` is an
+ * `OrderStage`, so anything already passing a status keeps working.
+ */
+export type OrderStage = OrderStatus | "cleaning";
+
 export type ExpenseCategory = Enums<"expense_category">;
 /** Which feed a purchase was: بادي (starter) or نامي (grower) — migration 013. */
 export type FeedPhase = Enums<"feed_phase">;
@@ -122,13 +140,17 @@ export const WEIGHT_STEP_KG = 0.005;
  */
 export const ORDER_STATUS_LABEL: Record<
   "admin" | "customer",
-  Record<OrderStatus, string>
+  Record<OrderStage, string>
 > = {
   admin: {
     pending: "قيد المراجعة",
     // The admin's card says it in full — he is scanning a list of cards, and
     // "تم الوزن" alone reads as a step rather than a state (A-50 weighed).
     weighed: "تم وزن الفراخ",
+    // The same moment, named for what it means to each of them: the customer is
+    // waiting for birds to be cleaned, the admin is being told he may start
+    // (Khaled, 2026-08-25). This is D-03 doing exactly what it is for.
+    cleaning: "تم تأكيد السعر",
     ready: "جاهز للاستلام",
     delivered: "تم التسليم",
     cancelled: "تم الغاء الطلب",
@@ -138,11 +160,30 @@ export const ORDER_STATUS_LABEL: Record<
     // The tracking card says it in full, as the design does — "تم الوزن" alone
     // reads as a step rather than a state.
     weighed: "تم وزن الفراخ",
+    cleaning: "يتم الذبح و التنظيف",
     ready: "جاهز للاستلام",
     delivered: "تم التسليم",
     cancelled: "ملغي",
   },
 };
+
+/**
+ * Which stage an order is actually at. Only one case is not the status itself:
+ * a weighed order whose price the customer has confirmed is being slaughtered
+ * and cleaned (migration 028).
+ *
+ * Written once, here beside {@link OrderStage}, because both apps read it — the
+ * customer's card and details screen, and the admin's card, which shows the same
+ * moment under its own name.
+ */
+export function orderStage(order: {
+  status: OrderStatus;
+  priceConfirmedAt: string | null;
+}): OrderStage {
+  return order.status === "weighed" && order.priceConfirmedAt
+    ? "cleaning"
+    : order.status;
+}
 
 /** The three groups the admin sorts orders into on A-50 and A-20. */
 export type AdminOrderTabKey = "new" | "active" | "done";

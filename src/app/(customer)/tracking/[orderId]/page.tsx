@@ -1,23 +1,28 @@
 import { notFound, redirect } from "next/navigation";
 import { ComingSoon, PageHeader } from "@/components/ui";
 import { ContactButton } from "@/components/customer/ContactButton";
-import { OrderSteps } from "@/components/customer/tracking/OrderSteps";
-import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
-import {
-  formatArabicDate,
-  formatArabicTime,
-  formatWeight,
-  pluralizeChicken,
-} from "@/lib/format";
+import { OrderInvoiceView } from "@/components/customer/tracking/OrderInvoiceView";
+import { OrderReview } from "@/components/customer/tracking/OrderReview";
+import type { TrackedStage } from "@/components/customer/tracking/OrderTrackStrip";
+import { orderStage } from "@/lib/constants";
+import { formatArabicDate, formatArabicTime } from "@/lib/format";
 import { getCurrentCustomer } from "@/lib/queries/customers";
 import { getOrder } from "@/lib/queries/orders";
+
+/** The stages that swap the timeline for the invoice (C-41→C-44). */
+const TRACKED: TrackedStage[] = ["weighed", "cleaning", "ready"];
 
 /**
  * C-40→C-44 — one order's details and invoice.
  *
- * Only the review state (C-40) is built: what was asked for, and how far along
- * the four stages it has got. Everything from «تم الوزن» onwards swaps the
- * timeline for a compact strip and adds the invoice — that is the next step.
+ * **Two layouts, not five states.** Under review the screen is the four stages
+ * written out at length (C-40) — there is nothing else to say yet. From the
+ * moment the birds are weighed the invoice IS the order (D-05), so the stages
+ * shrink to one strip and the bill takes the page (C-41→C-44). What differs
+ * between those three is the pill, one button and one mark on the strip.
+ *
+ * Delivered and cancelled orders belong to «الطلبات السابقة» and are not built
+ * yet (C-45, C-46).
  *
  * A screen walked into, not tabbed to: back button, no bottom bar. `-mb-nav`
  * gives back the room <main> reserves for the bar that `BottomNav` stands down.
@@ -36,7 +41,10 @@ export default async function OrderTrackingPage({
   // either a bad id or somebody else's order, and both are "no such page".
   if (!order) notFound();
 
-  if (order.status !== "pending") {
+  const stage = orderStage(order);
+  const tracked = TRACKED.find((candidate) => candidate === stage);
+
+  if (stage !== "pending" && !tracked) {
     return <ComingSoon title="تفاصيل الطلب" />;
   }
 
@@ -44,8 +52,8 @@ export default async function OrderTrackingPage({
 
   return (
     <div className="-mb-nav flex flex-1 flex-col gap-8 pb-contact">
-      {/* Which order you are looking at stays on screen while the stages
-          scroll under it. Its own `bg-background` — without one the content
+      {/* Which order you are looking at stays on screen while the rest
+          scrolls under it. Its own `bg-background` — without one the content
           would show through as it passes underneath. */}
       <div className="sticky top-0 z-20 flex flex-col gap-6 bg-background pb-2">
         <PageHeader
@@ -65,39 +73,11 @@ export default async function OrderTrackingPage({
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 px-screen">
-        <dl className="flex flex-col gap-[7px] text-foreground">
-          {[
-            {
-              label: "عدد الفراخ المطلوبة",
-              value: pluralizeChicken(order.chickenCount),
-            },
-            {
-              label: "الاوزان المطلوبة",
-              value:
-                order.approxWeight != null
-                  ? formatWeight(order.approxWeight)
-                  : "اوزان مختلفة",
-            },
-            {
-              label: "معاد تجهيز الفراخ",
-              value: order.pickupTimeLabel ?? "—",
-            },
-          ].map((row) => (
-            <div key={row.label} className="flex items-center justify-between">
-              <dt className="text-base font-bold">{row.label}</dt>
-              <dd className="text-base font-bold">{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-
-      <div className="px-screen">
-        <OrderSteps
-          activeStep={0}
-          badge={<OrderStatusBadge status={order.status} viewer="customer" />}
-        />
-      </div>
+      {tracked ? (
+        <OrderInvoiceView order={order} stage={tracked} />
+      ) : (
+        <OrderReview order={order} />
+      )}
 
       {/* Floats rather than scrolling away, like the pill on home. Full-width
           strip so it centres on the app column, `justify-end` to park it at the

@@ -160,6 +160,12 @@ export interface OrderListItem {
   createdAt: string;
   /** When the birds were handed over — the invoice sheet's header line. */
   deliveredAt: string | null;
+  /**
+   * When the customer read the invoice and released the birds for slaughtering
+   * (C-41, migration 028). On a weighed order this is what makes the stage
+   * «يتم الذبح و التنظيف» — see `orderStage`.
+   */
+  priceConfirmedAt: string | null;
   /** null for an orphan order, which has no customer yet (FR-13). */
   customer: { name: string; phone: string } | null;
   /** Who the birds are for, when the order was placed for a relative. */
@@ -226,7 +232,7 @@ export async function countOrdersByCycle(
 
 /** Everything an `OrderListItem` is built from — one place, so two lists can't drift. */
 const ORDER_COLUMNS =
-  "id, seq, status, created_at, delivered_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, batch_no, approx_weight, actual_weight, cleaning), payment(amount)";
+  "id, seq, status, created_at, delivered_at, price_confirmed_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, batch_no, approx_weight, actual_weight, cleaning), payment(amount)";
 
 /** The shape {@link ORDER_COLUMNS} comes back as. */
 interface OrderRow {
@@ -235,6 +241,7 @@ interface OrderRow {
   status: OrderStatus;
   created_at: string;
   delivered_at: string | null;
+  price_confirmed_at: string | null;
   on_behalf_of: string | null;
   pickup_date: string | null;
   pickup_time: string | null;
@@ -279,6 +286,7 @@ function toOrderListItem(
     status: order.status,
     createdAt: order.created_at,
     deliveredAt: order.delivered_at,
+    priceConfirmedAt: order.price_confirmed_at,
     customer: order.customer
       ? { name: order.customer.name, phone: order.customer.phone }
       : null,

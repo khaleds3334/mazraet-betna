@@ -155,3 +155,41 @@ export async function placeOrder(
   revalidatePath("/tracking");
   return { ok: true, orderId: order.id };
 }
+
+/**
+ * «التأكيد و الذبح» (C-41) — the customer has read the invoice and released the
+ * birds for slaughtering. The order stays «weighed» for the admin and moves to
+ * «يتم الذبح و التنظيف» for the customer (migration 028, `orderStage`).
+ *
+ * The write goes through `confirm_order_price` rather than an update: the
+ * customer app may not edit an order (D-04), and RLS cannot narrow a write down
+ * to one column — the function is the permission. It also decides for itself
+ * whether the order is the caller's and whether it is at the right stage, so
+ * there is nothing to check here first that the database would not have to check
+ * again anyway.
+ *
+ * Failure speaks through a toast, not an inline error (T-60): the customer is
+ * holding the phone and looking at it, and the action is one tap on one button.
+ */
+export async function confirmOrderPrice(
+  orderId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("confirm_order_price", {
+    _order_id: orderId,
+  });
+
+  if (error) {
+    return { ok: false, error: "مقدرناش نأكد الطلب، حاول تاني." };
+  }
+  // null = not this customer's order, or no longer at the stage where the
+  // question is asked. Most likely the admin has already moved it on, and the
+  // fresh screen will say so better than any sentence here.
+  if (!data) {
+    return { ok: false, error: "الطلب اتغيّر، اقفل الصفحة و افتحها تاني." };
+  }
+
+  revalidatePath("/tracking");
+  revalidatePath(`/tracking/${orderId}`);
+  return { ok: true };
+}

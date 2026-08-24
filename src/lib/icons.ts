@@ -74,6 +74,8 @@ import {
   Wallet03Icon, // figma: wallet-03 — الديون
   Wallet02Icon, // figma: wallet-02 — في المحفظة
   KnivesIcon, // figma: knives — الطلبات قيد التشغيل
+  // ── Domain: the customer's order track (C-41→C-43) ──
+  DocumentValidationIcon, // figma: document-validation — «التأكيد و الذبح»
 } from "@hugeicons/core-free-icons";
 // The chick glyph ("عدد الكتاكيت") isn't in the Hugeicons free pack — it's a
 // bespoke design SVG in components/admin/shared/ChickIcon (T-19 rationale).
@@ -167,6 +169,11 @@ export const icons = {
   // `chickensRequested` — the design uses it for both "waiting on the admin"
   // ideas, and the two names keep each screen reading semantically.
   ordersWaiting: Timer01Icon,
+
+  // The customer's order track (C-41→C-43). The checkpoint between «تم الوزن»
+  // and «الذبح» is the customer reading the invoice and saying go ahead — the
+  // design marks it with a stamped document.
+  priceConfirm: DocumentValidationIcon,
 } as const;
 
 export type IconName = keyof typeof icons;

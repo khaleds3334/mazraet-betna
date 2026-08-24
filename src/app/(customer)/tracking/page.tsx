@@ -6,16 +6,17 @@ import type { IconName } from "@/lib/icons";
 import { getCurrentCustomer } from "@/lib/queries/customers";
 import { getActiveSaleState } from "@/lib/queries/cycles";
 import { listCustomerActiveOrders } from "@/lib/queries/orders";
-import type { OrderStatus } from "@/lib/constants";
+import { orderStage, type OrderStage } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 /** The mark over a single order — the stage it has reached, in one glyph. */
-const STATUS_ICON: Record<OrderStatus, IconName> = {
+const STAGE_ICON: Record<OrderStage, IconName> = {
   pending: "ordersWaiting",
   weighed: "weight",
+  cleaning: "ordersProcessing",
   ready: "checkDouble",
   // Neither reaches this screen — both belong to «الطلبات السابقة» — but the
-  // map is total so a new status can never fall through to nothing.
+  // map is total so a new stage can never fall through to nothing.
   delivered: "checkDouble",
   cancelled: "close",
 };
@@ -74,7 +75,7 @@ export default async function TrackingPage() {
       {single ? (
         <div className="my-auto flex flex-col gap-9">
           <div className="flex justify-center">
-            <IconRing name={STATUS_ICON[single.status]} />
+            <IconRing name={STAGE_ICON[orderStage(single)]} />
           </div>
           <TrackingCard order={single} />
         </div>

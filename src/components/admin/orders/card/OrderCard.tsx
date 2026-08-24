@@ -9,6 +9,7 @@ import {
   pluralizeChicken,
 } from "@/lib/format";
 import { computeInvoice } from "@/lib/calculations/invoice";
+import { orderStage } from "@/lib/constants";
 import { EditCancelReasonButton } from "./EditCancelReasonButton";
 import { InvoiceTotal } from "./InvoiceTotal";
 import { OrderCardActions } from "./OrderCardActions";
@@ -94,8 +95,12 @@ export function OrderCard({
             )}
           </p>
         </div>
+        {/* The pill is the only thing on the admin's card that knows the
+            customer has confirmed the price — «تم تأكيد السعر». Everything
+            below stays put: the order is still «weighed» to him, and «جاهز
+            للاستلام» is still the next thing he presses. */}
         <OrderStatusBadge
-          status={order.status}
+          stage={orderStage(order)}
           remaining={amountDue}
           isHouse={order.isHouse}
         />

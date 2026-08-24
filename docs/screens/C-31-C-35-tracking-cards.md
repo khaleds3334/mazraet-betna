@@ -3,12 +3,13 @@
 **Route:** `/tracking`
 **Figma nodes:** 4013:2226 (the three single-order states) · 3165:6386 (C-35, several)
 **FR:** FR-29, FR-30
-**States:** Review · Weighed · Ready · Several
+**States:** Review · Weighed · Cleaning · Ready · Several
 
 ## What it does
 
 Shows the customer's orders that are still running, newest first. Tapping a card
-opens that order's details and invoice (`/tracking/[orderId]`, still a stub).
+opens that order's details and invoice (`/tracking/[orderId]` — C-40 and
+C-41→C-44, both built).
 
 **One order gets a glyph over it; a list does not.** With several cards the
 status is already on each one, and a single mark over the top could only
@@ -18,6 +19,7 @@ describe the first — which is why C-35 drops it.
 |---|---|---|---|
 | `pending` | `timer-01` | العدد · الاوزان المطلوبة · معاد التجهيز | يتم الان التأكد من توفر الاوزان المطلوبة |
 | `weighed` | `weight-scale-01` | العدد · اجمالي الوزن · السعر النهائي | انظر الي الفاتورة… |
+| `cleaning` | `knives` | العدد · السعر النهائي · المبلغ المدفوع | يتم الان تنظيف الطلب… |
 | `ready` | `tick-double-03` | العدد · السعر النهائي · المبلغ المدفوع | الطلب الان جاهز للاستلام… |
 
 What the card says changes with the status because what matters changes: while
@@ -70,17 +72,31 @@ they hid the reason — plain DOM order says the same thing and can be read.
   said «تم الوزن», which reads as a step rather than a state. Only this card uses
   the customer labels, so nothing else moved.
 
-## Two things the design says that the data does not
+## One thing the design says that the data does not
 
 - **«اجمالي الوزن»** is drawn as `3 فرخات * 2.45 كجم = 7.852 كجم`, which does not
   multiply out (3 × 2.45 is 7.35). Birds are weighed one by one and no two match,
   so there is no single multiplier to show. The card shows the real total.
-- **C-33 «الذبح والتنظيف»** is gone from the Figma file — the node 404s and the
-  section the design links to has only three states. There is no status behind it
-  either: `orders.status` runs pending → weighed → ready → delivered, and
-  `cleaning` is a boolean on the order, not a stage. Nothing to build.
+
+## C-33 «الذبح والتنظيف» — built 2026-08-25
+
+It was recorded here as "nothing to build": the node the section links to 404s,
+and `orders.status` had no stage between `weighed` and `ready` — `cleaning` is a
+boolean on the order, meaning "this order takes cleaning", not "it is being
+cleaned".
+
+Both halves have since been answered. The card is drawn at **3165:5347**, and the
+stage now exists: the customer confirms the price on C-41 and the order enters
+«يتم الذبح و التنظيف» (**D-67**, migration 028). It is still not a status —
+`orderStage()` derives it from `orders.price_confirmed_at` — which is why
+`TrackingCard` and `OrderStatusBadge` both read a **stage** rather than
+`order.status`.
+
+The card carries the same three figures as «جاهز للاستلام»: the invoice is
+settled and the only thing still moving is the birds. What changes is the
+sentence under them.
 
 ## Connected screens
 
 ← from: the «تتبع الطلب» tab
-→ to: `/tracking/[orderId]` (stub) · `/history` (from the bar)
+→ to: `/tracking/[orderId]` · `/history` (from the bar)

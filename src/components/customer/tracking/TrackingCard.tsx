@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Icon } from "@/components/ui";
 import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
 import { computeInvoice } from "@/lib/calculations/invoice";
+import { orderStage, type OrderStage } from "@/lib/constants";
 import {
   formatArabicDate,
   formatArabicTime,
@@ -31,6 +32,10 @@ interface Row {
  * news and the invoice takes over (D-05), so the card shows the weight and the
  * price. Once it is ready, the only open question is money, so it shows the
  * price and what has been paid.
+ *
+ * It reads a **stage**, not a status: once the customer has confirmed the price
+ * the card says «يتم الذبح و التنظيف» (C-33), and that is a stage the database
+ * has no status for — see `orderStage`.
  */
 export function TrackingCard({ order }: { order: OrderListItem }) {
   const placedAt = new Date(order.createdAt);
@@ -57,13 +62,16 @@ export function TrackingCard({ order }: { order: OrderListItem }) {
     count: onScale,
     average: onScale > 0 ? invoice.totalWeight / onScale : 0,
   };
-  const { rows, hint, hintCentred } = READING[
-    order.status === "pending"
-      ? "pending"
-      : order.status === "weighed"
-        ? "weighed"
-        : "ready"
-  ]({ order, invoice, count, weighedBirds });
+  // `ready` also catches delivered and cancelled, and neither reaches this
+  // screen — tracking lists the orders that are still running.
+  const stage = orderStage(order);
+  const reading: ReadingKey = reads(stage) ? stage : "ready";
+  const { rows, hint, hintCentred } = READING[reading]({
+    order,
+    invoice,
+    count,
+    weighedBirds,
+  });
 
   return (
     <Link
@@ -88,7 +96,7 @@ export function TrackingCard({ order }: { order: OrderListItem }) {
           </p>
         </div>
 
-        <OrderStatusBadge status={order.status} viewer="customer" />
+        <OrderStatusBadge stage={stage} viewer="customer" />
       </div>
 
       {/* Full-bleed on purpose — the design runs the rule to both edges while
@@ -145,8 +153,16 @@ type ReadingInput = {
   weighedBirds: { count: number; average: number };
 };
 
+/** The stages an order can be at while it is still on the tracking screen. */
+type ReadingKey = Extract<
+  OrderStage,
+  "pending" | "weighed" | "cleaning" | "ready"
+>;
+
+const reads = (stage: OrderStage): stage is ReadingKey => stage in READING;
+
 const READING: Record<
-  "pending" | "weighed" | "ready",
+  ReadingKey,
   (input: ReadingInput) => { rows: Row[]; hint: string; hintCentred?: boolean }
 > = {
   pending: ({ order, count }) => ({
@@ -183,6 +199,25 @@ const READING: Record<
     ],
     hint: "انظر الي الفاتورة لمعرفة التفاصيل و تأكيد الطلب",
     hintCentred: true,
+  }),
+
+  // The same three figures as «جاهز للاستلام»: the invoice is settled and the
+  // only thing still moving is the birds. What changes is the sentence.
+  cleaning: ({ invoice, count }) => ({
+    rows: [
+      { label: "عدد الفراخ المطلوبة", value: count, strong: true },
+      {
+        label: "السعر النهائي",
+        value: formatCurrency(invoice.total),
+        strong: true,
+      },
+      {
+        label: "المبلغ المدفوع",
+        value: formatCurrency(invoice.paid),
+        strong: true,
+      },
+    ],
+    hint: "يتم الان تنظيف الطلب و سيكون جاهز قريبا",
   }),
 
   ready: ({ invoice, count }) => ({

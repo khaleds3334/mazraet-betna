@@ -2161,3 +2161,44 @@ sitting inside a second gutter with nothing to show for the class (Khaled,
 **Lesson:** a Tailwind class that does not exist fails silently. Custom utilities
 only generate the names they declare — negatives are not free.
 **Date:** 2026-08-23
+
+### D-67 — «التأكيد و الذبح» is a timestamp on the order, not a fifth status
+Between «تم وزن الفراخ» and «جاهز للاستلام» the customer reads the invoice and
+releases the birds for slaughtering (C-41). The order then shows
+«يتم الذبح و التنظيف» to the customer and «تم تأكيد السعر» to the admin. That
+stage is stored as `orders.price_confirmed_at` (migration 028) and read back by
+`orderStage()`; `orders.status` does not move.
+**Why not a status:** the four statuses are the four things the **admin** does —
+each one is a button he presses. This is the one thing the *customer* does, and
+it changes nothing about the admin's work: he still marks the order ready when it
+is ready. A fifth status would sit in the middle of his tabs (`ADMIN_ORDER_TABS`)
+as a group he never acts on, and every screen that groups, counts or advances by
+status would have to learn to step over it. `advanceOrder`'s `STAGE_BEFORE` chain
+would need a branch for an order that may or may not have passed through it.
+**What it buys:** one nullable timestamp beside `weighed_at`, `delivered_at` and
+`cancelled_at` — the moments an order passed through, kept the way the schema
+already keeps them — and one derivation both apps read.
+**The two apps name it differently** (D-03), and that is the point: the customer
+is waiting for birds to be cleaned, the admin is being told he may start.
+**Date:** 2026-08-25
+
+### T-63 — A definer function *is* the permission, when RLS can only say "the whole row"
+The customer's «التأكيد و الذبح» writes through `public.confirm_order_price()`,
+a `SECURITY DEFINER` function granted to `authenticated` — not through a new
+policy on `orders`.
+**Why:** `orders_update` is admin-only on purpose (D-04 — the customer app cannot
+edit or cancel an order). RLS grants access to **rows**, not columns: a policy
+sees the finished row and cannot tell which fields moved, so a policy letting the
+customer set `price_confirmed_at` would equally let them set `status`,
+`unit_price` or `cleaning_price`. There is no `WITH CHECK` that can compare the
+new row to the old one.
+**What the function is instead:** the whole permission, written out — one column,
+one order, only for the customer who owns it, and only while it is `weighed`. It
+returns null rather than raising when none of that holds, and the action turns
+that into one Arabic sentence without telling the customer which condition failed.
+**Idempotent** (`coalesce(price_confirmed_at, now())`): a customer whose tap
+looked like it did nothing taps again — that is the reason rule 11 exists — and
+the second tap must not rewrite the moment of the first.
+**Same family as** `available_chickens` (T-59) and `create_farm`: definer rights
+buy exactly one narrow thing and no more.
+**Date:** 2026-08-25
