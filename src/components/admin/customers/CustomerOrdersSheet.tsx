@@ -136,7 +136,7 @@ export function CustomerOrdersSheet({
             <DebtAmount amount={debtFor(filter, customer)} iconSize={22} />
           </div>
 
-          <div className="flex items-center justify-center gap-2.5 overflow-x-auto">
+          <div className="no-scrollbar flex items-center justify-center gap-2.5 overflow-x-auto">
             {FILTERS.map((option) => (
               <Chip
                 key={option.key}

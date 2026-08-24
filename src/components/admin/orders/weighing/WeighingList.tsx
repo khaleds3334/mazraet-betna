@@ -63,7 +63,7 @@ export function WeighingList({
     <div
       // `overscroll-contain`: this is the list the admin flicks, and a flick that
       // runs past its last row must not become a pull-to-refresh (D-56).
-      className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-screen py-3"
+      className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-screen py-3"
     >
       <div className="flex flex-col gap-3">
         {bags.map(([batchNo, birds], bagIndex) => (

@@ -85,7 +85,7 @@ export function CustomerPicker({
       />
 
       {query.trim() && (
-        <ul className="absolute inset-x-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-lg border border-border bg-white shadow-card">
+        <ul className="no-scrollbar absolute inset-x-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-lg border border-border bg-white shadow-card">
           {results.length === 0 ? (
             <li className="px-4 py-3 text-right text-sm text-disabled">
               مفيش عميل بالاسم ده

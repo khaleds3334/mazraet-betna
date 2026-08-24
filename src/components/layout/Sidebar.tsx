@@ -94,7 +94,7 @@ export function Sidebar({
           </button>
         </div>
 
-        <div className="flex flex-1 flex-col gap-8 overflow-y-auto px-6 py-6">
+        <div className="no-scrollbar flex flex-1 flex-col gap-8 overflow-y-auto px-6 py-6">
           {/* Debt card */}
           <div className="rounded-xl border-2 border-border bg-surface p-4">
             <div className="flex flex-col items-start gap-2">

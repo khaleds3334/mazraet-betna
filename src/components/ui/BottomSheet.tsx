@@ -113,7 +113,7 @@ export function BottomSheet({
         aria-modal="true"
         aria-label={label}
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[430px] flex-col overflow-y-auto overflow-x-hidden overscroll-contain border-border bg-background transition-transform duration-300",
+          "no-scrollbar fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[430px] flex-col overflow-y-auto overflow-x-hidden overscroll-contain border-border bg-background transition-transform duration-300",
           size === "full"
             ? "top-0 border-x"
             : "max-h-[90svh] rounded-t-xl border-t-2",

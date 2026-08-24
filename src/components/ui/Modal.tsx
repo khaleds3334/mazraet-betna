@@ -102,7 +102,7 @@ export function Modal({
           className={cn(
             // Sideways never — see the note in BottomSheet for why the x axis has to be
             // said out loud.
-            "min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 pb-4",
+            "no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 pb-4",
             // With a header the caller owns the gap under it; without one the
             // body is the top of the card and needs the card's own padding.
             !header && "pt-4",
