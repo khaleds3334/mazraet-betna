@@ -56,7 +56,7 @@ export default async function TrackingPage() {
   const single = orders.length === 1 ? orders[0] : null;
 
   return (
-    <div className="flex flex-col gap-4 px-screen pb-calc pt-14">
+    <div className="flex flex-col gap-4 px-screen pb-24 pt-14">
       {single && (
         <div className="flex justify-center pb-5">
           <IconRing name={STATUS_ICON[single.status]} />

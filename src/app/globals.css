@@ -45,6 +45,10 @@
   --color-disabled: #8b968f; /* Text/disabled 2 */
   --color-disabled-soft: #a8b0ab; /* Text/disabled */
   --color-ink: #1a443d; /* CSK-500 — chip / strong label text */
+  /* The timestamp under an order number. Figma writes it as a raw hex rather
+     than a variable, which is why it never matched `disabled` (#8b968f) — this
+     is that hex, named. */
+  --color-timestamp: #ababab;
 
   /* ── Brand greens ─────────────────────────────────────────────────── */
   --color-primary: #d9f99d; /* Surface/action — primary (lime) button */

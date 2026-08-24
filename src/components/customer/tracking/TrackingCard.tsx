@@ -15,6 +15,8 @@ import type { OrderListItem } from "@/lib/queries/orders";
 interface Row {
   label: string;
   value: string;
+  /** Counts and money are set in the label's own bold; measurements are not. */
+  strong?: boolean;
 }
 
 /**
@@ -46,7 +48,7 @@ export function TrackingCard({ order }: { order: OrderListItem }) {
   );
 
   const count = pluralizeChicken(order.chickenCount);
-  const { rows, hint } = READING[
+  const { rows, hint, hintCentred } = READING[
     order.status === "pending"
       ? "pending"
       : order.status === "weighed"
@@ -64,9 +66,12 @@ export function TrackingCard({ order }: { order: OrderListItem }) {
           The design puts the order number there and the status pill opposite,
           so the number block is written first. */}
       <div className="flex items-center justify-between px-6">
-        <div className="flex flex-col items-end gap-1 text-right">
+        {/* No `items-end`: that shrinks each line to its own text and leaves
+            the shorter one hanging. Stretching them both and aligning the text
+            right is what puts the two on a single right edge, as drawn. */}
+        <div className="flex flex-col gap-1 text-right">
           <p className="text-sm text-accent-tan">طلب رقم {order.number}#</p>
-          <p className="text-xs text-disabled">
+          <p className="text-xs text-timestamp">
             في {formatArabicDate(placedAt)} الساعة{" "}
             {formatArabicTime(
               `${placedAt.getHours()}:${String(placedAt.getMinutes()).padStart(2, "0")}`,
@@ -79,19 +84,32 @@ export function TrackingCard({ order }: { order: OrderListItem }) {
 
       {/* Full-bleed on purpose — the design runs the rule to both edges while
           everything else keeps the card's padding. */}
-      <hr className="border-border" />
+      <hr className="border-t-[1.5px] border-foreground" />
 
       <dl className="flex flex-col gap-[7px] px-6 text-foreground">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center justify-between">
             <dt className="text-base font-bold">{row.label}</dt>
-            <dd className="text-sm">{row.value}</dd>
+            <dd className={row.strong ? "text-base font-bold" : "text-sm"}>
+              {row.value}
+            </dd>
           </div>
         ))}
       </dl>
 
-      <div className="flex items-center justify-between px-6">
-        <p className="text-sm text-foreground">{hint}</p>
+      <div className="flex items-center justify-between gap-2 px-6">
+        {/* Held to a narrow measure and centred on the two later cards, which is
+            how the design breaks it over two lines. `max-w` and not a fixed
+            width so it still fits beside the arrow at 320px. */}
+        <p
+          className={
+            hintCentred
+              ? "max-w-[195px] text-center text-sm text-foreground"
+              : "text-sm text-foreground"
+          }
+        >
+          {hint}
+        </p>
         <Icon
           name="openDetails"
           size={35}
@@ -110,11 +128,11 @@ type ReadingInput = {
 
 const READING: Record<
   "pending" | "weighed" | "ready",
-  (input: ReadingInput) => { rows: Row[]; hint: string }
+  (input: ReadingInput) => { rows: Row[]; hint: string; hintCentred?: boolean }
 > = {
   pending: ({ order, count }) => ({
     rows: [
-      { label: "عدد الفراخ المطلوبة", value: count },
+      { label: "عدد الفراخ المطلوبة", value: count, strong: true },
       {
         label: "الاوزان المطلوبة",
         value:
@@ -129,19 +147,33 @@ const READING: Record<
 
   weighed: ({ invoice, count }) => ({
     rows: [
-      { label: "عدد الفراخ المطلوبة", value: count },
+      { label: "عدد الفراخ المطلوبة", value: count, strong: true },
       { label: "اجمالي الوزن", value: formatWeight(invoice.totalWeight) },
-      { label: "السعر النهائي", value: formatCurrency(invoice.total) },
+      {
+        label: "السعر النهائي",
+        value: formatCurrency(invoice.total),
+        strong: true,
+      },
     ],
     hint: "انظر الي الفاتورة لمعرفة التفاصيل و تأكيد الطلب",
+    hintCentred: true,
   }),
 
   ready: ({ invoice, count }) => ({
     rows: [
-      { label: "عدد الفراخ المطلوبة", value: count },
-      { label: "السعر النهائي", value: formatCurrency(invoice.total) },
-      { label: "المبلغ المدفوع", value: formatCurrency(invoice.paid) },
+      { label: "عدد الفراخ المطلوبة", value: count, strong: true },
+      {
+        label: "السعر النهائي",
+        value: formatCurrency(invoice.total),
+        strong: true,
+      },
+      {
+        label: "المبلغ المدفوع",
+        value: formatCurrency(invoice.paid),
+        strong: true,
+      },
     ],
     hint: "الطلب الان جاهز للاستلام يمكنك التوجة للمزرعة",
+    hintCentred: true,
   }),
 };

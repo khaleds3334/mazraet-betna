@@ -53,6 +53,23 @@ before the value, the hint before the arrow.
 There were `order-1`/`order-2` classes doing this at first. They worked, but
 they hid the reason — plain DOM order says the same thing and can be read.
 
+## Card details worth keeping straight
+
+- The order number and its timestamp share one right edge. `items-end` shrinks
+  each line to its own text and leaves the shorter one hanging — stretching both
+  and aligning the text right is what the design draws.
+- Counts and money are set in the label's own bold 16px; measurements (weight,
+  pickup time) are 14px regular.
+- The rule is **1.5px in the body green** (`--color-foreground`), not a hairline
+  in the border grey.
+- The timestamp is `--color-timestamp` (#ababab). Figma writes that one as a raw
+  hex rather than a variable, which is why it never matched `disabled` (#8b968f).
+- On the weighed and ready cards the line beside the arrow is centred over two
+  lines (`max-w-[195px] text-center`); on the pending card it is a single line.
+- «تم وزن الفراخ» is the customer wording too now — `ORDER_STATUS_LABEL.customer`
+  said «تم الوزن», which reads as a step rather than a state. Only this card uses
+  the customer labels, so nothing else moved.
+
 ## Two things the design says that the data does not
 
 - **«اجمالي الوزن»** is drawn as `3 فرخات * 2.45 كجم = 7.852 كجم`, which does not

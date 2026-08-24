@@ -135,7 +135,9 @@ export const ORDER_STATUS_LABEL: Record<
   },
   customer: {
     pending: "قيد المراجعة",
-    weighed: "تم الوزن",
+    // The tracking card says it in full, as the design does — "تم الوزن" alone
+    // reads as a step rather than a state.
+    weighed: "تم وزن الفراخ",
     ready: "جاهز للاستلام",
     delivered: "تم التسليم",
     cancelled: "ملغي",
