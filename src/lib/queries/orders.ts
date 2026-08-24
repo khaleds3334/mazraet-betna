@@ -370,6 +370,30 @@ export interface CustomerOrder extends OrderListItem {
  * whole history, and shipping every customer's up front would send a list the
  * admin opens one row of.
  */
+/**
+ * The customer's orders still in progress, newest first — the cards on the
+ * tracking screen (C-31→C-35). Same columns and same mapper as every other
+ * order read, so the customer's card and the admin's are looking at one shape.
+ */
+export async function listCustomerActiveOrders(
+  farmId: string,
+  customerId: string,
+): Promise<OrderListItem[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("orders")
+    .select(`${ORDER_COLUMNS}, cycle(seq)`)
+    .eq("farm_id", farmId)
+    .eq("customer_id", customerId)
+    .in("status", ACTIVE_STATUSES)
+    .order("created_at", { ascending: false });
+
+  const { pickupSlots } = await getFarmSettings(farmId);
+  return (data ?? []).map((order) =>
+    toOrderListItem(order, order.cycle?.seq ?? 0, pickupSlots),
+  );
+}
+
 export async function listCustomerOrders(
   farmId: string,
   customerId: string,

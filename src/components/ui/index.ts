@@ -19,6 +19,7 @@ export { EmptyState } from "./EmptyState";
 export { FarmSaleCard } from "./FarmSaleCard";
 export { PageHeader } from "./PageHeader";
 export { Icon } from "./Icon";
+export { IconRing } from "./IconRing";
 export { InputField } from "./InputField";
 export { Modal } from "./Modal";
 export { NumberStepper } from "./NumberStepper";
