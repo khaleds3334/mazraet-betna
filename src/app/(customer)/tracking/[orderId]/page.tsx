@@ -51,11 +51,15 @@ export default async function OrderTrackingPage({
   const placedAt = new Date(order.createdAt);
 
   return (
-    <div className="-mb-nav flex flex-1 flex-col gap-8 pb-contact">
+    <div className="-mb-nav flex flex-1 flex-col gap-6 pb-contact">
       {/* Which order you are looking at stays on screen while the rest
           scrolls under it. Its own `bg-background` — without one the content
-          would show through as it passes underneath. */}
-      <div className="sticky top-0 z-20 flex flex-col gap-6 bg-background pb-2">
+          would show through as it passes underneath.
+
+          `data-sticky-header` is how anything scrolling this page finds out
+          how much of the top is already spoken for — `WeightsDisclosure`
+          measures it instead of carrying a copy of this block's height. */}
+      <div data-sticky-header className="sticky top-0 z-20 flex flex-col gap-4 bg-background pb-2">
         <PageHeader
           title="تفاصيل الطلب"
           backHref="/tracking"

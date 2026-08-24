@@ -47,6 +47,32 @@ fixed and the rules give way: `w-full` on the row, and the connectors are the
 only things in it allowed to shrink, down to a 4px floor. Nothing shrinks at
 360px and up.
 
+## The disclosure moves the page, both ways
+
+Opening «عرض الاوزان بالتفصيل» scrolls the table into view; closing it puts the
+reader back exactly where they were standing before. Three things make it more
+than a `scrollIntoView`:
+
+- **The page does not scroll — `<main>` does.** The customer shell pins the body
+  to the viewport, so the scroll is done to that element.
+- **A pinned header covers the top.** Scrolling the table's top to the top of the
+  scrollport slides it under the order number, so the header measures itself
+  (`data-sticky-header` on the page's sticky block) instead of this component
+  carrying a copy of its height.
+- **A floating «تواصل معنا» pill covers the bottom.** So the scroll target is the
+  bottom of the *content*, not the bottom of the table — the page's `pb-contact`
+  is exactly the pill's clearance, and landing on it parks the last row above the
+  pill instead of behind it.
+
+A table taller than the screen cannot be shown whole; then the clamp wins and it
+stops with the head of the table just under the header, which is where you start
+reading.
+
+**Closing needs it too.** The table is hundreds of pixels, and the browser
+answers its removal by clamping the scroll to the shorter page — which lands
+wherever it lands, usually halfway up an invoice the customer had already read.
+The position from before the tap is remembered and returned to.
+
 ## Data
 
 **Reads:** `getOrder(farmId, orderId)` — now also carrying `priceConfirmedAt`.
