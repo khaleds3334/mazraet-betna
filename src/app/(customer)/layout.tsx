@@ -33,7 +33,7 @@ export default async function CustomerLayout({
       <BackGuard home="/" />
       <RefreshOnReturn />
       {/* Bottom padding clears the fixed BottomNav (its height + safe area). */}
-      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))]">
+      <main className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))]">
         {children}
       </main>
       <BottomNav activeOrders={activeOrders} />

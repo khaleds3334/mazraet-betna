@@ -285,10 +285,16 @@ select,
 }
 
 /*
-  Hides the scrollbar on a row that scrolls sideways (weight chips, expense
-  categories, order tabs) while it still scrolls normally by touch.
-  The bar adds nothing here — these rows are swiped, never dragged, and a grey
-  system bar under a row of designed chips reads as a rendering fault.
+  Hides the scrollbar while the element still scrolls normally by touch. Used in
+  two places:
+  · rows that scroll sideways (weight chips, expense categories, order tabs)
+  · the page itself — the <main> of both shells, so long screens (the order
+    screen, the admin orders / customers / cycles lists) scroll without one
+
+  The bar adds nothing in either case: everything here is swiped, never dragged,
+  and a grey system bar over a designed surface reads as a rendering fault.
+  Note this is the opposite of `lime-scrollbar` above, where the design draws the
+  rail on purpose — do not put this on the pickup-time list.
 */
 @utility no-scrollbar {
   scrollbar-width: none; /* Firefox */
