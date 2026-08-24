@@ -68,7 +68,7 @@ export default function AdminLayout({
       {/* Bottom padding clears the fixed AdminBottomNav (its height + safe area).
           `overscroll-contain` keeps a swipe past the last row from reaching the
           document, which is what invites the browser to retract its address bar. */}
-      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[calc(76px+env(safe-area-inset-bottom))]">
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))]">
         {children}
       </main>
       <AdminBottomNav />

@@ -78,6 +78,28 @@
   --color-accent-tan: #ca955d; /* Text/body 4 */
   --color-accent-brown: #987046; /* Text/action 2 */
 
+  /* ── Layout ───────────────────────────────────────────────────────── */
+  /* The height of the fixed bottom nav, safe area excluded — measured, not
+     guessed: 2px top border + 8px padding + a 32px icon line box + 4px gap +
+     a 20px label + 8px padding. Both shells pad their <main> by it, and
+     anything floating above the bar measures up from it, so it lives here
+     rather than being retyped at each site. The shells used to carry 76px,
+     which left an unexplained 6px and threw off anything measured from it. */
+  --spacing-nav: 70px;
+
+  /* Breathing room between the blocks on customer home. Fluid on purpose: it
+     opens to the design's 32px on a tall phone and tightens to 12px on a short
+     one, which is what keeps a small screen from needing to scroll. The blocks
+     also spread beyond this when there is spare height (`justify-evenly`), so
+     this value is the FLOOR of the spacing, not the whole of it. */
+  --spacing-section: clamp(0.75rem, 3.4svh, 2rem);
+
+  /* Room kept under the page content for the floating «تواصل معنا» pill: the
+     pill is 46px and sits 16px above the nav, so 62px is the real floor. Fluid
+     for the same reason as above — a short phone gives back the slack that a
+     tall one can afford to leave. */
+  --spacing-pill: clamp(74px, 9svh, 80px);
+
   /* ── Shadows ──────────────────────────────────────────────────────── */
   --shadow-card: 0 2px 6px 0 #3f624626; /* "drop shadow" */
   /* The faint lift under a warm status card — «حالة البيع للمزرعة» in settings,
@@ -96,12 +118,17 @@
   --shadow-stat: 2px 2px 0 2px #0000001a, 0 0 16px 4px #3f62461a;
   /* Centered modal card (A-14 record-mortality popup and similar). */
   --shadow-modal: 0 8px 16px 4px #3f624640;
+  /* The count badge riding on a bottom-nav icon: just enough of a drop to lift
+     the lime disc off the icon underneath it. */
+  --shadow-badge: 0 1px 0.5px 0 #3f62461f;
 }
 
 /*
   ┌─────────────────────────────────────────────────────────────────────┐
   │  Layer ladder (z-index) — the one place it is written down.          │
   │                                                                      │
+  │    20  sticky page header    (HomeHeader)                            │
+  │    30  floating action       (the «تواصل معنا» pill on customer home) │
   │    40  bottom nav            (BottomNav · AdminBottomNav)            │
   │    45  sidebar drawer        (Sidebar + its scrim)                   │
   │    50  sheets                (BottomSheet)                           │

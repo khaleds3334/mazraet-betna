@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NavIcon } from "./NavIcon";
-import { formatArabicNumber } from "@/lib/format";
+import { CountBadge } from "@/components/ui";
 import { isActivePath } from "@/lib/utils";
 
 /**
@@ -59,11 +59,7 @@ export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
           >
             <span className="relative">
               <NavIcon name={item.icon} active={active} size={28} />
-              {item.badge ? (
-                <span className="absolute -start-2 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-primary-hover bg-primary px-1 text-[11px] font-bold text-primary-foreground">
-                  {formatArabicNumber(item.badge)}
-                </span>
-              ) : null}
+              <CountBadge count={item.badge ?? 0} />
             </span>
             <span className="text-sm font-bold">{item.label}</span>
           </Link>
