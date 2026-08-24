@@ -62,11 +62,13 @@ export function OrderInvoiceView({
         invoice={invoice}
         unitPrice={unitPrice}
         cleaningPrice={cleaningPrice}
-        // The design adds المدفوع / المتبقي on «جاهز للاستلام», where collecting
-        // the birds is about to mean paying for them. Money that has already
-        // moved is shown whenever it has: a customer who paid a deposit at the
-        // scale must see it counted before he is asked for the rest.
-        showPayments={stage === "ready" || invoice.paid > 0}
+        // Only once money has actually moved (Khaled, 2026-08-25). The design
+        // draws المدفوع / المتبقي on «جاهز للاستلام», but on an order nobody has
+        // paid a piaster of, «المبلغ المدفوع ٠ جنيه» and «المبلغ المتبقي ١٣٠٤
+        // جنيه» are two lines repeating the total above them — and the second
+        // reads as a debt to a customer who has not been asked for anything yet.
+        // A deposit paid at the scale still shows, at any stage.
+        showPayments={invoice.paid > 0}
       />
 
       {/* 24px under the card rather than the 16 the column runs on: the table

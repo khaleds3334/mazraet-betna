@@ -73,6 +73,16 @@ answers its removal by clamping the scroll to the shorter page — which lands
 wherever it lands, usually halfway up an invoice the customer had already read.
 The position from before the tap is remembered and returned to.
 
+## المدفوع / المتبقي only once money has moved
+
+The design draws those two lines on C-43. They are shown on **any** stage where
+`invoice.paid > 0`, and on **no** stage where it is zero (Khaled, 2026-08-25).
+
+On an order nobody has paid a piaster of, «المبلغ المدفوع ٠ جنيه» and «المبلغ
+المتبقي ١٣٠٤ جنيه» are two lines repeating the total directly above them — and
+the second reads as a debt to a customer who has not been asked for anything
+yet. A deposit paid at the scale still shows, whatever stage the order is at.
+
 ## Data
 
 **Reads:** `getOrder(farmId, orderId)` — now also carrying `priceConfirmedAt`.
