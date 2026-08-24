@@ -61,6 +61,12 @@ they hid the reason — plain DOM order says the same thing and can be read.
 
 ## Card details worth keeping straight
 
+- **The card's own padding follows the phone, like the gutter does** (`px-card`,
+  Khaled, 2026-08-25). The two paddings compound — a card that keeps a fixed 24
+  while the page narrows spends 80px of a 320px phone before the first letter,
+  turning 297px of line at 393 into 240. With `px-card` it is 256, and the row
+  that needs it is «اجمالي الوزن» on the weighed card, which is a whole sentence.
+  Same variable as `px-screen`; they are one measurement asked twice.
 - The order number and its timestamp share one right edge. `items-end` shrinks
   each line to its own text and leaves the shorter one hanging — stretching both
   and aligning the text right is what the design draws.

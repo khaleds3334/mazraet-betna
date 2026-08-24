@@ -82,7 +82,7 @@ export function TrackingCard({ order }: { order: OrderListItem }) {
       {/* In RTL the first child of a `justify-between` row lands on the RIGHT.
           The design puts the order number there and the status pill opposite,
           so the number block is written first. */}
-      <div className="flex items-center justify-between px-6">
+      <div className="flex items-center justify-between px-card">
         {/* No `items-end`: that shrinks each line to its own text and leaves
             the shorter one hanging. Stretching them both and aligning the text
             right is what puts the two on a single right edge, as drawn. */}
@@ -103,7 +103,7 @@ export function TrackingCard({ order }: { order: OrderListItem }) {
           everything else keeps the card's padding. */}
       <hr className="border-t-[1.5px] border-foreground" />
 
-      <dl className="flex flex-col gap-[7px] px-6 text-foreground">
+      <dl className="flex flex-col gap-[7px] px-card text-foreground">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center justify-between">
             <dt className="text-base font-bold">{row.label}</dt>
@@ -122,7 +122,7 @@ export function TrackingCard({ order }: { order: OrderListItem }) {
         ))}
       </dl>
 
-      <div className="flex items-center justify-between gap-2 px-6">
+      <div className="flex items-center justify-between gap-2 px-card">
         {/* Held to a narrow measure and centred on the two later cards, which is
             how the design breaks it over two lines. `max-w` and not a fixed
             width so it still fits beside the arrow at 320px. */}

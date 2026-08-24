@@ -242,6 +242,22 @@ select,
 }
 
 /*
+  The inside of a card that sits inside the gutter — the order card on the
+  customer's tracking screen. Same three steps as `px-screen`, deliberately:
+  the two paddings COMPOUND, and a card that keeps a fixed 24 while the page
+  narrows spends 80px of a 320px phone before the first letter (24 + 16 twice).
+  Read against the same card at 393px, that is 297px of line turning into 240.
+
+  One variable and two names rather than two variables: they are the same
+  measurement asked twice, and the day they need to differ is the day to split
+  them. `px-card` at the call site so a reader inside a card is not left
+  wondering why the screen's gutter is in there.
+*/
+@utility px-card {
+  padding-inline: var(--screen-pad);
+}
+
+/*
   A row that runs edge to edge while the page around it keeps its gutter: pull
   out by the screen padding, then give it straight back as padding, so the row
   can scroll to the very edge of the phone but its first item still starts on
