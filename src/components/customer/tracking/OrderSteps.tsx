@@ -67,7 +67,11 @@ export function OrderSteps({
           // RTL: the first child of the row lands on the RIGHT, which is where
           // the design puts the circles — so the icon column is written first,
           // and inside the header the title before the badge.
-          <li key={step.title} className="flex gap-4">
+          // Every stage is exactly as tall as its icon column — 64px circle
+          // plus the 28px between circles — so the badge on the active one
+          // cannot stretch it past the others. The design does the same: all
+          // four steps are 96px there, set by the icon column and not the text.
+          <li key={step.title} className="flex min-h-[92px] gap-4">
             {/* The circle sits halfway down its own section: a line segment
                 above and below it, each taking whatever is left, so the two
                 balance whatever the text does. The first stage has nothing
@@ -102,7 +106,7 @@ export function OrderSteps({
 
             {/* 14px top and bottom, so consecutive stages sit 28px apart while
                 the connector still runs unbroken between the circles. */}
-            <div className="flex flex-1 flex-col gap-1 py-3.5 text-right">
+            <div className="flex flex-1 flex-col gap-1 py-3 text-right">
               <div className="flex items-center justify-between gap-3">
                 <h2
                   className={cn(
