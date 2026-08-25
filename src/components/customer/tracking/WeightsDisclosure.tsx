@@ -18,10 +18,13 @@ import { cn } from "@/lib/utils";
  *    top of the scrollport would slide it under the order number. The header
  *    measures itself (`data-sticky-header`) rather than being written down here
  *    as a number that would rot the next time the header changes.
- * 3. **A floating «تواصل معنا» pill covers the bottom.** So the scroll goes to
- *    the very bottom of the content, not to the bottom of the table — the page's
- *    own `pb-contact` is exactly the pill's clearance, and landing on it parks
- *    the last row above the pill instead of behind it.
+ * 3. **A floating «تواصل معنا» pill covers the bottom**, on the screens that
+ *    still carry one. So the scroll goes to the very bottom of the content, not
+ *    to the bottom of the table — the page's own `pb-contact` is exactly the
+ *    pill's clearance, and landing on it parks the last row above the pill
+ *    instead of behind it. A delivered order has no pill and a smaller padding
+ *    (C-45/C-46); the same "scroll to the end of the content" lands correctly
+ *    there too, which is why this reads the page rather than a number.
  *
  * A table taller than the screen cannot be shown whole, and then the clamp wins:
  * it stops with the head of the table just under the header, which is where you

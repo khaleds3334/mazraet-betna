@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 /** The stages that get the flat strip. «قيد المراجعة» gets the timeline (C-40). */
 export type TrackedStage = Extract<
   OrderStage,
-  "weighed" | "cleaning" | "ready"
+  "weighed" | "cleaning" | "ready" | "delivered"
 >;
 
 /**
@@ -26,15 +26,21 @@ interface Mark {
 }
 
 /**
- * **The strip is five marks, never six.** Between the four stages sit two gates:
- * the customer confirming the price (before slaughtering) and the order becoming
- * ready (before collection). The design shows only the one in play — the gate
- * just passed, or the one being waited on — so the row stays the same length at
- * every stage and the eye lands on the single checkpoint that matters.
+ * **The strip is five marks, never six** — while the order is still running.
+ * Between the four stages sit two gates: the customer confirming the price
+ * (before slaughtering) and the order becoming ready (before collection). The
+ * design shows only the one in play — the gate just passed, or the one being
+ * waited on — so the row stays the same length at every stage and the eye lands
+ * on the single checkpoint that matters.
  *
- * Written as three literal rows rather than derived from a longer chain: there
- * are exactly three states, the design draws all three, and a rule general
- * enough to produce them would take longer to read than they do.
+ * **A delivered order has four, and no gate at all** (C-45/C-46). Both
+ * checkpoints are behind it and neither is waiting on anybody; what is left is
+ * the four things that happened, all of them done. The row is 268px where the
+ * others are 302, and that is the design's, not a shortcut.
+ *
+ * Written as literal rows rather than derived from a longer chain: there are
+ * exactly four, the design draws all four, and a rule general enough to produce
+ * them would take longer to read than they do.
  */
 const STRIP: Record<TrackedStage, Mark[]> = {
   // Weighed, and the price is waiting on the customer — the open gate is the
@@ -65,6 +71,15 @@ const STRIP: Record<TrackedStage, Mark[]> = {
     { icon: "checkDouble", gate: true, state: "done" },
     { icon: "delivered", state: "todo" },
   ],
+  // Over. The gates were checkpoints on the way here and there is no longer a
+  // way here, so the strip drops them and reads as the four things that
+  // happened — every one of them done, nothing live.
+  delivered: [
+    { icon: "ordersWaiting", state: "done" },
+    { icon: "weight", state: "done" },
+    { icon: "ordersProcessing", state: "done" },
+    { icon: "delivered", state: "done" },
+  ],
 };
 
 /** Lime fill · pale fill with a lime edge · nothing but a grey edge. */
@@ -75,10 +90,10 @@ const LOOK: Record<Mark["state"], string> = {
 };
 
 /**
- * The compact stage strip on C-41→C-43 — the same four stages the vertical
- * timeline draws on C-40, laid flat. From «تم الوزن» onwards the invoice is what
- * the screen is for, and the stages become a reminder of where you are rather
- * than the subject.
+ * The compact stage strip on C-41→C-43 and C-45/C-46 — the same four stages the
+ * vertical timeline draws on C-40, laid flat. From «تم الوزن» onwards the invoice
+ * is what the screen is for, and the stages become a reminder of where you are
+ * rather than the subject.
  */
 export function OrderTrackStrip({ stage }: { stage: TrackedStage }) {
   const marks = STRIP[stage];
