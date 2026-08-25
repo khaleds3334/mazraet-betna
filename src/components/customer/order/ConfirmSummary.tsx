@@ -6,6 +6,7 @@ import {
   pluralizeChicken,
 } from "@/lib/format";
 import { ChickenTray } from "./ChickenTray";
+import { Span } from "next/dist/trace";
 
 /**
  * The order read back to the customer, above the confirm button (Figma
@@ -70,7 +71,9 @@ export function ConfirmSummary({
           </p>
           {weight != null && (
             <p className="flex items-center gap-1 whitespace-nowrap">
-              <Icon name="weight" size={24} aria-hidden />
+              <span className="-scale-x-100 text-accent-tan">
+                <Icon name="weight" size={24} aria-hidden />
+              </span>
               <span className="text-sm">في حدود {formatWeight(weight)}</span>
             </p>
           )}
@@ -86,7 +89,9 @@ export function ConfirmSummary({
               the same rule `computeInvoice` charges by. */}
           {cleaning && (
             <p className="flex items-center gap-1 whitespace-nowrap">
-              <KnifeGlyph size={24} />
+              <span className="-scale-x-100 text-accent-tan">
+                <KnifeGlyph size={24} />{" "}
+              </span>
               <span className="text-sm">
                 {formatCurrency(count * cleaningPrice)}
               </span>
