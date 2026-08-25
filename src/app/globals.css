@@ -67,6 +67,7 @@
 
   /* ── Status ───────────────────────────────────────────────────────── */
   --color-success: #2c854d; /* Text/success 3 */
+  --color-success-soft: #4ade80; /* Icons/success — the tick in the C-15 bubble */
   --color-success-surface: #dbf8e6; /* Surface/success */
   --color-warning: #f7b545; /* Text/warning */
   --color-warning-surface: #fdf0da; /* Surface/warning */

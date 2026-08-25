@@ -97,12 +97,19 @@ New: `StatusBubble` (`/components/ui`) · `NotificationRow` · `MarkNotification
 · `formatTimeAgo()`
 Reused: `PageHeader` · `CountBadge` (the bell's badge already existed)
 
-`StatusBubble` takes the toast's three tones from the same token pairs — the same
-three things are being said, and a customer should not have to learn two colour
-languages because one of them fades after four seconds. It draws **bare** glyphs
-(tick · exclamation · cross), not the toast's `success`/`warning`/`error` icons:
-those are each drawn inside their own circle or triangle, which inside this disc
-is a shape within a shape.
+`StatusBubble` is **the exported vector, not a disc with an icon in it** (Figma
+4129:4435). Each of the three is its own speech balloon with its own tail, at its
+own size — the warning is 42px where the other two are 38 — so nothing built out
+of a circle and a glyph could have stood in for them.
+
+The paths are copied out of the SVG exports; the two fills per bubble are bound to
+tokens (`Surface/*` behind `Icons/*`, the same pairs the toast uses) rather than
+the hex baked into the export. One new token came with them:
+`--color-success-soft: #4ade80`, the tick's green.
+
+Inlined rather than three files in `/public`: this screen draws one per row, and a
+list that fetches an image per line flickers its way down the page the first time
+it opens.
 
 `CountBadge` gained a `tone`: lime on the nav, the contact pill's orange on the
 bell. Lime on the bell sat an inch above a lime tab bar and read as decoration
