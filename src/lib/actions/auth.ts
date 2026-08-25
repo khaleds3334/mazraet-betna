@@ -36,20 +36,25 @@ export async function startLogin(rawPhone: string): Promise<StartLoginResult> {
 
   const admin = createAdminClient();
 
-  // 1) Is this the admin? The farm stores its owner's phone (owner_phone).
-  const { data: farm } = await admin
-    .from("farm")
-    .select("id")
-    .eq("owner_phone", phone)
-    .maybeSingle();
-  if (farm) return { ok: true, next: "pin", phone };
+  // Both asked at once. The number belongs to the owner, to a customer, or to
+  // nobody, and neither answer is needed to ask the other question — waited in
+  // turn they were two round trips standing between a tap on «دخول» and anything
+  // happening at all. The admin's login pays for one lookup it does not use;
+  // every customer's saves a whole trip to Stockholm (T-68, T-71).
+  const [{ data: farm }, { data: customer }] = await Promise.all([
+    // 1) Is this the admin? The farm stores its owner's phone (owner_phone).
+    admin.from("farm").select("id").eq("owner_phone", phone).maybeSingle(),
+    // 2) A registered customer (added by the admin, or self-registered before)?
+    admin
+      .from("customer")
+      .select("id, auth_user_id")
+      .eq("phone", phone)
+      .maybeSingle(),
+  ]);
 
-  // 2) A registered customer (added by the admin, or self-registered before)?
-  const { data: customer } = await admin
-    .from("customer")
-    .select("id, auth_user_id")
-    .eq("phone", phone)
-    .maybeSingle();
+  // The owner wins the tie: his number is the farm's, and if it is also on a
+  // customer row that row is not what he is signing in as.
+  if (farm) return { ok: true, next: "pin", phone };
   if (!customer) return { ok: true, next: "register", phone };
 
   // Known customer → make sure they have an auth account, then sign them in.
