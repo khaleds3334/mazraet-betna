@@ -51,10 +51,21 @@ export interface CustomerNotification {
 const ORDER_MONEY =
   "seq, unit_price, cleaning_price, cycle(seq), order_line(id, position, batch_no, actual_weight, cleaning), payment(amount)";
 
+/** The two notices whose sentence is a question about money — see `settle`. */
+const PRICED: Enums<"notification_event">[] = ["order_ready", "order_delivered"];
+
 /**
- * «تم تسليم الطلب» read as money rather than as a status (Khaled, 2026-08-25):
- * settled it is good news, with something still owed it is a warning that names
- * what was paid and what is left.
+ * The two notices that carry figures (Khaled, 2026-08-25).
+ *
+ * **«طلبك جاهز للاستلام»** names what to bring — which is FR-31's «مع الإجمالي»,
+ * and is the amount still owed rather than the total: a customer who paid a
+ * deposit at the scale should be asked for the rest, not for the bill again. The
+ * tone stays good news; being asked to pay on collection is the arrangement, not
+ * a warning.
+ *
+ * **«تم تسليم الطلب»** is read as money rather than as a status: settled it is
+ * good news, with something still owed it is a warning that names what was paid
+ * and what is left.
  *
  * **Computed here, never stored.** The amounts are the order's invoice, and an
  * invoice is the order plus its weights worked out on read (D-05) — writing the
@@ -64,21 +75,24 @@ const ORDER_MONEY =
  * and the history card run, so the three cannot disagree, and it stays true
  * however long the notice sits in the list.
  *
- * Only this event is re-read. Every other notice is finished the moment it is
+ * Only these two are re-read. Every other notice is finished the moment it is
  * written, and the sentence in the database is the whole of it.
  */
-function settle(order: {
-  unit_price: number | null;
-  cleaning_price: number | null;
-  order_line: {
-    id: string;
-    position: number;
-    batch_no: number;
-    actual_weight: number | null;
-    cleaning: boolean;
-  }[];
-  payment: { amount: number }[];
-}): { kind: Enums<"notification_kind">; body: string } {
+function settle(
+  event: Enums<"notification_event">,
+  order: {
+    unit_price: number | null;
+    cleaning_price: number | null;
+    order_line: {
+      id: string;
+      position: number;
+      batch_no: number;
+      actual_weight: number | null;
+      cleaning: boolean;
+    }[];
+    payment: { amount: number }[];
+  },
+): { kind?: Enums<"notification_kind">; body: string } {
   const invoice = computeInvoice(
     {
       unit_price: order.unit_price ?? 0,
@@ -88,12 +102,29 @@ function settle(order: {
     order.payment ?? [],
   );
 
-  if (invoice.remaining <= 0) {
+  const { paid, remaining } = invoice;
+
+  if (event === "order_ready") {
+    if (remaining <= 0) {
+      return { body: "خلص تجهيزه و تنظيفه و مدفوع بالكامل، تقدر تيجي تستلمه" };
+    }
+    if (paid > 0) {
+      return {
+        body: `خلص تجهيزه و تنظيفه، دفعت ${formatCurrency(paid)} و المطلوب ${formatCurrency(remaining)}`,
+      };
+    }
+    return {
+      body: `خلص تجهيزه و تنظيفه، المطلوب ${formatCurrency(remaining)}`,
+    };
+  }
+
+  // Delivered — and here the money decides the tone as well as the words.
+  if (remaining <= 0) {
     return { kind: "success", body: "تم استلامه و سداد المبلغ بالكامل" };
   }
   return {
     kind: "warning",
-    body: `تم استلامه، دفعت ${formatCurrency(invoice.paid)} و باقي عليك ${formatCurrency(invoice.remaining)}`,
+    body: `تم استلامه، دفعت ${formatCurrency(paid)} و باقي عليك ${formatCurrency(remaining)}`,
   };
 }
 
@@ -119,11 +150,11 @@ export async function listNotifications(
     .order("created_at", { ascending: false });
 
   return (data ?? []).map((row) => {
-    // The one notice whose tone and sentence are a question about money, and so
-    // the one that is worked out now rather than read back — see `settle`.
+    // The notices whose figures are a question about money, and so the ones
+    // worked out now rather than read back — see `settle`.
     const money =
-      row.event === "order_delivered" && row.orders
-        ? settle(row.orders)
+      row.event && PRICED.includes(row.event) && row.orders
+        ? settle(row.event, row.orders)
         : null;
 
     return {

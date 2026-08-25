@@ -30,7 +30,7 @@ writers are already two apps and a psql prompt, and FR-16 will be a third.
 | Customer account created | «اهلا بيك في مزرعة بيتنا» | success | — |
 | Order placed | «تم استلام طلبك بنجاح» | success | the order |
 | Order weighed | «الفاتورة جاهزة» | success | the order |
-| Order ready | «طلبك جاهز للاستلام» | success | the order |
+| Order ready | «طلبك جاهز للاستلام» + what to bring | success | the order |
 | Order delivered, settled | «تم تسليم الطلب» | success | the order |
 | Order delivered, owing | «تم تسليم الطلب» + what was paid and what is left | **warning** | the order |
 | Order cancelled | «تم الغاء طلبك» + the reason | error | the order |
@@ -48,14 +48,21 @@ and without the edge test every bird sold would re-announce the sale.
 **Orphan and house orders notify nobody** (FR-13, FR-36): one has no customer, the
 other is not a sale.
 
-**The delivered notice is the one that is priced on read.** Its tone and its
-sentence are a question about money — settled is good news, owed on is a warning —
-and money is answered by `computeInvoice`, never stored (D-05). The trigger writes
-`event = 'order_delivered'` with a placeholder tone and a neutral sentence;
-`listNotifications` runs the same invoice the invoice screen and the history card
-run, and replaces both. So the figures are as true the tenth time he opens the
-screen as the first, and a payment recorded afterwards moves the notice from
-warning to success on its own.
+**Two notices are priced on read**, and neither figure is stored (D-05). The
+triggers write the event with a neutral sentence; `listNotifications` runs the
+same `computeInvoice` the invoice screen and the history card run, and replaces
+the sentence — and, for one of them, the tone.
+
+- **«جاهز للاستلام»** names what to bring. That is FR-31's «مع الإجمالي», and it
+  is the amount still *owed*, not the total: a customer who paid a deposit at the
+  scale should be asked for the rest, not for the bill again. The tone stays good
+  news — being asked to pay on collection is the arrangement, not a warning.
+- **«تم تسليم الطلب»** is read as money rather than as a status: settled is
+  success, still owed on is a **warning** naming what was paid and what is left.
+
+So the figures are as true the tenth time he opens the screen as the first, and a
+payment recorded afterwards moves the delivered notice from warning to success on
+its own.
 
 Every other notice is finished the moment it is written.
 
@@ -68,15 +75,11 @@ storing «طلبك رقم ١٢٢٤#» would have meant a second implementation o
 Each body is instead written to read *after* that prefix, and `NotificationRow`
 puts the number on the front with the real formatter, from the joined order.
 
-**Consequence for FR-31:** the «جاهز للاستلام» notice does not carry the total, as
-FR-31's wording asks. Tapping it opens the invoice, which is one tap and always
-right, where a total frozen into a sentence would be a second copy of
-`computeInvoice` written in SQL.
-
-The delivered notice *does* carry figures — because they are computed on read
-rather than stored. `notification.event` is what makes that possible: it is the
-one thing the database knows for certain about a notice, and the query keys off it
-instead of matching on the title.
+**FR-31 is met, from the other side.** Its «مع الإجمالي» is not written into the
+row; it is computed when the row is read. `notification.event` is what makes that
+possible — it is the one thing the database knows for certain about a notice, and
+the query keys off it instead of matching on the title, which is a sentence for a
+human and will be reworded.
 
 ## New and old
 
