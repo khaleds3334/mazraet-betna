@@ -41,7 +41,7 @@ export function ContactSheet({
 }) {
   return (
     <Modal open={open} onClose={onClose} label="تواصل معنا">
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         {/* RTL: the first child lands on the RIGHT, so the sentence is written
             first and the close button, on the left, second — which is where the
             design puts it. */}

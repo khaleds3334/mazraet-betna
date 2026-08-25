@@ -2559,3 +2559,40 @@ the button's right with the word beside it, and in RTL the first child is the
 right-hand one. Written after the word it landed on the left, which is where it
 first shipped.
 **Date:** 2026-08-25
+
+### T-74 — A change reaches the screen that is being looked at
+`LiveRefresh` subscribes to Supabase Realtime on four tables and turns any change
+into `router.refresh()`. Mounted in both shells: the customer's watches `cycle`,
+`settings`, `orders` and `notification`; the admin's watches `orders` only.
+**The problem.** Every screen here is rendered on the server and then held. The
+countdown ticks by itself, but whether the sale is open, what the kilo costs,
+what stage an order is at, and how many are waiting are read once and frozen.
+`RefreshOnReturn` (T-?) covers the phone put down and picked up. Nothing covered
+the phone *held*: the admin opened the sale and a customer looking straight at it
+saw nothing, and — the one that costs money — a customer placed an order and the
+admin standing at the scale saw nothing until he left the screen and came back
+(Khaled, 2026-08-26).
+**It carries no data.** The payload is thrown away; the only thing taken from the
+event is *that* something changed. Every figure is still computed on the server,
+by the same query, behind the same RLS, and nothing about how a screen is built
+moves into the browser. That is what makes this safe to add to a finished app —
+the diff is one component and a publication, and not one screen changed.
+**No filters — RLS is the filter,** and a better one than anything a browser
+passes: `orders_select` already limits a customer to his own orders and
+`notification_select` to his own notices, and Realtime applies those per
+subscriber. So no ids reach the client and there is no filter to get wrong.
+**Three things hold a refresh back:** a 400ms settling window, so a burst of
+related writes (an order, its lines, its notice) costs one re-read; a hidden tab,
+so a phone in a pocket does not re-render all afternoon; and **an open overlay**,
+because a re-read under the weighing sheet is the one thing in this app that must
+never surprise anybody. `router.refresh()` keeps client state either way, so
+nothing typed is at risk — but the numbers under a sheet being worked in must not
+move. It waits and reads when the sheet closes.
+**The admin watches `orders` and nothing else:** everything else on his screens
+changes because *he* changed it, and his own writes already `revalidatePath`.
+**This overturns the note in `RefreshOnReturn`,** which weighed "a socket open on
+every customer's phone all day" against a poll and took neither. The socket is
+the cheaper of the two: a timer re-renders on a schedule whether or not anything
+happened, and each of those is a server render and a database read. This wakes
+only when a row actually changed — a handful of times a day on this farm.
+**Date:** 2026-08-26

@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui";
 import { AdminBottomNav } from "@/components/layout/AdminBottomNav";
 import { BackGuard } from "@/components/layout/BackGuard";
 import { InstallPrompt } from "@/components/shared/InstallPrompt";
+import { LiveRefresh } from "@/components/layout/LiveRefresh";
 
 /**
  * The admin half of the site advertises the **second** manifest, so "install"
@@ -55,6 +56,11 @@ export default function AdminLayout({
     >
       <Toaster />
       <BackGuard home="/admin" />
+      {/* `orders` only. Everything else on the admin's screens changes because
+          *he* changed it, and his own writes already revalidate — the one thing
+          that arrives without him is a customer placing an order, which is the
+          screen he is standing in front of when it happens. */}
+      <LiveRefresh tables={["orders"]} />
       {/* Every word arrives from here, so the customer app can say its own
           (Figma 3799:4013 — C-Comp_PWA_InstallBanner). */}
       <InstallPrompt

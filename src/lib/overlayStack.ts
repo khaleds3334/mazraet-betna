@@ -62,6 +62,15 @@ export function closeTopOverlay(): boolean {
   return true;
 }
 
+/**
+ * Whether anything is open right now. `LiveRefresh` asks before it re-reads a
+ * screen: a refresh under an open weighing sheet is the one thing in this app
+ * that must never surprise anybody, so it waits for the sheet to close.
+ */
+export function hasOpenOverlay(): boolean {
+  return stack.length > 0;
+}
+
 export function subscribeOverlays(listener: () => void) {
   listeners.add(listener);
   return () => {

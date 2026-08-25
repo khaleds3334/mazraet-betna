@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui";
 import { BackGuard } from "@/components/layout/BackGuard";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { InstallPrompt } from "@/components/shared/InstallPrompt";
+import { LiveRefresh } from "@/components/layout/LiveRefresh";
 import { RefreshOnReturn } from "@/components/layout/RefreshOnReturn";
 import { getCurrentCustomer } from "@/lib/queries/customers";
 import { countActiveOrders } from "@/lib/queries/orders";
@@ -62,6 +63,12 @@ export default function CustomerLayout({
         laterLabel="لاحقاً"
       />
       <RefreshOnReturn />
+      {/* What can change under a customer who is looking at the screen: the
+          admin opening or closing the sale (`cycle`), moving the kilo price
+          (`settings`), taking one of his orders through the stages (`orders` —
+          the tracking cards and the count on their tab), and the notices that
+          follow (`notification` — the bell's badge). */}
+      <LiveRefresh tables={["cycle", "settings", "orders", "notification"]} />
       {/* Bottom padding clears the fixed BottomNav (its height + safe area). */}
       <main className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))]">
         {children}
