@@ -41,7 +41,10 @@ const CRUMBLE_MS = 620;
  * is small and sits low, and without the scrim it read as part of the page it
  * had landed on rather than something asking a question (Khaled, 2026-08-22).
  * The scrim is the `Modal` treatment — dim plus a light blur — because this is a
- * popup, not the sheet the first version made it. **It is the one overlay here
+ * popup, not the sheet the first version made it. **Half black, in both apps**
+ * (Khaled, 2026-08-25): this banner is small and low on the screen, and a 30%
+ * dim left the page behind it legible enough to keep reading, which is how a
+ * question gets ignored rather than answered. **It is the one overlay here
  * that a tap outside does not close**: the banner asks a question with its two
  * answers written on it, and a tap on the dimmed page is neither.
  *
@@ -139,7 +142,7 @@ export function InstallPrompt({
       <div
         aria-hidden
         className={cn(
-          "fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px]",
+          "fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]",
           leaving
             ? "opacity-0 transition-opacity duration-500"
             : "opacity-100 [animation:install-scrim_620ms_ease-out]",

@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui";
 import { BackGuard } from "@/components/layout/BackGuard";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { InstallPrompt } from "@/components/shared/InstallPrompt";
 import { RefreshOnReturn } from "@/components/layout/RefreshOnReturn";
 import { getCurrentCustomer } from "@/lib/queries/customers";
 import { countActiveOrders } from "@/lib/queries/orders";
@@ -31,6 +32,18 @@ export default async function CustomerLayout({
     >
       <Toaster />
       <BackGuard home="/" />
+      {/* Every word arrives from here, so each half of the site says its own
+          (Figma 2948:1273 — the customer's C-Comp_PWA_InstallBanner). The two
+          are two installed apps with two manifests and two icons; the banner is
+          one component and knows which it is offering. */}
+      <InstallPrompt
+        app="customer"
+        title="لسهولة الوصول للموقع"
+        body="يمكنك اضافة الموقع كتطبيق علي الشاشة الرئيسية"
+        manualBody="من زرار المشاركة تحت، اختار «إضافة إلى الشاشة الرئيسية»"
+        installLabel="تحميل"
+        laterLabel="لاحقاً"
+      />
       <RefreshOnReturn />
       {/* Bottom padding clears the fixed BottomNav (its height + safe area). */}
       <main className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))]">
