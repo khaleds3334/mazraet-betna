@@ -1,4 +1,4 @@
-import { Icon } from "@/components/ui";
+import { Icon, KnifeGlyph } from "@/components/ui";
 import {
   formatCurrency,
   formatPricePerKilo,
@@ -24,11 +24,19 @@ import { ChickenTray } from "./ChickenTray";
  * button is how a customer arrives at the farm expecting a number nobody
  * promised him.
  *
+ * ## Three of the four labels are icons
+ *
+ * Only «عدد» is still a word (Khaled, 2026-08-25). The scale, the price badge
+ * and the knife each stand exactly where a label would, and each is a shape this
+ * customer already knows from elsewhere in the app — the scale from every weight
+ * in it, the knife from the switch that turned cleaning on. Four written labels
+ * in a strip this small is a paragraph; the count keeps its word because the
+ * tray beside it is already doing the picture's job.
+ *
  * ## Reading order
  *
- * RTL, so the first child of a row is its rightmost. Tray, then the count
- * column, then the price column — and inside the cleaning line the knife comes
- * first, standing where «السعر :» stands in the line above it.
+ * RTL, so the first child of a row is its rightmost — the icon leads its line,
+ * standing where «السعر :» would have stood.
  *
  * `items-start` on the columns, not `items-end`: in RTL the start *is* the right
  * edge, which is where the design aligns both stacks.
@@ -61,24 +69,24 @@ export function ConfirmSummary({
             <span className="text-lg">{pluralizeChicken(count)}</span>
           </p>
           {weight != null && (
-            <p className="whitespace-nowrap">
-              <span className="text-base font-bold">الوزن : </span>
+            <p className="flex items-center gap-1 whitespace-nowrap">
+              <Icon name="weight" size={24} aria-hidden />
               <span className="text-sm">في حدود {formatWeight(weight)}</span>
             </p>
           )}
         </div>
 
         <div className="flex flex-col items-start gap-1.5">
-          <p className="whitespace-nowrap">
-            <span className="text-base font-bold">السعر : </span>
+          <p className="flex items-center gap-1 whitespace-nowrap">
+            <span className="text-base font-bold">السعر:</span>
             <span className="text-sm">{formatPricePerKilo(salePrice)}</span>
           </p>
           {/* Only when he asked for it. A cleaning line reading «٠ جنيه» is a
               charge that isn't there, said out loud. The fee is flat per bird —
               the same rule `computeInvoice` charges by. */}
           {cleaning && (
-            <p className="flex items-center gap-0.5 whitespace-nowrap">
-              <Icon name="cleaning" size={24} aria-hidden />
+            <p className="flex items-center gap-1 whitespace-nowrap">
+              <KnifeGlyph size={24} />
               <span className="text-sm">
                 {formatCurrency(count * cleaningPrice)}
               </span>

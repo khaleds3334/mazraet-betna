@@ -44,7 +44,7 @@ import {
   Loading03Icon,
   TickDouble03Icon, // figma: tick-double-03
   // ── Domain: orders, money, cycle ──
-  Knife02Icon, // the cleaning fee on the confirm bar (C-22)
+  BadgeDollarSignIcon, // figma: badge-dollar-sign — the kilo price on C-22
   WeightScale01Icon, // figma: weight-scale-01 — the weighing screen
   PackageDelivered01Icon, // figma: package-delivered-01
   Wallet01Icon, // figma: wallet-01 — sidebar debt card
@@ -130,12 +130,7 @@ export const icons = {
 
   // Domain
   weight: WeightScale01Icon,
-  // The design draws a *filled* knife from Remix Icons (`ri:knife-fill`), which
-  // Hugeicons has no equal of — the free pack is Stroke Rounded only. This is
-  // the nearest shape in the library we already use; swapping it for the exact
-  // glyph is one line here plus an SVG, which is the whole reason this map
-  // exists (Khaled, 2026-08-25).
-  cleaning: Knife02Icon,
+  price: BadgeDollarSignIcon,
   delivered: PackageDelivered01Icon,
   wallet: Wallet01Icon,
   walletAdd: WalletAdd01Icon,

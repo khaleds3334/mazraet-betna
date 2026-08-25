@@ -2293,3 +2293,19 @@ for 59px and got 136px.
 **The general rule this sets:** any dimension a component draws itself at is a
 prop with named options, never a class the caller is trusted to override.
 **Date:** 2026-08-25
+
+### T-65 — Look for the shape in the project before reaching for the library
+The confirm bar's knife is `KnifeGlyph`, moved from `admin/orders/weighing/` up
+to `/components/ui/` — not a Hugeicons name. Its price badge, by contrast, *is*
+one: `BadgeDollarSignIcon`, whose name matches the Figma node exactly.
+**Why this is written down:** the first attempt registered `Knife02Icon` as the
+nearest Hugeicons shape and shipped it, when the design's own knife had already
+been traced into this repo months earlier for the weighing sheet — the same
+export, `ri:knife-fill`, under T-19 (Khaled, 2026-08-25).
+**The rule:** when the design uses a glyph from outside Hugeicons, grep the
+project for it before substituting. `/lib/icons.ts` is where Hugeicons names are
+registered; it is not the whole inventory of shapes the app draws.
+**And check the name:** Figma names its layers after the icon set they came from.
+`badge-dollar-sign` resolved to `BadgeDollarSignIcon` on the first try — the name
+in the node was the answer, not a starting point for guessing.
+**Date:** 2026-08-25

@@ -2,9 +2,9 @@
 
 import { Toggle } from "@/components/ui";
 import type { OrderListItem } from "@/lib/queries/orders";
+import { KnifeGlyph } from "@/components/ui";
 import { formatPricePerKilo, pluralizeChicken } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { KnifeGlyph } from "./glyphs";
 
 /** Who the birds are for — the customer, the relative, or nobody yet (FR-13). */
 function orderFor(order: OrderListItem): string {
