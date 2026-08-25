@@ -41,7 +41,7 @@ disagree.
 |---|---|---|---|
 | Delivered, settled | «تم الاستلام» · «تم الدفع» | count · final price | «تم تسليم الطلب في …» |
 | Delivered, owing | «تم الاستلام» · «متبقي … ج» | count · final price · paid so far | «تم تسليم الطلب في …» |
-| Cancelled | «تم الغاء الطلب» | the reason, centred | «تم الغاء الطلب في …» |
+| Cancelled | «تم الغاء الطلب» | the reason, centred | «تم الغاء الطلب في …», one line |
 
 **Two pills, not one.** On tracking the status *is* the news; here it is settled —
 every delivered card says the same thing — so the second pill carries what the
@@ -54,11 +54,19 @@ question left. Same rule as the invoice on C-41.
 **A house order** (FR-36) is never a sale, so it is never owed on: it wears the
 settled pill («مش محسوب») and files under «مدفوع».
 
+**A cancelled card opens nothing, and so has no arrow.** C-45/C-46 are an invoice
+and a payment history; an order that was called off has neither, and everything it
+has to say is the reason already on its face. The arrow is the only thing that
+says a card leads somewhere, so the two go together — `OrderCardShell` drops both
+when no `href` is passed. Its closing date then runs on one line, in the width the
+arrow left behind.
+
 ## The filters
 
 `مدفوع` · `عليه فلوس` · `ملغي` — in that order, which RTL puts starting from the
 right, as drawn.
 
+- **Centred**, under a centred title and a centred caption.
 - **One at a time.** They are not overlapping questions.
 - **Nothing selected is the fourth state.** The screen opens on everything, and
   tapping the lit chip puts it back. The design draws no «الكل», and the way out
@@ -70,9 +78,24 @@ right, as drawn.
   empty-state crate. He *has* orders; «اطلب دلوقتي» would be answering a question
   he did not ask.
 
+## What scrolls
+
+**Only the cards.** The title, the caption and the chips are one `sticky top-0`
+block with the page background under it — the chips are how you steer this
+screen, and a control that scrolls away is one you have to scroll back for to
+change your mind.
+
+`sticky`, not `fixed`: the scroller is `<main>`, and a fixed block would position
+against the viewport instead and land over the shell's own chrome.
+
+That block lives in `HistoryList` so all three pinned things share one background.
+The empty state draws the same `HistoryHeading`, unpinned — it has nothing to
+scroll.
+
 ## Components
 
-New: `HistoryList` · `HistoryCard` · `OrderCardShell` + `OrderCardRows`
+New: `HistoryList` · `HistoryCard` · `HistoryHeading` · `OrderCardShell` +
+`OrderCardRows`
 Reused: `PageHeader` · `Chip` · `OrderStatusBadge` · `EmptyOrders` (C-50 branch)
 
 `OrderCardShell` is the tracking card's shape, lifted out so both lists draw one

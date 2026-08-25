@@ -36,6 +36,12 @@ import type { OrderListItem } from "@/lib/queries/orders";
  * off `deliveredAt`, «تم الغاء الطلب في …» off `cancelledAt`. The card's header
  * already carries the day it was placed, and repeating it below would be the
  * same date twice.
+ *
+ * **A cancelled card opens nothing** (Khaled, 2026-08-25), so it has no arrow
+ * either — see `OrderCardShell`. There is no detail screen behind it: C-45 and
+ * C-46 are an invoice and a payment history, and an order that was called off
+ * has neither. Everything it has to say is the reason, which is already the
+ * whole middle of the card. Its date runs on one line, the room the arrow left.
  */
 export function HistoryCard({ order }: { order: OrderListItem }) {
   const invoice = computeInvoice(
@@ -58,7 +64,7 @@ export function HistoryCard({ order }: { order: OrderListItem }) {
 
   return (
     <OrderCardShell
-      href={`/tracking/${order.id}`}
+      href={cancelled ? undefined : `/tracking/${order.id}`}
       number={order.number}
       placedAt={order.createdAt}
       hintCentred
@@ -131,10 +137,14 @@ function CancelReason({ reason }: { reason: string | null }) {
 /**
  * «تم تسليم الطلب في ٥ نوفمبر الساعة ١٢:٣٠ م» — the date the order ended.
  *
- * Broken over two lines by the design, and left as two elements rather than one
- * string with a `<br />`: an Arabic sentence split by a raw break loses its
- * direction at the seam, which is a bug this project has already paid for once
- * (C-30).
+ * A delivered card breaks it over two lines, as the design draws it, and does so
+ * with two elements rather than one string and a `<br />`: an Arabic sentence
+ * split by a raw break loses its direction at the seam, a bug this project has
+ * already paid for once (C-30).
+ *
+ * A cancelled card keeps it on one line (Khaled, 2026-08-25) — with no arrow
+ * beside it there is a whole card's width to say it in, and wrapping a line that
+ * fits reads as a line that was too long.
  */
 function Ending({
   order,
@@ -147,17 +157,16 @@ function Ending({
   if (!at) return <>{cancelled ? "تم الغاء الطلب" : "تم تسليم الطلب"}</>;
 
   const when = new Date(at);
+  const date = `${formatArabicDate(when, "d MMMM")} الساعة ${formatArabicTime(
+    `${when.getHours()}:${String(when.getMinutes()).padStart(2, "0")}`,
+  )}`;
+
+  if (cancelled) return <>تم الغاء الطلب في {date}</>;
+
   return (
     <>
-      <span className="block">
-        {cancelled ? "تم الغاء الطلب في" : "تم تسليم الطلب في"}
-      </span>
-      <span className="block">
-        {formatArabicDate(when, "d MMMM")} الساعة{" "}
-        {formatArabicTime(
-          `${when.getHours()}:${String(when.getMinutes()).padStart(2, "0")}`,
-        )}
-      </span>
+      <span className="block">تم تسليم الطلب في</span>
+      <span className="block">{date}</span>
     </>
   );
 }

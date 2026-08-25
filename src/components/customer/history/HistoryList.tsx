@@ -5,6 +5,7 @@ import { Chip } from "@/components/ui";
 import { computeInvoice } from "@/lib/calculations/invoice";
 import type { OrderListItem } from "@/lib/queries/orders";
 import { HistoryCard } from "./HistoryCard";
+import { HistoryHeading } from "./HistoryHeading";
 
 /**
  * «طلباتك السابقة» — the list and the three filters above it (C-51/C-52).
@@ -23,10 +24,30 @@ import { HistoryCard } from "./HistoryCard";
  * a handful, they are already on the page, and a round trip to the server per
  * chip would put a spinner between him and a list he is looking at.
  *
+ * Centred, not pushed to the reading edge — the design sets them under a centred
+ * title and a centred caption, and a row of three that starts at the right hangs
+ * off the column those two establish.
+ *
  * ## Order
  *
  * RTL puts the first chip on the right, which is where the design starts:
  * مدفوع · عليه فلوس · ملغي.
+ *
+ * ## What scrolls
+ *
+ * **Only the cards.** The title, the caption and the chips are pinned (Khaled,
+ * 2026-08-25): the chips are how you steer this screen, and a control that
+ * scrolls away is one you have to scroll back for to change your mind.
+ *
+ * `sticky` and not `fixed` — the scroller is `<main>`, and a fixed block would
+ * be positioned against the viewport instead, landing over the shell's own
+ * chrome. It carries `bg-background` because cards pass underneath it, and
+ * z-20 to stay over them, which is the tier the customer's home header sits on.
+ *
+ * The heading is inside this component rather than left on the page so that all
+ * three pinned things are one block with one background. The empty state (C-50)
+ * draws the same heading from `HistoryHeading`, unpinned, because it has nothing
+ * to scroll.
  */
 type Filter = "paid" | "owing" | "cancelled";
 
@@ -71,18 +92,23 @@ export function HistoryList({ orders }: { orders: OrderListItem[] }) {
       : orders.filter((order) => categorise(order) === filter);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {/* Scrolls sideways so three chips still fit at 320px without wrapping
-          into a second row and pushing the list down. */}
-      <div className="no-scrollbar flex shrink-0 gap-2.5 overflow-x-auto px-screen py-4">
-        {FILTERS.map(({ key, label }) => (
-          <Chip
-            key={key}
-            label={label}
-            selected={filter === key}
-            onClick={() => setFilter(filter === key ? null : key)}
-          />
-        ))}
+    <div className="flex flex-1 flex-col">
+      <div className="sticky top-0 z-20 bg-background pb-1">
+        <HistoryHeading />
+
+        {/* Centred, and still a sideways scroller: the three fit at 320px with
+            room to spare, but a longer word in a future filter must push the row
+            rather than the screen. */}
+        <div className="no-scrollbar flex justify-center gap-2.5 overflow-x-auto px-screen py-4">
+          {FILTERS.map(({ key, label }) => (
+            <Chip
+              key={key}
+              label={label}
+              selected={filter === key}
+              onClick={() => setFilter(filter === key ? null : key)}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 px-screen pb-3">

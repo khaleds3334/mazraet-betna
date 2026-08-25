@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { PageHeader } from "@/components/ui";
 import { EmptyOrders } from "@/components/customer/EmptyOrders";
+import { HistoryHeading } from "@/components/customer/history/HistoryHeading";
 import { HistoryList } from "@/components/customer/history/HistoryList";
 import { getCurrentCustomer } from "@/lib/queries/customers";
 import { getActiveSaleState } from "@/lib/queries/cycles";
@@ -30,34 +30,23 @@ export default async function HistoryPage() {
     getActiveSaleState(customer.farmId),
   ]);
 
+  // The heading is drawn by whichever branch owns the screen: the list pins it
+  // to the top with the filter chips (they are one block, and only the cards
+  // scroll under it), the empty state just puts it there.
+  if (orders.length > 0) return <HistoryList orders={orders} />;
+
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader
-        title="طلباتك السابقة"
-        backHref="/"
-        className="px-screen pt-4"
-      />
+      <HistoryHeading />
 
-      {/* Held to a narrow measure so it breaks over two lines the way the design
-          draws it — at full width it would sit on one. No `px-screen`: the
-          padding would eat into the 180px and push it onto a third line, and
-          the measure is already far narrower than the narrowest phone. */}
-      <p className="mx-auto max-w-[180px] pt-2 text-center text-base text-foreground">
-        هنا تقدر تشوف كل طلباتك، وحالات الدفع
-      </p>
-
-      {orders.length > 0 ? (
-        <HistoryList orders={orders} />
-      ) : (
-        // Centred in what is left under the caption — `my-auto` rather than
-        // `justify-center` so a short screen scrolls instead of hiding the top.
-        <div className="my-auto">
-          <EmptyOrders
-            titleLines={["ليس لديك اي طلبات", "مكتملة حاليا"]}
-            saleOpen={sale?.saleOpen ?? false}
-          />
-        </div>
-      )}
+      {/* Centred in what is left under the caption — `my-auto` rather than
+          `justify-center` so a short screen scrolls instead of hiding the top. */}
+      <div className="my-auto">
+        <EmptyOrders
+          titleLines={["ليس لديك اي طلبات", "مكتملة حاليا"]}
+          saleOpen={sale?.saleOpen ?? false}
+        />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui";
 import { formatArabicDate, formatArabicTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * The shape both of the customer's order cards are drawn in — the tracking list
@@ -14,6 +15,12 @@ import { formatArabicDate, formatArabicTime } from "@/lib/format";
  *
  * `badges` rather than one pill, because a finished order wears two: what
  * happened to it, and whether it was paid for (C-51).
+ *
+ * **Without an `href` it is not a card you can open, and it loses the arrow.**
+ * The two go together: the arrow is the only thing on the card that says it
+ * leads anywhere, so a card that leads nowhere must not wear one. A cancelled
+ * order is the case (Khaled, 2026-08-25) — there is no detail screen behind it
+ * worth the tap, since everything it has to say is already on its face.
  */
 export function OrderCardShell({
   href,
@@ -24,7 +31,8 @@ export function OrderCardShell({
   hintCentred = false,
   children,
 }: {
-  href: string;
+  /** Where it opens. Omit and the card is not a link and grows no arrow. */
+  href?: string;
   /** Already formatted, e.g. «١٠٠٤». */
   number: string;
   /** When the order was placed — the card's second line. */
@@ -38,13 +46,8 @@ export function OrderCardShell({
   children: React.ReactNode;
 }) {
   const placed = new Date(placedAt);
-
-  return (
-    <Link
-      href={href}
-      replace
-      className="flex w-full flex-col gap-3.5 rounded-xl border border-border bg-surface-page py-[18px] shadow-card"
-    >
+  const body = (
+    <>
       {/* In RTL the first child of a `justify-between` row lands on the RIGHT.
           The design puts the order number there and the status pill opposite,
           so the number block is written first. */}
@@ -76,23 +79,38 @@ export function OrderCardShell({
       <div className="flex items-center justify-between gap-2 px-card">
         {/* Held to a narrow measure and centred on the cards whose sentence runs
             long, which is how the design breaks it over two lines. `max-w` and
-            not a fixed width so it still fits beside the arrow at 320px. */}
+            not a fixed width so it still fits beside the arrow at 320px. With no
+            arrow beside it the line has the whole card and keeps none of that. */}
         <p
-          className={
-            hintCentred
-              ? "max-w-[195px] text-center text-sm text-foreground"
-              : "text-sm text-foreground"
-          }
+          className={cn(
+            "text-sm text-foreground",
+            hintCentred && "text-center",
+            hintCentred && href && "max-w-[195px]",
+            !href && "w-full",
+          )}
         >
           {hint}
         </p>
-        <Icon
-          name="openDetails"
-          size={35}
-          className="shrink-0 text-foreground"
-        />
+        {href && (
+          <Icon
+            name="openDetails"
+            size={35}
+            className="shrink-0 text-foreground"
+          />
+        )}
       </div>
+    </>
+  );
+
+  const shape =
+    "flex w-full flex-col gap-3.5 rounded-xl border border-border bg-surface-page py-[18px] shadow-card";
+
+  return href ? (
+    <Link href={href} replace className={shape}>
+      {body}
     </Link>
+  ) : (
+    <div className={shape}>{body}</div>
   );
 }
 
