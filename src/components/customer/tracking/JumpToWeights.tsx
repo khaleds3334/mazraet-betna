@@ -18,11 +18,11 @@ import { cn } from "@/lib/utils";
  * signpost, and a signpost pointing at something you are already looking at is
  * clutter.
  *
- * **Outlined, not filled** (Khaled): the same circle as the contact pill and the
- * same 44px, in the same tan edge, but the orange is spoken for. That is the
- * difference between a thing to do and a way to get somewhere. It carries the
- * page's own background rather than nothing at all, so the invoice does not read
- * through it as it scrolls past underneath.
+ * **Dark green, the admin's «دفع» green** (Khaled, 2026-08-25) — `CardAction`'s
+ * `brand`, minus its icon chip. The same 44px circle as the contact pill beside
+ * it, in the one other colour this app fills a button with. Orange is «تواصل
+ * معنا» wherever it appears and could not be borrowed; green reads as a second
+ * button rather than a second contact button.
  *
  * The arrow is the cards' arrow (`openDetails`) turned to face down — the glyph
  * this app already uses for "there is more of this over here".
@@ -69,7 +69,7 @@ export function JumpToWeights() {
       inert={!show}
       className={cn(
         "flex size-11 shrink-0 items-center justify-center rounded-full",
-        "border border-accent-tan bg-background text-primary-foreground shadow-card",
+        "border border-accent-tan bg-background/80 text-primary-foreground shadow-card",
         // `scale`, not `transform`: Tailwind v4 compiles `scale-*` to the
         // standalone CSS `scale` property, so a transition naming only
         // `transform` animates the fade and lets the size snap.
@@ -83,7 +83,9 @@ export function JumpToWeights() {
     >
       {/* `openDetails` points along the reading direction; a quarter turn
           anticlockwise faces it down the page. */}
+      <span className="text-accent-tan">
       <Icon name="openDetails" size={24} aria-hidden className="-rotate-90" />
+      </span>
     </button>
   );
 }

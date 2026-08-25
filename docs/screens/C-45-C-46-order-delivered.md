@@ -44,8 +44,10 @@ invoice the page runs two lines longer, and «عرض الاوزان بالتفص
 bottom — the customer reads to the total, finds the page apparently finished, and
 never learns the table exists. So when that control is not fully on screen,
 `JumpToWeights` appears beside «تواصل معنا» and points at it; the moment it is in
-view, it goes. Outlined rather than filled: the orange is spoken for by the thing
-you *do*, and this is a way to get somewhere. It watches the control with an
+view, it goes. Dark green — `CardAction`'s `brand`, the admin's «دفع» green,
+without its icon chip: orange is «تواصل معنا» wherever it appears, so a second
+orange button beside it would read as a second way to call. It watches the control
+with an
 `IntersectionObserver` rather than measuring scroll, so it stays right when the
 table opens and the page grows underneath it.
 
