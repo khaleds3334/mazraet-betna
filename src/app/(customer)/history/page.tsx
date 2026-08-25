@@ -1,25 +1,32 @@
 import { redirect } from "next/navigation";
-import { ComingSoon, PageHeader } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { EmptyOrders } from "@/components/customer/EmptyOrders";
+import { HistoryList } from "@/components/customer/history/HistoryList";
 import { getCurrentCustomer } from "@/lib/queries/customers";
 import { getActiveSaleState } from "@/lib/queries/cycles";
-import { countPastOrders } from "@/lib/queries/orders";
+import { listCustomerPastOrders } from "@/lib/queries/orders";
 
 /**
- * C-50 — «طلباتك السابقة». Only the empty state is built so far; the list
- * (C-51/C-52) is the next step.
+ * C-50 → C-52 — «طلباتك السابقة»: every order that has finished, either way it
+ * finished (FR-29).
+ *
+ * The list is read whole rather than counted first. The two branches need
+ * different things — the empty state needs to know whether the sale is open, the
+ * list needs the orders — and a count would have been a third query answering
+ * neither. A customer's finished orders are a handful.
  *
  * This is a screen you walk into, not a tab: it has a back button and **no
- * bottom bar** (`BottomNav` stands itself down here). `-mb-nav` gives back the
- * room <main> reserves for that bar, so the block below centres against the
- * real bottom of the screen rather than 70px above it.
+ * bottom bar** — `BottomNav` stands itself down here. The room `<main>` reserves
+ * for that bar is left in place all the same (Khaled removed the `-mb-nav` that
+ * took it back, be2f38e): it reads as the list's bottom margin, and the empty
+ * state centres against it happily enough.
  */
 export default async function HistoryPage() {
   const customer = await getCurrentCustomer();
   if (!customer) redirect("/logout");
 
-  const [pastOrders, sale] = await Promise.all([
-    countPastOrders(customer.id),
+  const [orders, sale] = await Promise.all([
+    listCustomerPastOrders(customer.farmId, customer.id),
     getActiveSaleState(customer.farmId),
   ]);
 
@@ -39,8 +46,8 @@ export default async function HistoryPage() {
         هنا تقدر تشوف كل طلباتك، وحالات الدفع
       </p>
 
-      {pastOrders > 0 ? (
-        <ComingSoon title="الطلبات السابقة" />
+      {orders.length > 0 ? (
+        <HistoryList orders={orders} />
       ) : (
         // Centred in what is left under the caption — `my-auto` rather than
         // `justify-center` so a short screen scrolls instead of hiding the top.

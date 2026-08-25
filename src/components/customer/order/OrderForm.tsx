@@ -176,7 +176,7 @@ export function OrderForm({ data }: { data: OrderFormData }) {
           it, kept whether or not it is on screen — a padding that came and went
           with it would shift the whole form under a reading thumb. `<main>`
           already clears the nav's own height on top of this. */}
-      <div aria-hidden className="h-34 shrink-0" />
+      <div aria-hidden className="h-36 shrink-0" />
 
       <ConfirmBar
         count={count}

@@ -1,26 +1,15 @@
-import Link from "next/link";
-import { Icon } from "@/components/ui";
+import {
+  OrderCardRows,
+  OrderCardShell,
+} from "@/components/customer/OrderCardShell";
 import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
 import { computeInvoice } from "@/lib/calculations/invoice";
 import { orderStage, type OrderStage } from "@/lib/constants";
-import {
-  formatArabicDate,
-  formatArabicTime,
-  formatCurrency,
-  formatWeight,
-  pluralizeChicken,
-} from "@/lib/format";
+import { formatCurrency, formatWeight, pluralizeChicken } from "@/lib/format";
 import type { OrderListItem } from "@/lib/queries/orders";
 
 /** One label/value line in the card's middle block. */
-interface Row {
-  label: string;
-  value: string;
-  /** Counts and money are set in the label's own bold; measurements are not. */
-  strong?: boolean;
-  /** The weight breakdown only — it is a sentence, not a figure. */
-  small?: boolean;
-}
+type Row = React.ComponentProps<typeof OrderCardRows>["rows"][number];
 
 /**
  * The customer's order card on the tracking screen (C-31→C-35). Tapping it
@@ -36,9 +25,11 @@ interface Row {
  * It reads a **stage**, not a status: once the customer has confirmed the price
  * the card says «يتم الذبح و التنظيف» (C-33), and that is a stage the database
  * has no status for — see `orderStage`.
+ *
+ * The card's shape is `OrderCardShell`, shared with the history list (C-51).
+ * This file owns only what a running order has to say.
  */
 export function TrackingCard({ order }: { order: OrderListItem }) {
-  const placedAt = new Date(order.createdAt);
   const invoice = computeInvoice(
     {
       unit_price: order.weighing.unitPrice ?? 0,
@@ -74,74 +65,16 @@ export function TrackingCard({ order }: { order: OrderListItem }) {
   });
 
   return (
-    <Link
+    <OrderCardShell
       href={`/tracking/${order.id}`}
-      replace
-      className="flex flex-col gap-3.5 rounded-xl border border-border bg-surface-page py-[18px] shadow-card"
+      number={order.number}
+      placedAt={order.createdAt}
+      badges={<OrderStatusBadge stage={stage} viewer="customer" />}
+      hint={hint}
+      hintCentred={hintCentred}
     >
-      {/* In RTL the first child of a `justify-between` row lands on the RIGHT.
-          The design puts the order number there and the status pill opposite,
-          so the number block is written first. */}
-      <div className="flex items-center justify-between px-card">
-        {/* No `items-end`: that shrinks each line to its own text and leaves
-            the shorter one hanging. Stretching them both and aligning the text
-            right is what puts the two on a single right edge, as drawn. */}
-        <div className="flex flex-col gap-1 text-right">
-          <p className="text-sm text-accent-tan">طلب رقم {order.number}#</p>
-          <p className="text-xs text-timestamp">
-            في {formatArabicDate(placedAt)} الساعة{" "}
-            {formatArabicTime(
-              `${placedAt.getHours()}:${String(placedAt.getMinutes()).padStart(2, "0")}`,
-            )}
-          </p>
-        </div>
-
-        <OrderStatusBadge stage={stage} viewer="customer" />
-      </div>
-
-      {/* Full-bleed on purpose — the design runs the rule to both edges while
-          everything else keeps the card's padding. */}
-      <hr className="border-t-[1.5px] border-foreground" />
-
-      <dl className="flex flex-col gap-[7px] px-card text-foreground">
-        {rows.map((row) => (
-          <div key={row.label} className="flex items-center justify-between">
-            <dt className="text-base font-bold">{row.label}</dt>
-            <dd
-              className={
-                row.strong
-                  ? "text-base font-bold"
-                  : row.small
-                    ? "text-xs"
-                    : "text-sm"
-              }
-            >
-              {row.value}
-            </dd>
-          </div>
-        ))}
-      </dl>
-
-      <div className="flex items-center justify-between gap-2 px-card">
-        {/* Held to a narrow measure and centred on the two later cards, which is
-            how the design breaks it over two lines. `max-w` and not a fixed
-            width so it still fits beside the arrow at 320px. */}
-        <p
-          className={
-            hintCentred
-              ? "max-w-[195px] text-center text-sm text-foreground"
-              : "text-sm text-foreground"
-          }
-        >
-          {hint}
-        </p>
-        <Icon
-          name="openDetails"
-          size={35}
-          className="shrink-0 text-foreground"
-        />
-      </div>
-    </Link>
+      <OrderCardRows rows={rows} />
+    </OrderCardShell>
   );
 }
 

@@ -54,22 +54,6 @@ export async function countActiveOrders(customerId: string): Promise<number> {
 }
 
 /**
- * How many orders the customer has finished with — handed over or cancelled.
- * Tells «الطلبات السابقة» (C-50) whether it has a list to draw or an empty
- * state. Cancelled counts: the screen lists it too, so a customer whose only
- * order was cancelled has a history, not an empty one.
- */
-export async function countPastOrders(customerId: string): Promise<number> {
-  const supabase = await createClient();
-  const { count } = await supabase
-    .from("orders")
-    .select("id", { count: "exact", head: true })
-    .eq("customer_id", customerId)
-    .in("status", PAST_STATUSES);
-  return count ?? 0;
-}
-
-/**
  * The customer's total outstanding debt (FR-30) — shown in the sidebar. Sum of
  * the remaining balance on every non-cancelled order, computed on read (D-05).
  */
@@ -160,6 +144,8 @@ export interface OrderListItem {
   createdAt: string;
   /** When the birds were handed over — the invoice sheet's header line. */
   deliveredAt: string | null;
+  /** When it was called off. The closing line on a cancelled history card (C-51). */
+  cancelledAt: string | null;
   /**
    * When the customer read the invoice and released the birds for slaughtering
    * (C-41, migration 028). On a weighed order this is what makes the stage
@@ -232,7 +218,7 @@ export async function countOrdersByCycle(
 
 /** Everything an `OrderListItem` is built from — one place, so two lists can't drift. */
 const ORDER_COLUMNS =
-  "id, seq, status, created_at, delivered_at, price_confirmed_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, batch_no, approx_weight, actual_weight, cleaning), payment(amount)";
+  "id, seq, status, created_at, delivered_at, cancelled_at, price_confirmed_at, on_behalf_of, pickup_date, pickup_time, cancel_reason, is_house, notes, cleaning, unit_price, cleaning_price, customer(name, phone), order_line(id, position, batch_no, approx_weight, actual_weight, cleaning), payment(amount)";
 
 /** The shape {@link ORDER_COLUMNS} comes back as. */
 interface OrderRow {
@@ -241,6 +227,7 @@ interface OrderRow {
   status: OrderStatus;
   created_at: string;
   delivered_at: string | null;
+  cancelled_at: string | null;
   price_confirmed_at: string | null;
   on_behalf_of: string | null;
   pickup_date: string | null;
@@ -286,6 +273,7 @@ function toOrderListItem(
     status: order.status,
     createdAt: order.created_at,
     deliveredAt: order.delivered_at,
+    cancelledAt: order.cancelled_at,
     priceConfirmedAt: order.price_confirmed_at,
     customer: order.customer
       ? { name: order.customer.name, phone: order.customer.phone }
@@ -394,6 +382,38 @@ export async function listCustomerActiveOrders(
     .eq("farm_id", farmId)
     .eq("customer_id", customerId)
     .in("status", ACTIVE_STATUSES)
+    .order("created_at", { ascending: false });
+
+  const { pickupSlots } = await getFarmSettings(farmId);
+  return (data ?? []).map((order) =>
+    toOrderListItem(order, order.cycle?.seq ?? 0, pickupSlots),
+  );
+}
+
+/**
+ * The customer's finished orders, newest first — the cards on «طلباتك السابقة»
+ * (C-51/C-52).
+ *
+ * "Finished" is both ways an order can end (`PAST_STATUSES`): delivered, and
+ * cancelled. A cancelled order belongs in the history rather than nowhere — it
+ * is a thing that happened to him, with a reason on it he may want to re-read,
+ * and the screen has a filter for exactly that.
+ *
+ * The counterpart of `listCustomerActiveOrders`, splitting the same orders down
+ * the same seam the tracking screen splits them on: what is still running goes
+ * there, what is over comes here.
+ */
+export async function listCustomerPastOrders(
+  farmId: string,
+  customerId: string,
+): Promise<OrderListItem[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("orders")
+    .select(`${ORDER_COLUMNS}, cycle(seq)`)
+    .eq("farm_id", farmId)
+    .eq("customer_id", customerId)
+    .in("status", PAST_STATUSES)
     .order("created_at", { ascending: false });
 
   const { pickupSlots } = await getFarmSettings(farmId);

@@ -14,8 +14,13 @@ import { cn } from "@/lib/utils";
  * Once an order is delivered the status stops being the news — what is left to
  * say is whether it was paid for (FR-12), so pass `remaining` and the badge
  * reports that instead: settled in dark green, or the amount still owed in
- * orange. Every tone here now comes from a finished design except "cancelled",
- * which is confirmed when its card is drawn.
+ * orange.
+ *
+ * **Unless the screen has room to say both.** The history card (C-51) stacks two
+ * pills: the birds arrived, and then the money did or did not. `reads="handover"`
+ * is the first of those — the plain fact of delivery, in the soft green the
+ * design gives it. Everywhere else there is one pill and money is the question
+ * worth its space, which is why that is the default.
  *
  * A house order answers that question with «مش محسوب». The family's own birds
  * are not a sale (FR-36), so «تم الدفع» would be claiming money changed hands
@@ -38,6 +43,7 @@ const TONE: Record<OrderStage, string> = {
 export function OrderStatusBadge({
   stage,
   viewer = "admin",
+  reads = "payment",
   remaining,
   isHouse = false,
   className,
@@ -45,26 +51,36 @@ export function OrderStatusBadge({
   /** Where the order is now — `orderStage(order)`, not `order.status`. */
   stage: OrderStage;
   viewer?: "admin" | "customer";
+  /**
+   * What a **delivered** order's pill reports. Ignored at every other stage.
+   * `"payment"` — whether the money arrived. `"handover"` — that the birds did.
+   */
+  reads?: "payment" | "handover";
   /** Still owed. Only read on a delivered order, where it is the real state. */
   remaining?: number;
   /** The family's own birds — never a sale, so never paid and never owed. */
   isHouse?: boolean;
   className?: string;
 }) {
-  const owing = stage === "delivered" && !isHouse && (remaining ?? 0) > 0;
+  const money = stage === "delivered" && reads === "payment";
+  const owing = money && !isHouse && (remaining ?? 0) > 0;
 
   return (
     <span
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-1.5 text-sm whitespace-nowrap",
-        owing ? "bg-accent-orange text-white" : TONE[stage],
+        owing
+          ? "bg-accent-orange text-white"
+          : stage === "delivered" && !money
+            ? "bg-success-surface text-success"
+            : TONE[stage],
         className,
       )}
     >
       <span className="optical-center">
         {owing
           ? `متبقي مبلغ ${formatCurrency(remaining ?? 0)}`
-          : stage === "delivered"
+          : money
             ? isHouse
               ? "مش محسوب"
               : "تم الدفع"

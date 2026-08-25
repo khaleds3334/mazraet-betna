@@ -165,8 +165,11 @@ export const ORDER_STATUS_LABEL: Record<
     // «يتم الذبح و التنظيف» was the same sentence said twice.
     cleaning: "الذبح و التنظيف",
     ready: "جاهز للاستلام",
-    delivered: "تم التسليم",
-    cancelled: "ملغي",
+    delivered: "تم الاستلام",
+    // The full sentence, not «ملغي» — the history screen carries a «ملغي»
+    // filter chip three lines above these cards, and a pill wearing the same
+    // word as the filter reads as "this is the filter you picked" (C-51).
+    cancelled: "تم الغاء الطلب",
   },
 };
 

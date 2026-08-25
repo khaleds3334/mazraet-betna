@@ -6,7 +6,6 @@ import {
   pluralizeChicken,
 } from "@/lib/format";
 import { ChickenTray } from "./ChickenTray";
-import { Span } from "next/dist/trace";
 
 /**
  * The order read back to the customer, above the confirm button (Figma
