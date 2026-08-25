@@ -2462,3 +2462,29 @@ it — not a bar that jumps.
 **The rule this leaves behind:** a layout that reads is a layout that blocks. If a
 shell needs data, suspend the part that needs it, not the shell.
 **Date:** 2026-08-25
+
+### T-71 — The server runs next to the database, not next to nothing
+`vercel.json` pins every function to **`arn1` (Stockholm)**, because the Supabase
+project lives in `eu-north-1` — Stockholm. Before this the deployment ran in
+Vercel's default `iad1` (Washington), and the file did not exist.
+**Why:** the app's server components talk to the database several times per
+screen, and the user talks to the server once. So the hop worth shortening is the
+one that repeats. Washington→Stockholm is roughly 95ms **per query**; a screen
+making four of them spent ~380ms in the Atlantic before Postgres had done any
+work — on top of Cairo→Washington to reach the server at all. In the same city
+that per-query cost is ~3ms.
+**Why not Frankfurt, which is nearer Egypt:** it would save ~20ms on the single
+user hop and add ~22ms to every database hop. That is a loss on any screen making
+more than one query, which is all of them. Co-locate with whatever you call
+repeatedly.
+**Relationship to T-68:** that decision removed round trips, this one shortens the
+ones that are left. Neither substitutes for the other, and this one is a config
+file rather than code — which is exactly why it went unnoticed while the code was
+being tuned.
+**The other half stays global:** static assets, prefetch payloads and `proxy.ts`
+are served from Vercel's edge nearest the customer. `proxy.ts` verifies the
+session token locally (D-32), so it never leaves that edge to do it — otherwise
+pinning the region would have made *every* request pay the long hop.
+**If Supabase ever moves,** this file moves with it. The two region codes are one
+decision written in two places.
+**Date:** 2026-08-25
