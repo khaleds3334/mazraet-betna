@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils";
 
 /** Long enough that the screen is read first, short enough to still belong to it. */
 const APPEAR_AFTER_MS = 1200;
-/** Matches `install-crumble` in globals.css — the banner leaves before it unmounts. */
-const CRUMBLE_MS = 620;
+/** Matches `install-sink` in globals.css — the banner leaves before it unmounts. */
+const SINK_MS = 320;
 
 /**
  * `C-Comp_PWA_InstallBanner` (Figma 3799:4013) — the banner that offers to put
@@ -30,12 +30,15 @@ const CRUMBLE_MS = 620;
  * which is the only shape it has for a thing it cannot do. It never appears on a
  * browser that can do neither, so «تحميل» never lies.
  *
- * **It arrives slowly and leaves in pieces.** Everything else in the app appears
+ * **It arrives slowly and leaves quickly.** Everything else in the app appears
  * because a finger asked for it, in 200–300ms. This appears on its own, a beat
  * after the screen has settled, and rises at half that speed — something that
  * arrives at the pace of an answer, when nothing was asked, reads as a fault.
- * «لاحقا» crumbles it rather than sliding it back down, so dismissing looks like
- * an end rather than a retreat (Khaled, 2026-08-22).
+ *
+ * «لاحقا» sends it straight back down (Khaled, 2026-08-25). It used to come
+ * apart into specks, which was a nice thing that drew the eye to the wrong
+ * moment: the banner has already interrupted once, and its leaving should not
+ * interrupt a second time.
  *
  * It dims and blurs the screen behind it like every other popup in the app. It
  * is small and sits low, and without the scrim it read as part of the page it
@@ -104,7 +107,7 @@ export function InstallPrompt({
         setShown(false);
         setLeaving(false);
         dismiss();
-      }, CRUMBLE_MS);
+      }, SINK_MS);
     };
   });
 
@@ -137,14 +140,14 @@ export function InstallPrompt({
           neither of them, and dismissing on one would spend «لاحقا» for a finger
           that was reaching for the screen underneath.
 
-          It fades rather than crumbling: the specks belong to the thing that
-          came apart, not to the room behind it. */}
+          It fades on its own rather than following the banner down — the room
+          behind it is not the thing that left. */}
       <div
         aria-hidden
         className={cn(
           "fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]",
           leaving
-            ? "opacity-0 transition-opacity duration-500"
+            ? "opacity-0 transition-opacity duration-300"
             : "opacity-100 [animation:install-scrim_620ms_ease-out]",
         )}
       />
@@ -158,7 +161,7 @@ export function InstallPrompt({
         className={cn(
           "fixed inset-x-0 z-50 mx-auto w-full max-w-[430px] px-screen",
           leaving
-            ? "install-crumbling"
+            ? "[animation:install-sink_320ms_cubic-bezier(0.4,0,1,1)_forwards]"
             : "[animation:install-rise_620ms_cubic-bezier(0.16,1,0.3,1)]",
         )}
         style={{ bottom: "calc(84px + env(safe-area-inset-bottom))" }}
