@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui";
 import { LogoutButton } from "@/components/shared/LogoutButton";
+import { ContactSheet } from "@/components/customer/ContactSheet";
 import type { IconName } from "@/lib/icons";
 import { formatCurrency } from "@/lib/format";
 import { closeOverlay, openOverlay } from "@/lib/overlayStack";
@@ -22,15 +23,17 @@ import { cn, isActivePath } from "@/lib/utils";
 interface NavItem {
   label: string;
   icon: IconName;
-  href?: string; // absent → not wired yet (placeholder)
+  href?: string; // absent → opens something, or not wired yet (placeholder)
   exact?: boolean; // home matches exactly so it doesn't stay lit on sub-pages
+  /** Opens the contact popup instead of going anywhere (4146:4683). */
+  contact?: boolean;
 }
 
 const NAV: NavItem[] = [
   { label: "الصفحة الرئيسية", icon: "home", href: "/", exact: true },
   { label: "طلباتي السابقة", icon: "pastOrders", href: "/history" },
   { label: "حول التطبيق", icon: "infoSquare" },
-  { label: "تواصل معنا", icon: "telephone" },
+  { label: "تواصل معنا", icon: "telephone", contact: true },
 ];
 
 export function Sidebar({
@@ -38,13 +41,17 @@ export function Sidebar({
   onClose,
   customerName,
   debtAmount,
+  contactPhone,
 }: {
   open: boolean;
   onClose: () => void;
   customerName: string;
   debtAmount: number;
+  /** The farm's number for «تواصل معنا»; null if the row could not be read. */
+  contactPhone: string | null;
 }) {
   const pathname = usePathname();
+  const [contactOpen, setContactOpen] = useState(false);
 
   // The drawer is an overlay like any sheet, so the back gesture closes it
   // rather than leaving the page under it (`BackGuard`).
@@ -140,6 +147,18 @@ export function Sidebar({
                 <button
                   key={item.label}
                   type="button"
+                  // «تواصل معنا» opens the popup; the drawer closes behind it,
+                  // so the dialog is not left sitting on top of an open menu
+                  // with two things for the back gesture to dismiss in turn.
+                  onClick={
+                    item.contact
+                      ? () => {
+                          setContactOpen(true);
+                          onClose();
+                        }
+                      : undefined
+                  }
+                  aria-haspopup={item.contact ? "dialog" : undefined}
                   className={cn(className, "text-start")}
                 >
                   {content}
@@ -164,6 +183,14 @@ export function Sidebar({
           </div>
         </div>
       </aside>
+
+      {/* Outside the drawer: it outlives the drawer that opened it, and an
+          overlay nested in one that has slid off screen goes with it. */}
+      <ContactSheet
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        phone={contactPhone}
+      />
     </>
   );
 }

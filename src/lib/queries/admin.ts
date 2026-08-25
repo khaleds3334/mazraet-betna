@@ -52,3 +52,36 @@ export const getCurrentFarm = cache(async (): Promise<CurrentFarm | null> => {
     loginPhone: data.owner_phone,
   };
 });
+
+/**
+ * The number the farm answers on, read by a **customer** (FR-30, the contact
+ * popup). Same fallback the admin's own screen resolves — `contact_phone` when
+ * one is set, the owner's sign-in number when it is not — so the two halves of
+ * the app can never quote different numbers for the same farm.
+ *
+ * Its own function rather than a field on `getCurrentCustomer`: the customer
+ * screens that do not open the popup should not pay for a farm read, and the
+ * ones that do ask for exactly this and nothing else. `cache` because the home
+ * asks twice — once for the pill, once for the sidebar's «تواصل معنا».
+ *
+ * Reads through the customer's own session. The `farm_select` policy lets him
+ * see the farm he belongs to (`my_customer_farms`), so no service-role client is
+ * involved and a customer can only ever get his own farm's number.
+ *
+ * Returns null when the read fails or the row is gone. **Not a throw** (cf.
+ * T-58): a missing price is a wrong number on a bill, but a missing contact
+ * number is one button that has nothing behind it — and taking the whole screen
+ * down over it would be the larger fault. The popup shows what it has.
+ */
+export const getFarmContactPhone = cache(
+  async (farmId: string): Promise<string | null> => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("farm")
+      .select("owner_phone, contact_phone")
+      .eq("id", farmId)
+      .maybeSingle();
+
+    return data ? (data.contact_phone ?? data.owner_phone) : null;
+  },
+);

@@ -16,10 +16,13 @@ export function HomeHeader({
   unreadCount,
   customerName,
   debtAmount,
+  contactPhone,
 }: {
   unreadCount: number;
   customerName: string;
   debtAmount: number;
+  /** Passed straight through to the sidebar's «تواصل معنا» row. */
+  contactPhone: string | null;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -78,6 +81,7 @@ export function HomeHeader({
         onClose={() => setSidebarOpen(false)}
         customerName={customerName}
         debtAmount={debtAmount}
+        contactPhone={contactPhone}
       />
     </>
   );

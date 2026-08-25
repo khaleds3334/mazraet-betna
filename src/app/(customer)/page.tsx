@@ -4,6 +4,7 @@ import { HomeHeader } from "@/components/customer/HomeHeader";
 import { ContactButton } from "@/components/customer/ContactButton";
 import { SaleStatusCard } from "@/components/customer/SaleStatusCard";
 import { getCurrentCustomer } from "@/lib/queries/customers";
+import { getFarmContactPhone } from "@/lib/queries/admin";
 import { getActiveSaleState } from "@/lib/queries/cycles";
 import { getCustomerDebt } from "@/lib/queries/orders";
 import { countUnreadNotifications } from "@/lib/queries/notifications";
@@ -23,10 +24,13 @@ export default async function CustomerHomePage() {
   const customer = await getCurrentCustomer();
   if (!customer) redirect("/logout");
 
-  const [sale, unreadCount, debtAmount] = await Promise.all([
+  const [sale, unreadCount, debtAmount, contactPhone] = await Promise.all([
     getActiveSaleState(customer.farmId),
     countUnreadNotifications(customer.id),
     getCustomerDebt(customer.id),
+    // Beside the others, not after them — it is one more small read and it must
+    // not add a round trip to the screen the app opens on (T-68).
+    getFarmContactPhone(customer.farmId),
   ]);
   const saleOpen = sale?.saleOpen ?? false;
 
@@ -39,6 +43,7 @@ export default async function CustomerHomePage() {
         unreadCount={unreadCount}
         customerName={customer.name}
         debtAmount={debtAmount}
+        contactPhone={contactPhone}
       />
 
       {/* The three sections adapt to the height of the phone in both
@@ -96,7 +101,7 @@ export default async function CustomerHomePage() {
           bottom: "calc(var(--spacing-nav) + 16px + env(safe-area-inset-bottom))",
         }}
       >
-        <ContactButton className="pointer-events-auto" />
+        <ContactButton phone={contactPhone} className="pointer-events-auto" />
       </div>
     </div>
   );

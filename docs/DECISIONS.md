@@ -2516,3 +2516,36 @@ on the screen reads as blame. It goes to the console, for whoever comes looking.
 `global-error.tsx` can catch. That layout reads nothing and renders a font and a
 `<body>`, so there is nothing in it to fail — noted rather than built.
 **Date:** 2026-08-25
+
+### T-73 — «تواصل معنا» opens one popup, and the number in it is the farm's own
+The floating pill (home and order details) and the sidebar's «تواصل معنا» row all
+open `ContactSheet` — the design at 4146:4683. Until now the pill was
+presentational: it had been drawn but had nowhere to go, because the farm's
+number had no reader on the customer's side.
+**The number is `getFarmContactPhone`,** which resolves it exactly as the admin's
+own settings screen does — `contact_phone` when he has set one, his sign-in
+number when he has not. One rule in one place, so the popup can never quote a
+number the admin does not recognise. It reads through the customer's own session:
+`farm_select` lets him see the farm he belongs to, so no service-role client is
+involved and he can only ever get his own farm's number.
+**It returns null instead of throwing** (cf. T-58): a settings read that fails is
+a wrong price on a bill, but a contact read that fails is one button with nothing
+behind it. Taking the whole screen down over it would be the larger fault, so the
+two buttons disable themselves and the rest of the popup stands. A «الهاتف» that
+opens an empty dialler is worse than one that visibly cannot be pressed.
+**Latin digits.** Rule 3 names phone numbers as its one exception, and this is
+the case it was written for: a string to be dialled and checked against a
+contacts list, not a quantity to be read.
+**44px, not the canvas's 42.** The two buttons are the only reason the popup
+exists and rule 8's floor is 44 — two pixels the design will not miss.
+**The four social buttons are not built.** The farm has nowhere to store a
+Facebook or Instagram address, and hard-coding one farm's links into a codebase
+that has been multi-farm since day one (D-08) would show the wrong farm's page to
+the second one. They arrive when settings has a home for them (Khaled,
+2026-08-25).
+**The marks moved to `ContactGlyphs`.** The handset and the WhatsApp mark are
+bespoke design SVGs (T-19) and three places now draw them — the admin's customer
+row and order card through `ContactLinks`, and this popup at its own sizes.
+Copied instead, the first nudge to a path would land in one place and the app
+would be quietly showing two different handsets.
+**Date:** 2026-08-25

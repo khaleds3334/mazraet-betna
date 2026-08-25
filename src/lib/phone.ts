@@ -8,7 +8,8 @@
  * number means an order that can never be traced back to a person.
  *
  * Formatting a number for display lives in `format.ts` (`formatPhone`); this
- * file is only the rule for whether a number is valid at all.
+ * file holds the rule for whether a number is valid at all, and the one
+ * conversion the outside world needs (`whatsappNumber`).
  */
 
 /** 11 digits, starting with a real network prefix. */
@@ -48,4 +49,21 @@ export function phoneError(phone: string): string | null {
     return "الرقم لازم يبدأ بـ 010 أو 011 أو 012 أو 015.";
   }
   return null;
+}
+
+/**
+ * Egyptian local number (01…) → the international form `wa.me` expects.
+ *
+ * Numbers are stored the way both users type and read them back — the local
+ * `01…` — so the country code is added at the point of use rather than kept in
+ * the database, where it would have to be stripped again for every field that
+ * shows a number.
+ *
+ * Two callers: the admin's contact shortcuts beside a customer (`ContactLinks`)
+ * and the customer's «تواصل معنا» popup (`ContactSheet`). It lived inside the
+ * first of them until the second needed it too.
+ */
+export function whatsappNumber(phone: string): string {
+  const digits = normalizePhone(phone);
+  return digits.startsWith("0") ? `20${digits.slice(1)}` : digits;
 }

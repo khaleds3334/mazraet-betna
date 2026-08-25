@@ -10,6 +10,7 @@ import { orderStage } from "@/lib/constants";
 import { formatArabicDate, formatArabicTime } from "@/lib/format";
 import { getCurrentCustomer } from "@/lib/queries/customers";
 import { getOrder } from "@/lib/queries/orders";
+import { getFarmContactPhone } from "@/lib/queries/admin";
 
 /** The stages that swap the timeline for the invoice (C-41→C-46). */
 const TRACKED: TrackedStage[] = ["weighed", "cleaning", "ready", "delivered"];
@@ -50,7 +51,12 @@ export default async function OrderTrackingPage({
   const customer = await getCurrentCustomer();
   if (!customer) redirect("/logout");
 
-  const order = await getOrder(customer.farmId, orderId);
+  // Together: the pill's number does not depend on the order, and this screen
+  // already waits on a read the customer walked into it for (T-68).
+  const [order, contactPhone] = await Promise.all([
+    getOrder(customer.farmId, orderId),
+    getFarmContactPhone(customer.farmId),
+  ]);
   // RLS already limits the read to this customer's own orders; a miss here is
   // either a bad id or somebody else's order, and both are "no such page".
   if (!order) notFound();
@@ -124,7 +130,9 @@ export default async function OrderTrackingPage({
         style={{ bottom: "calc(2rem + env(safe-area-inset-bottom))" }}
       >
         <JumpToWeights />
-        {!done && <ContactButton className="pointer-events-auto" />}
+        {!done && (
+          <ContactButton phone={contactPhone} className="pointer-events-auto" />
+        )}
       </div>
     </div>
   );
