@@ -11,11 +11,20 @@ import { cn } from "@/lib/utils";
  * two colour languages for that. `Toast` keeps its own box because it is a bar
  * with text in it, not a circle — what is shared is the vocabulary, which lives
  * here in one map.
+ *
+ * **Bare glyphs, not the toast's icons.** A tick, an exclamation and a cross —
+ * `success`/`warning`/`error` in the icon map are all drawn *inside* their own
+ * circle or triangle, and a shape inside this disc is a shape inside a shape
+ * (Khaled, 2026-08-25). The design draws each bubble as one solid mark.
  */
 const TONE = {
-  success: { box: "bg-success-surface", icon: "text-success", name: "success" },
-  warning: { box: "bg-warning-surface", icon: "text-warning", name: "warning" },
-  error: { box: "bg-error-surface", icon: "text-error", name: "error" },
+  success: { box: "bg-success-surface", icon: "text-success", name: "check" },
+  warning: {
+    box: "bg-warning-surface",
+    icon: "text-warning",
+    name: "exclamation",
+  },
+  error: { box: "bg-error-surface", icon: "text-error", name: "close" },
 } as const;
 
 export type StatusTone = keyof typeof TONE;

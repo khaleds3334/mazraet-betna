@@ -45,6 +45,7 @@ import {
   TickDouble03Icon, // figma: tick-double-03
   // ── Domain: orders, money, cycle ──
   BadgeDollarSignIcon, // figma: badge-dollar-sign — the kilo price on C-22
+  ExclamationMarkIcon, // the warning bubble on C-15
   WeightScale01Icon, // figma: weight-scale-01 — the weighing screen
   PackageDelivered01Icon, // figma: package-delivered-01
   Wallet01Icon, // figma: wallet-01 — sidebar debt card
@@ -100,6 +101,9 @@ export const icons = {
   cancel: Cancel02Icon,
   search: Search02Icon,
   check: Tick02Icon,
+  // The bare glyph, for a bubble that is already a circle — `warning` is the
+  // triangle, which would be a shape inside a shape (C-15).
+  exclamation: ExclamationMarkIcon,
   filter: FilterIcon,
   // Every "add" button in the admin app uses Figma's layer-add glyph (A-50
   // «اضافة طلب», A-30 «اضافة عميل», A-42 «انشاء دورة جديدة»); a name per screen

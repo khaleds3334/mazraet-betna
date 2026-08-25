@@ -18,8 +18,15 @@ import { getCurrentCustomer } from "@/lib/queries/customers";
  * and old tomorrow — which is what the two headings are for.
  *
  * It returns nothing and is not awaited by anything on screen. The bell's badge
- * is what it is really for, and that is on the *next* screen: `revalidatePath`
- * on the layout is what clears it.
+ * is what it is really for, and that is on the *next* screen.
+ *
+ * **`revalidatePath("/")`, never `("/", "layout")`.** The layout form invalidates
+ * every route under it — including the one the customer is standing on — so the
+ * notifications page re-rendered from the rows this had just marked, and every
+ * notice slid from «الجديدة» to «القديمة» while he was reading it (Khaled,
+ * 2026-08-25). The badge is counted by the home page (`countUnreadNotifications`
+ * in `(customer)/page.tsx`), not by the layout, so the narrow form reaches it
+ * and touches nothing else.
  */
 export async function markNotificationsRead(): Promise<void> {
   const customer = await getCurrentCustomer();
@@ -33,7 +40,7 @@ export async function markNotificationsRead(): Promise<void> {
     .eq("audience", "customer")
     .eq("is_read", false);
 
-  // The badge lives in the customer layout's header, so the layout is what has
-  // to be re-read — not this page, which has already drawn itself.
-  revalidatePath("/", "layout");
+  // Home only — see above. This page has already drawn itself and must stay
+  // exactly as drawn until he leaves it.
+  revalidatePath("/");
 }

@@ -61,7 +61,7 @@ export function HomeHeader({
               strokeWidth={2.5}
               absoluteStrokeWidth
             />
-            <CountBadge count={unreadCount} />
+            <CountBadge count={unreadCount} tone="accent" />
           </span>
         </Link>
       </header>

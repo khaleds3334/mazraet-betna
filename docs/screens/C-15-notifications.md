@@ -74,7 +74,13 @@ Marking before rendering would file everything under «القديمة» while he
 it for the first time. Marking after means new today, old tomorrow.
 
 Nothing on screen waits for step 4 — it is for the bell's badge, on the screen he
-goes back to, which `revalidatePath("/", "layout")` redraws.
+goes back to.
+
+**And it revalidates `"/"`, never `("/", "layout")`.** The layout form invalidates
+every route beneath it, this page included, so the screen re-rendered from the
+rows step 4 had just written and every notice slid into «القديمة» under the
+customer's eyes — steps 1-3 undone by step 4. The badge is counted by the home
+page, not the layout, so the narrow form reaches it and touches nothing else.
 
 A heading with nothing under it is not drawn: an empty «الجديدة» claims there is
 something to catch up on.
@@ -93,7 +99,14 @@ Reused: `PageHeader` · `CountBadge` (the bell's badge already existed)
 
 `StatusBubble` takes the toast's three tones from the same token pairs — the same
 three things are being said, and a customer should not have to learn two colour
-languages because one of them fades after four seconds.
+languages because one of them fades after four seconds. It draws **bare** glyphs
+(tick · exclamation · cross), not the toast's `success`/`warning`/`error` icons:
+those are each drawn inside their own circle or triangle, which inside this disc
+is a shape within a shape.
+
+`CountBadge` gained a `tone`: lime on the nav, the contact pill's orange on the
+bell. Lime on the bell sat an inch above a lime tab bar and read as decoration
+rather than a number.
 
 ## Connected screens
 
@@ -104,6 +117,8 @@ links.
 
 ## Watch out
 
+- The bubble is on the **right** and «منذ …» on the **left** — the mark comes
+  before the words it marks, and the timestamp is parked where the eye finishes.
 - **Migration 029 must be run** before this screen opens — the read asks for
   `kind`, which does not exist without it.
 - No bottom bar: `/notifications` is in `SCREENS_WITHOUT_NAV`.

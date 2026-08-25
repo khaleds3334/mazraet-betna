@@ -38,18 +38,21 @@ export function NotificationRow({
 
   const content = (
     <>
-      {/* RTL: the first child lands on the right, and the design puts the text
-          there with the bubble opposite it. */}
+      {/* RTL: the first child lands on the RIGHT, which is where the design
+          hangs the bubble — the mark comes before the words it marks. */}
       <div className="flex w-full items-center gap-2.5">
+        <StatusBubble tone={notification.kind} />
+
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 text-right">
           <p className="text-base text-heading">{notification.title}</p>
           {body && <p className="text-sm text-muted">{line}</p>}
         </div>
-
-        <StatusBubble tone={notification.kind} />
       </div>
 
-      <p className="w-full text-right text-xs text-timestamp">
+      {/* On the far side from the reading edge, under the text rather than under
+          the bubble: it is the least of the three things on this row, and the
+          design parks it where the eye finishes rather than where it starts. */}
+      <p className="w-full text-left text-xs text-timestamp">
         {formatTimeAgo(notification.createdAt)}
       </p>
     </>
