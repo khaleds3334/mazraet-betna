@@ -2419,3 +2419,46 @@ mentioned in the next `await`.
 **Why `cache` on the sale state:** three customer screens ask that question, and
 the order form asks it beside `getFarmSettings`. One request, one answer.
 **Date:** 2026-08-25
+
+### T-69 — Grey stands for an answer that hasn't arrived, never for a word we already have
+A `loading.tsx` draws **for real** everything the app knows without asking the
+database — titles, back buttons, headings, questions, fixed button labels, the
+logo, the filter chips, the invoice band — and greys **only** what a read has to
+come back with. The shape of a screen is not the same thing as its content.
+**Why:** a grey bar where «طلباتك السابقة» is about to appear hides a word the app
+was holding all along, and then swaps it for text of a slightly different width —
+so the screen flickers on the way in, and for a fraction of a second says less
+than it could. It also reads as *broken* rather than *loading*: our customer is
+elderly, and a screen of grey blocks is a screen with nothing on it (Khaled,
+2026-08-25). Drawn for real, the header is simply the header, and the page slides
+in underneath it.
+**Second effect:** the back button on «الطلبات السابقة» and «الرسائل و الاشعارات»
+*works* while the list is still coming — it is the real component, not a picture
+of one. On the notifications screen, whose only exit is that button, that is the
+difference between a loading state and a trap.
+**The exception, and how to tell:** ask whether the thing could differ between two
+visits. «تفاصيل الطلب» is the title of every order ever opened — written. Where
+its back button *goes* depends on whether the order was delivered — grey. The
+countdown's four boxes are colour as well as number, and the colour is the state
+of the sale — grey. A heading that only exists when there is something under it
+(«الجديدة») waits with the rows it belongs to.
+**Amends T-37,** which said "shaped like its own screen" and was read too
+literally the first time it was applied to the customer app.
+**Date:** 2026-08-25
+
+### T-70 — The shell reads nothing, so it never makes the page wait
+`(customer)/layout.tsx` is not `async`. The one thing it needed from the database
+— the count on the «تتبع الطلب» badge — lives in a small async component behind
+`<Suspense>`, with the same bar minus its number as the fallback.
+**Why:** a layout's `await` runs **before** the page below it is allowed to start,
+and before that page's own `loading.tsx` can be shown. So two reads for one badge
+held back the background, the tab bar, the install banner and the skeleton alike:
+opening the app gave a blank screen for as long as those took, and every
+`router.refresh()` re-ran them. The frame was waiting on a badge (Khaled,
+2026-08-25).
+**The trade:** the number arrives a moment after the bar it sits on. `CountBadge`
+renders nothing at zero, so what the customer sees is a bar, and then a number on
+it — not a bar that jumps.
+**The rule this leaves behind:** a layout that reads is a layout that blocks. If a
+shell needs data, suspend the part that needs it, not the shell.
+**Date:** 2026-08-25

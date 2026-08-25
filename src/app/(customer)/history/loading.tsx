@@ -1,5 +1,9 @@
-import { Skeleton, SkeletonScreen } from "@/components/ui";
+import { Chip, SkeletonScreen } from "@/components/ui";
+import { HistoryHeading } from "@/components/customer/history/HistoryHeading";
 import { OrderCardSkeleton } from "@/components/customer/OrderCardSkeleton";
+
+/** The three filters, in the design's order — مدفوع · عليه فلوس · ملغي. */
+const FILTERS = ["مدفوع", "عليه فلوس", "ملغي"];
 
 /**
  * Loading face of «طلباتك السابقة» (C-50→C-52).
@@ -8,30 +12,24 @@ import { OrderCardSkeleton } from "@/components/customer/OrderCardSkeleton";
  * home button and from the tracking bar, and the reason he taps it is that he
  * has orders behind him. The empty face is seen once.
  *
- * The heading, the caption and the three filter chips are one pinned block on
- * the real screen — drawn here in the same order so nothing shifts when the
- * cards arrive underneath.
+ * **The whole top of the screen is real** (T-69) — the same `HistoryHeading` the
+ * page itself draws, back button and all, and the three chips with their own
+ * words on them. None of it depends on an answer, so none of it is grey, and
+ * none of it moves when the cards arrive. The back button works while the list
+ * is still coming, which is the point of drawing the real one.
+ *
+ * The chips carry no `onClick` yet — there is nothing to filter until the orders
+ * land, and the page below replaces them with the same three, lit.
  */
 export default function HistoryLoading() {
   return (
     <SkeletonScreen>
       <div className="pb-1">
-        {/* `PageHeader`: the back button at the reading edge, the title laid
-            over the row and centred against the screen. */}
-        <header className="relative flex min-h-12 items-center px-screen pt-4">
-          <Skeleton className="size-12 rounded-xl" />
-          <Skeleton className="absolute inset-x-0 mx-auto h-6 w-40" />
-        </header>
+        <HistoryHeading />
 
-        {/* «هنا تقدر تشوف كل طلباتك، وحالات الدفع» — two lines, centred. */}
-        <div className="flex flex-col items-center gap-1 pt-2">
-          <Skeleton className="h-5 w-44" />
-          <Skeleton className="h-5 w-28" />
-        </div>
-
-        <div className="flex justify-center gap-2.5 px-screen py-4">
-          {[0, 1, 2].map((chip) => (
-            <Skeleton key={chip} className="h-9 w-24 rounded-full" />
+        <div className="no-scrollbar flex justify-center gap-2.5 overflow-x-auto px-screen py-4">
+          {FILTERS.map((label) => (
+            <Chip key={label} label={label} />
           ))}
         </div>
       </div>

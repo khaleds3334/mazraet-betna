@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Toaster } from "@/components/ui";
 import { BackGuard } from "@/components/layout/BackGuard";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -7,19 +8,35 @@ import { getCurrentCustomer } from "@/lib/queries/customers";
 import { countActiveOrders } from "@/lib/queries/orders";
 
 /**
+ * The bar, with the number on «تتبع الطلب».
+ *
+ * Split out and suspended so the count is the only thing in the shell that waits
+ * on the database. It is two reads deep — who is signed in, then how many of his
+ * orders are running — and while the layout itself awaited them, **nothing at
+ * all** was on screen: not the bar, not the background, and not the page's own
+ * `loading.tsx`, which cannot start until the layout above it has finished.
+ * The frame was waiting on a badge (Khaled, 2026-08-25).
+ */
+async function NavWithBadge() {
+  const customer = await getCurrentCustomer();
+  const activeOrders = customer ? await countActiveOrders(customer.id) : 0;
+  return <BottomNav activeOrders={activeOrders} />;
+}
+
+/**
  * Shell for the customer app: a centered mobile column with the shared bottom
  * nav and the toast host. Route protection (only a customer reaches here) is
- * handled in the middleware; this layout just supplies the frame and the
- * in-progress order count for the nav badge.
+ * handled in the middleware; this layout just supplies the frame.
+ *
+ * **Not `async`.** It reads nothing, so it renders on the first pass and the
+ * screen has its chrome immediately; the page below streams into it behind its
+ * own skeleton, and the badge streams into the bar behind its own fallback.
  */
-export default async function CustomerLayout({
+export default function CustomerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const customer = await getCurrentCustomer();
-  const activeOrders = customer ? await countActiveOrders(customer.id) : 0;
-
   return (
     // Fixed to the viewport (h-svh + overflow-hidden): the page body never
     // scrolls — only <main> scrolls internally — matching the admin shell, so the
@@ -49,7 +66,11 @@ export default async function CustomerLayout({
       <main className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))]">
         {children}
       </main>
-      <BottomNav activeOrders={activeOrders} />
+      {/* The same bar without its number — identical in every other respect, so
+          the badge simply appears rather than the bar arriving late. */}
+      <Suspense fallback={<BottomNav />}>
+        <NavWithBadge />
+      </Suspense>
     </div>
   );
 }
