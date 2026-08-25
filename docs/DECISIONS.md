@@ -2590,6 +2590,26 @@ nothing typed is at risk — but the numbers under a sheet being worked in must 
 move. It waits and reads when the sheet closes.
 **The admin watches `orders` and nothing else:** everything else on his screens
 changes because *he* changed it, and his own writes already `revalidatePath`.
+**The socket must be signed in before it subscribes — and is not by default.**
+RLS decides which rows a subscriber hears about, and RLS asks *who is this*. A
+socket opened before the client has finished reading the session out of the
+cookies is the `anon` role, which matches no policy on any of these four tables:
+it subscribes, reports `SUBSCRIBED`, and is never sent anything. **A silent
+failure with no error anywhere.** So the session is fetched first and handed to
+the socket before anything subscribes.
+**It is also why this worked in development and not on Vercel** (Khaled,
+2026-08-26) — for a reason with nothing to do with Realtime. React Strict Mode
+mounts an effect, tears it down and mounts it again; the second mount came after
+the session had loaded, so the second socket was signed in. Production mounts
+once, and once was too early. **The general lesson: a dev server double-mounts
+effects, so anything that only works on the second try works only in dev.**
+**And the token is handed over again on every renewal.** An access token lasts an
+hour and this app is left open on a counter all day. Without it the screen goes
+live, works, and stops around lunchtime — the socket keeps the expired token and
+goes quiet without ever disconnecting.
+**The subscription status is logged when it is not `SUBSCRIBED`,** so this class
+of fault can never again be invisible: a blocked socket, a stale token, a table
+missing from the publication all land there and none of them show on screen.
 **This overturns the note in `RefreshOnReturn`,** which weighed "a socket open on
 every customer's phone all day" against a poll and took neither. The socket is
 the cheaper of the two: a timer re-renders on a schedule whether or not anything
