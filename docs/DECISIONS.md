@@ -2616,3 +2616,35 @@ the cheaper of the two: a timer re-renders on a schedule whether or not anything
 happened, and each of those is a server render and a database read. This wakes
 only when a row actually changed — a handful of times a day on this farm.
 **Date:** 2026-08-26
+
+### T-75 — Five wrong PINs, then a minute
+`verify_admin_pin` counts the misses and refuses to compare for sixty seconds
+after the fifth (migration 032). The count lives on `admin_credentials`.
+**Why:** six digits is a million combinations and nothing was counting. The only
+way to reach the check is the `verifyPin` server action — the function is
+executable by `service_role` alone, verified — but a server action is a POST
+endpoint anybody can script, and the number it needs is the admin's phone. Which
+the «تواصل معنا» popup now shows to every customer, since the contact number
+falls back to the one he signs in with (T-73). The parts were each reasonable and
+together they were a way in.
+**Sixty seconds, not fifteen minutes.** Five tries a minute turns a million
+guesses into ~138 days, which is already far past the point where guessing is the
+easy way in. Fifteen minutes buys almost nothing on top of that and costs
+something real: he has **no PIN recovery path** (FR-1 — a forgotten PIN means
+ringing Khaled), and he is usually standing at a scale with birds in his hands. A
+lockout long enough to genuinely obstruct him is a worse fault than the one being
+fixed.
+**A correct PIN is refused during a lockout too** — otherwise the lock is a
+speed bump a script drives over. It is the cost of the design, and it is why the
+lock is a minute.
+**Counted in the database, not the app.** Two attempts arriving together both
+read and both write; only a single statement keeps the count straight. It also
+means the limit holds against anything the app forgets to do, and against a
+future caller that is not this one.
+**The grants are re-granted in the same migration.** Changing the return type
+means dropping the function, and a recreated function is executable by `PUBLIC` —
+which would have handed the world the check this migration exists to build.
+**Still open, and Khaled's to decide:** FR-1's phone-only customer login. It was
+justified with «بيانات العميل مش حسّاسة», written before the app held invoices,
+debts and an order button.
+**Date:** 2026-08-26

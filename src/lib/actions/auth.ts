@@ -8,6 +8,7 @@ import {
   type CustomerAuthRow,
 } from "@/lib/auth/session";
 import { isEgyptianMobile, normalizePhone, phoneError } from "@/lib/phone";
+import { toArabicDigits } from "@/lib/format";
 
 /**
  * Auth actions. Login is phone-only for customers, phone + PIN for the admin
@@ -171,12 +172,29 @@ export async function verifyPin(
     return { ok: false, error: "الرقم ده مش بتاع صاحب المزرعة." };
   }
 
-  const { data: valid, error } = await admin.rpc("verify_admin_pin", {
+  // The function counts the misses and locks the farm out for a minute after
+  // five (T-75). It returns a row rather than a boolean now: whether the PIN was
+  // right, and — when it refused to look — how long is left on the lock.
+  const { data, error } = await admin.rpc("verify_admin_pin", {
     _farm_id: farm.id,
     _pin: pin,
   });
   if (error) return { ok: false, error: "حصلت مشكلة، حاول تاني." };
-  if (!valid) return { ok: false, error: "تم إدخال رقم سري غير صحيح" };
+
+  const result = data?.[0];
+  if (!result) return { ok: false, error: "حصلت مشكلة، حاول تاني." };
+
+  if (result.retry_after_seconds > 0) {
+    // Said as a wait, not as a punishment, and with the number in it — «حاول
+    // تاني بعد شوية» leaves him tapping to find out how long (rule 11). Seconds
+    // in Arabic-Indic like every other number in the app (rule 3).
+    return {
+      ok: false,
+      error: `حاولت كذا مرة. استنى ${toArabicDigits(result.retry_after_seconds)} ثانية وجرب تاني.`,
+    };
+  }
+
+  if (!result.ok) return { ok: false, error: "تم إدخال رقم سري غير صحيح" };
 
   try {
     await signInAdmin(phone, farm);

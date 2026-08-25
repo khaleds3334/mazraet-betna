@@ -16,17 +16,23 @@ export type Database = {
     Tables: {
       admin_credentials: {
         Row: {
+          failed_attempts: number
           farm_id: string
+          locked_until: string | null
           pin_hash: string
           updated_at: string
         }
         Insert: {
+          failed_attempts?: number
           farm_id: string
+          locked_until?: string | null
           pin_hash: string
           updated_at?: string
         }
         Update: {
+          failed_attempts?: number
           farm_id?: string
+          locked_until?: string | null
           pin_hash?: string
           updated_at?: string
         }
@@ -692,7 +698,7 @@ export type Database = {
       }
       verify_admin_pin: {
         Args: { _farm_id: string; _pin: string }
-        Returns: boolean
+        Returns: { ok: boolean; retry_after_seconds: number }[]
       }
     }
     Enums: {

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Toaster } from "@/components/ui";
 import { AdminBottomNav } from "@/components/layout/AdminBottomNav";
 import { BackGuard } from "@/components/layout/BackGuard";
 import { InstallPrompt } from "@/components/shared/InstallPrompt";
 import { LiveRefresh } from "@/components/layout/LiveRefresh";
+import { getCurrentFarm } from "@/lib/queries/admin";
+import { countPendingOrders } from "@/lib/queries/orders";
 
 /**
  * The admin half of the site advertises the **second** manifest, so "install"
@@ -28,6 +31,20 @@ export const metadata: Metadata = {
     apple: "/icons/admin-apple-touch-icon.png",
   },
 };
+
+/**
+ * The bar, with «الجديدة» counted on «الطلبات».
+ *
+ * Suspended for the same reason the customer's is (T-70): the count is two reads
+ * deep — which farm, then how many of its orders are waiting — and a layout that
+ * awaits holds back the page below it *and* that page's own `loading.tsx`. The
+ * bar arrives first and the number lands on it.
+ */
+async function NavWithBadge() {
+  const farm = await getCurrentFarm();
+  const pending = farm ? await countPendingOrders(farm.farmId) : 0;
+  return <AdminBottomNav pendingOrders={pending} />;
+}
 
 /**
  * Shell for the admin app (lives under /admin): a centered mobile column with
@@ -77,7 +94,11 @@ export default function AdminLayout({
       <main className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))]">
         {children}
       </main>
-      <AdminBottomNav />
+      {/* The same bar without its number, so the badge appears rather than the
+          bar arriving late. `CountBadge` draws nothing at zero. */}
+      <Suspense fallback={<AdminBottomNav />}>
+        <NavWithBadge />
+      </Suspense>
     </div>
   );
 }

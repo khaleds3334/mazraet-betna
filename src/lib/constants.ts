@@ -192,6 +192,17 @@ export function orderStage(order: {
 }
 
 /** The three groups the admin sorts orders into on A-50 and A-20. */
+/**
+ * What both apps call a pickup nobody named a time for.
+ *
+ * The admin books walk-in orders himself and A-56 never asks for a slot, so
+ * those orders genuinely have no appointment. The admin's card has read «مش
+ * محدد» since 2026-08-18; the customer's read «—», which is a gap where a
+ * sentence should be — and the two were describing the same order (Khaled,
+ * 2026-08-26). One string, so they cannot drift again.
+ */
+export const PICKUP_UNSET = "مش محدد";
+
 export type AdminOrderTabKey = "new" | "active" | "done";
 
 /**

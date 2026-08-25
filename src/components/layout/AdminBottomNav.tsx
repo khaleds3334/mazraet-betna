@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdminNavIcon, type AdminNavIconName } from "./AdminNavIcon";
+import { CountBadge } from "@/components/ui";
 import { isActivePath } from "@/lib/utils";
 
 /**
@@ -36,7 +37,12 @@ const ITEMS: NavEntry[] = [
  */
 const NO_NAV = ["/admin/settings"];
 
-export function AdminBottomNav() {
+export function AdminBottomNav({
+  pendingOrders = 0,
+}: {
+  /** «الجديدة» — orders waiting on him. Rides the corner of «الطلبات». */
+  pendingOrders?: number;
+}) {
   const pathname = usePathname();
   if (NO_NAV.includes(pathname)) return null;
 
@@ -67,7 +73,15 @@ export function AdminBottomNav() {
               (active ? "text-primary-foreground" : "text-brand-muted")
             }
           >
-            <AdminNavIcon name={item.icon} size={28} />
+            {/* Wrapped so the disc pins to the glyph rather than to the 44px
+                tap target around it — the same corner rule the customer's bar
+                and the notification bell follow. */}
+            <span className="relative">
+              <AdminNavIcon name={item.icon} size={28} />
+              {item.href === "/admin/orders" && (
+                <CountBadge count={pendingOrders} />
+              )}
+            </span>
             <span className="text-sm font-bold">{item.label}</span>
           </Link>
         );

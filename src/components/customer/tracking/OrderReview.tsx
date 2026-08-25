@@ -1,4 +1,5 @@
 import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
+import { PICKUP_UNSET } from "@/lib/constants";
 import { formatWeight, pluralizeChicken } from "@/lib/format";
 import type { OrderListItem } from "@/lib/queries/orders";
 import { OrderSteps } from "./OrderSteps";
@@ -24,7 +25,7 @@ export function OrderReview({ order }: { order: OrderListItem }) {
           ? formatWeight(order.approxWeight)
           : "اوزان مختلفة",
     },
-    { label: "معاد تجهيز الفراخ", value: order.pickupTimeLabel ?? "—" },
+    { label: "معاد تجهيز الفراخ", value: order.pickupTimeLabel ?? PICKUP_UNSET },
   ];
 
   return (

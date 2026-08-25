@@ -4,7 +4,7 @@ import {
 } from "@/components/customer/OrderCardShell";
 import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
 import { computeInvoice } from "@/lib/calculations/invoice";
-import { orderStage, type OrderStage } from "@/lib/constants";
+import { orderStage, PICKUP_UNSET, type OrderStage } from "@/lib/constants";
 import { formatCurrency, formatWeight, pluralizeChicken } from "@/lib/format";
 import type { OrderListItem } from "@/lib/queries/orders";
 
@@ -108,7 +108,7 @@ const READING: Record<
             ? formatWeight(order.approxWeight)
             : "اوزان مختلفة",
       },
-      { label: "معاد تجهيز الفراخ", value: order.pickupTimeLabel ?? "—" },
+      { label: "معاد تجهيز الفراخ", value: order.pickupTimeLabel ?? PICKUP_UNSET },
     ],
     hint: "يتم الان التأكد من توفر الاوزان المطلوبة",
   }),

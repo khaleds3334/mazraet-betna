@@ -9,7 +9,7 @@ import {
   pluralizeChicken,
 } from "@/lib/format";
 import { computeInvoice } from "@/lib/calculations/invoice";
-import { orderStage } from "@/lib/constants";
+import { orderStage, PICKUP_UNSET } from "@/lib/constants";
 import { EditCancelReasonButton } from "./EditCancelReasonButton";
 import { InvoiceTotal } from "./InvoiceTotal";
 import { OrderCardActions } from "./OrderCardActions";
@@ -37,7 +37,7 @@ function Stat({ label, value }: { label: string; value: string }) {
  * older than the slots falls back to its clock there.
  */
 function pickupLabel(date: string | null, slot: string | null): string {
-  if (!date) return "مش محدد";
+  if (!date) return PICKUP_UNSET;
   const day = formatArabicDate(date, "EEEE d MMMM");
   return slot ? `${day} — ${slot}` : day;
 }

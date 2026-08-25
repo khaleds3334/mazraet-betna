@@ -37,6 +37,34 @@ export async function countOpenCycleOrders(cycleId: string): Promise<number> {
   return count ?? 0;
 }
 
+/**
+ * Orders waiting on the admin to do something — «الجديدة», the tab the orders
+ * screen opens on. Drives the badge on the «الطلبات» tab (Khaled, 2026-08-26):
+ * he asked for the same disc the customer has on «تتبع الطلب», and it answers
+ * the same question from the other side — *how many are waiting for me?*
+ *
+ * Counted across the farm rather than the cycle the orders screen happens to be
+ * showing. A cycle cannot end while an order on it is unfinished (D-36), so a
+ * pending order always belongs to the running cycle — the two are the same
+ * number, and this one needs no cycle to ask about.
+ *
+ * `ADMIN_ORDER_TABS` is the source of which statuses count, so regrouping a
+ * status moves the badge with the tab and nothing has to be remembered here.
+ */
+export async function countPendingOrders(farmId: string): Promise<number> {
+  const statuses =
+    ADMIN_ORDER_TABS.find((tab) => tab.key === "new")?.statuses ?? [];
+  if (statuses.length === 0) return 0;
+
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("farm_id", farmId)
+    .in("status", statuses);
+  return count ?? 0;
+}
+
 // ─────────────────────────── Customer app ───────────────────────────
 
 /**
