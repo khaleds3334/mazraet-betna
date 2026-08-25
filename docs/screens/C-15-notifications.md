@@ -31,6 +31,8 @@ writers are already two apps and a psql prompt, and FR-16 will be a third.
 | Order placed | «تم استلام طلبك بنجاح» | success | the order |
 | Order weighed | «الفاتورة جاهزة» | success | the order |
 | Order ready | «طلبك جاهز للاستلام» | success | the order |
+| Order delivered, settled | «تم تسليم الطلب» | success | the order |
+| Order delivered, owing | «تم تسليم الطلب» + what was paid and what is left | **warning** | the order |
 | Order cancelled | «تم الغاء طلبك» + the reason | error | the order |
 | Sale opened | «تم البدء في فترة البيع» | warning | — |
 
@@ -46,6 +48,17 @@ and without the edge test every bird sold would re-announce the sale.
 **Orphan and house orders notify nobody** (FR-13, FR-36): one has no customer, the
 other is not a sale.
 
+**The delivered notice is the one that is priced on read.** Its tone and its
+sentence are a question about money — settled is good news, owed on is a warning —
+and money is answered by `computeInvoice`, never stored (D-05). The trigger writes
+`event = 'order_delivered'` with a placeholder tone and a neutral sentence;
+`listNotifications` runs the same invoice the invoice screen and the history card
+run, and replaces both. So the figures are as true the tenth time he opens the
+screen as the first, and a payment recorded afterwards moves the notice from
+warning to success on its own.
+
+Every other notice is finished the moment it is written.
+
 ## No numbers in the database
 
 The stored bodies carry no order number, no total, no date. Every number this app
@@ -59,6 +72,11 @@ puts the number on the front with the real formatter, from the joined order.
 FR-31's wording asks. Tapping it opens the invoice, which is one tap and always
 right, where a total frozen into a sentence would be a second copy of
 `computeInvoice` written in SQL.
+
+The delivered notice *does* carry figures — because they are computed on read
+rather than stored. `notification.event` is what makes that possible: it is the
+one thing the database knows for certain about a notice, and the query keys off it
+instead of matching on the title.
 
 ## New and old
 

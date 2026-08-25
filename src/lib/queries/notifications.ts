@@ -7,7 +7,8 @@
  * if we asked it to.
  */
 import { createClient } from "@/lib/supabase/server";
-import { formatOrderNumber } from "@/lib/format";
+import { computeInvoice } from "@/lib/calculations/invoice";
+import { formatCurrency, formatOrderNumber } from "@/lib/format";
 import type { Enums } from "@/types/database";
 
 /**
@@ -46,6 +47,56 @@ export interface CustomerNotification {
   createdAt: string;
 }
 
+/** Everything the delivered notice needs to price itself — see `settle`. */
+const ORDER_MONEY =
+  "seq, unit_price, cleaning_price, cycle(seq), order_line(id, position, batch_no, actual_weight, cleaning), payment(amount)";
+
+/**
+ * «تم تسليم الطلب» read as money rather than as a status (Khaled, 2026-08-25):
+ * settled it is good news, with something still owed it is a warning that names
+ * what was paid and what is left.
+ *
+ * **Computed here, never stored.** The amounts are the order's invoice, and an
+ * invoice is the order plus its weights worked out on read (D-05) — writing the
+ * figures into the notification row would have been a second place the same
+ * order is priced, frozen at the moment of delivery and wrong the day a payment
+ * is recorded against it. This runs the same `computeInvoice` the invoice screen
+ * and the history card run, so the three cannot disagree, and it stays true
+ * however long the notice sits in the list.
+ *
+ * Only this event is re-read. Every other notice is finished the moment it is
+ * written, and the sentence in the database is the whole of it.
+ */
+function settle(order: {
+  unit_price: number | null;
+  cleaning_price: number | null;
+  order_line: {
+    id: string;
+    position: number;
+    batch_no: number;
+    actual_weight: number | null;
+    cleaning: boolean;
+  }[];
+  payment: { amount: number }[];
+}): { kind: Enums<"notification_kind">; body: string } {
+  const invoice = computeInvoice(
+    {
+      unit_price: order.unit_price ?? 0,
+      cleaning_price: order.cleaning_price ?? 0,
+    },
+    order.order_line ?? [],
+    order.payment ?? [],
+  );
+
+  if (invoice.remaining <= 0) {
+    return { kind: "success", body: "تم استلامه و سداد المبلغ بالكامل" };
+  }
+  return {
+    kind: "warning",
+    body: `تم استلامه، دفعت ${formatCurrency(invoice.paid)} و باقي عليك ${formatCurrency(invoice.remaining)}`,
+  };
+}
+
 /**
  * The customer's notifications, newest first.
  *
@@ -62,21 +113,30 @@ export async function listNotifications(
   const supabase = await createClient();
   const { data } = await supabase
     .from("notification")
-    .select("id, kind, title, body, is_read, created_at, order_id, orders(seq, cycle(seq))")
+    .select(`id, kind, event, title, body, is_read, created_at, order_id, orders(${ORDER_MONEY})`)
     .eq("customer_id", customerId)
     .eq("audience", "customer")
     .order("created_at", { ascending: false });
 
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    kind: row.kind,
-    title: row.title,
-    body: row.body,
-    orderNumber: row.orders
-      ? formatOrderNumber(row.orders.cycle?.seq ?? 0, row.orders.seq ?? 0)
-      : null,
-    orderId: row.order_id,
-    isRead: row.is_read,
-    createdAt: row.created_at,
-  }));
+  return (data ?? []).map((row) => {
+    // The one notice whose tone and sentence are a question about money, and so
+    // the one that is worked out now rather than read back — see `settle`.
+    const money =
+      row.event === "order_delivered" && row.orders
+        ? settle(row.orders)
+        : null;
+
+    return {
+      id: row.id,
+      kind: money?.kind ?? row.kind,
+      title: row.title,
+      body: money?.body ?? row.body,
+      orderNumber: row.orders
+        ? formatOrderNumber(row.orders.cycle?.seq ?? 0, row.orders.seq ?? 0)
+        : null,
+      orderId: row.order_id,
+      isRead: row.is_read,
+      createdAt: row.created_at,
+    };
+  });
 }

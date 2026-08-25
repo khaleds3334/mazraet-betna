@@ -2353,3 +2353,23 @@ the first time is old news.
 **Nothing on screen waits for it.** It exists for the bell's badge on the screen
 he returns to, which `revalidatePath("/", "layout")` redraws.
 **Date:** 2026-08-25
+
+### D-75 — A notification stores which event it was; money is priced on read
+`notification.event` (migration 030) names one of seven things that happened.
+«تم تسليم الطلب» is the only notice whose tone and sentence depend on money, and
+neither is written down: the trigger stores `event = 'order_delivered'` with a
+placeholder tone and a neutral line, and `listNotifications` runs `computeInvoice`
+over the order to decide between success and warning and to write «دفعت X و باقي
+عليك Y».
+**Why:** D-05 — there is no invoice table, because an invoice is the order plus
+its weights computed on read. «باقي عليك ٧٨٥ جنيه» stored in a row is an invoice
+total stored: a second place one order is priced, frozen at delivery, and wrong
+the day a payment is recorded against it. Computed on read it also heals itself —
+record the payment and the notice turns from warning to success with nothing to
+migrate.
+**And D-74 still holds:** the figures go through `formatCurrency`, in TypeScript,
+because that is where rule 3 lives.
+**Why an event column rather than reading the title:** the title is a sentence for
+a human and will be reworded; the event is what the row *is*. It also documents
+the seven in the schema, where the next person will look.
+**Date:** 2026-08-25

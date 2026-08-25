@@ -368,6 +368,7 @@ export type Database = {
           body: string | null
           created_at: string
           customer_id: string | null
+          event: Database["public"]["Enums"]["notification_event"] | null
           farm_id: string
           id: string
           is_read: boolean
@@ -380,6 +381,7 @@ export type Database = {
           body?: string | null
           created_at?: string
           customer_id?: string | null
+          event?: Database["public"]["Enums"]["notification_event"] | null
           farm_id: string
           id?: string
           is_read?: boolean
@@ -392,6 +394,7 @@ export type Database = {
           body?: string | null
           created_at?: string
           customer_id?: string | null
+          event?: Database["public"]["Enums"]["notification_event"] | null
           farm_id?: string
           id?: string
           is_read?: boolean
@@ -696,6 +699,14 @@ export type Database = {
       expense_category: "feed" | "utilities" | "medicine" | "other"
       feed_phase: "badi" | "nami"
       notification_audience: "customer" | "admin"
+      notification_event:
+        | "welcome"
+        | "order_placed"
+        | "order_weighed"
+        | "order_ready"
+        | "order_delivered"
+        | "order_cancelled"
+        | "sale_open"
       notification_kind: "success" | "warning" | "error"
       order_source: "customer" | "admin"
       order_status: "pending" | "weighed" | "ready" | "delivered" | "cancelled"
@@ -829,6 +840,15 @@ export const Constants = {
       expense_category: ["feed", "utilities", "medicine", "other"],
       feed_phase: ["badi", "nami"],
       notification_audience: ["customer", "admin"],
+      notification_event: [
+        "welcome",
+        "order_placed",
+        "order_weighed",
+        "order_ready",
+        "order_delivered",
+        "order_cancelled",
+        "sale_open",
+      ],
       notification_kind: ["success", "warning", "error"],
       order_source: ["customer", "admin"],
       order_status: ["pending", "weighed", "ready", "delivered", "cancelled"],
