@@ -48,6 +48,10 @@ export function HomeHeader({
 
         <Link
           href="/notifications"
+          // Fetched in full while he is on the home screen: the badge beside it
+          // is the whole reason he taps, and a bell with a number on it that
+          // then makes him wait is the silence rule 11 is about.
+          prefetch
           replace
           aria-label="الإشعارات"
           className="flex size-11 items-center justify-center text-foreground"

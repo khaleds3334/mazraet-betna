@@ -2,6 +2,7 @@
  * Cycle reads the customer needs: whether the sale is open right now, and the
  * instant the countdown on the home screen points at (FR-25).
  */
+import { cache } from "react";
 import { differenceInCalendarDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -87,142 +88,150 @@ export interface SaleState {
  * Returns null only when the farm has never had a cycle and no date is set —
  * there is genuinely nothing to promise, and the home says so rather than
  * counting down to a date nobody chose.
+ *
+ * Wrapped in React `cache`: three customer screens ask this question, and the
+ * order form asks it beside `getFarmSettings`. One request, one answer — and one
+ * round trip, however many callers there turn out to be.
  */
-export async function getActiveSaleState(
-  farmId: string,
-): Promise<SaleState | null> {
-  const supabase = await createClient();
+export const getActiveSaleState = cache(
+  async (farmId: string): Promise<SaleState | null> => {
+    const supabase = await createClient();
 
-  const { data: cycle } = await supabase
-    .from("cycle")
-    .select(
-      "sale_open, sale_auto_closed, selling_started_at, selling_ended_at, start_date",
-    )
-    .eq("farm_id", farmId)
-    .eq("is_active", true)
-    .maybeSingle();
+    // Together, not one after the other: neither read needs the other's answer,
+    // and waited in turn they were two round trips on the customer's slowest
+    // screen — the home, which is the first thing the app shows.
+    const [{ data: cycle }, { data: settings }] = await Promise.all([
+      supabase
+        .from("cycle")
+        .select(
+          "sale_open, sale_auto_closed, selling_started_at, selling_ended_at, start_date",
+        )
+        .eq("farm_id", farmId)
+        .eq("is_active", true)
+        .maybeSingle(),
+      supabase
+        .from("settings")
+        .select("raising_period_days, sale_starts_at, sale_closes_at")
+        .eq("farm_id", farmId)
+        .maybeSingle(),
+    ]);
 
-  const { data: settings } = await supabase
-    .from("settings")
-    .select("raising_period_days, sale_starts_at, sale_closes_at")
-    .eq("farm_id", farmId)
-    .maybeSingle();
+    if (cycle) {
+      // **The flock closed it** (migration 025). Read, not recounted: this runs
+      // on the customer's own session, where RLS hides other people's orders and
+      // all mortality, so a count taken here came back with a hundred birds
+      // available out of none (T-58). One stored answer, and both halves of the
+      // app read the same one.
+      //
+      // No date: the sale is over for this flock, and the next belongs to birds
+      // nobody has bought. Zeros are the honest reading.
+      if (cycle.sale_auto_closed) {
+        return { status: "sold-out", saleOpen: false, targetDate: null };
+      }
 
-  if (cycle) {
-    // **The flock closed it** (migration 025). Read, not recounted: this runs
-    // on the customer's own session, where RLS hides other people's orders and
-    // all mortality, so a count taken here came back with a hundred birds
-    // available out of none (T-58). One stored answer, and both halves of the
-    // app read the same one.
-    //
-    // No date: the sale is over for this flock, and the next belongs to birds
-    // nobody has bought. Zeros are the honest reading.
-    if (cycle.sale_auto_closed) {
-      return { status: "sold-out", saleOpen: false, targetDate: null };
-    }
+      if (cycle.sale_open) {
+        // The forecast lives in settings now (migration 024) — one sale is open at
+        // a time, and it is the admin's to move. Cleared, or left behind by a sale
+        // that outran it, it falls back to the default window off the day selling
+        // opened — the same date `startSelling` puts there, worked out again
+        // rather than left blank (Khaled, 2026-08-22).
+        const chosenEnd = settings?.sale_closes_at
+          ? new Date(settings.sale_closes_at)
+          : null;
 
-    if (cycle.sale_open) {
-      // The forecast lives in settings now (migration 024) — one sale is open at
-      // a time, and it is the admin's to move. Cleared, or left behind by a sale
-      // that outran it, it falls back to the default window off the day selling
-      // opened — the same date `startSelling` puts there, worked out again
-      // rather than left blank (Khaled, 2026-08-22).
-      const chosenEnd = settings?.sale_closes_at
-        ? new Date(settings.sale_closes_at)
+        return {
+          status: "open",
+          saleOpen: true,
+          targetDate: (chosenEnd && chosenEnd.getTime() > Date.now()
+            ? chosenEnd
+            : saleWindowEnd(cycle.selling_started_at)
+          ).toISOString(),
+        };
+      }
+
+      // In its selling phase with the switch off: he closed it himself, and he is
+      // the one who opens it again. Hours, not days — and rolling, because he has
+      // promised no particular hour.
+      if (isSellingPhase(cycle)) {
+        return {
+          status: "paused",
+          saleOpen: false,
+          targetDate: salePauseEnd(cycle.selling_ended_at).toISOString(),
+        };
+      }
+      const ready = expectedSaleDate(
+        cycle.start_date,
+        settings?.raising_period_days,
+      );
+      const chosen = settings?.sale_starts_at
+        ? new Date(settings.sale_starts_at)
         : null;
 
+      // Not a date that has already come and gone, either: the day he named can
+      // pass with the sale still shut, and a target in the past is the same
+      // stopped clock the rolling date below exists to avoid.
+      if (
+        chosen &&
+        chosen.getTime() >= ready.getTime() &&
+        chosen.getTime() > Date.now()
+      ) {
+        return {
+          status: "waiting",
+          saleOpen: false,
+          targetDate: chosen.toISOString(),
+        };
+      }
+
       return {
-        status: "open",
-        saleOpen: true,
-        targetDate: (chosenEnd && chosenEnd.getTime() > Date.now()
-          ? chosenEnd
-          : saleWindowEnd(cycle.selling_started_at)
+        status: "waiting",
+        saleOpen: false,
+        targetDate: raisingSaleStartDate(
+          cycle.start_date,
+          settings?.raising_period_days,
         ).toISOString(),
       };
     }
 
-    // In its selling phase with the switch off: he closed it himself, and he is
-    // the one who opens it again. Hours, not days — and rolling, because he has
-    // promised no particular hour.
-    if (isSellingPhase(cycle)) {
-      return {
-        status: "paused",
-        saleOpen: false,
-        targetDate: salePauseEnd(cycle.selling_ended_at).toISOString(),
-      };
-    }
-    const ready = expectedSaleDate(
-      cycle.start_date,
-      settings?.raising_period_days,
-    );
-    const chosen = settings?.sale_starts_at
-      ? new Date(settings.sale_starts_at)
-      : null;
-
-    // Not a date that has already come and gone, either: the day he named can
-    // pass with the sale still shut, and a target in the past is the same
-    // stopped clock the rolling date below exists to avoid.
+    // Between cycles. The admin's own date wins — he may know when the next chicks
+    // arrive long before he registers them — but **only while it is still ahead**.
+    //
+    // It is one date field, and it is the last thing on his mind the day a cycle
+    // closes: the one he set for the last sale simply stays there, goes by, and
+    // then wins forever over the estimate that exists for exactly this case. The
+    // customer's home sat on a countdown of zeros with no cycle even registered
+    // (Khaled, 2026-08-22).
+    //
+    // A date that has passed is not a promise he is still making, so the rolling
+    // estimate takes over — and takes over again every time one goes stale, which
+    // is what stops him ever having to remember this field at all.
     if (
-      chosen &&
-      chosen.getTime() >= ready.getTime() &&
-      chosen.getTime() > Date.now()
+      settings?.sale_starts_at &&
+      new Date(settings.sale_starts_at).getTime() > Date.now()
     ) {
       return {
         status: "waiting",
         saleOpen: false,
-        targetDate: chosen.toISOString(),
+        targetDate: settings.sale_starts_at,
       };
     }
 
+    const { data: lastEnded } = await supabase
+      .from("cycle")
+      .select("ended_at")
+      .eq("farm_id", farmId)
+      .not("ended_at", "is", null)
+      .order("ended_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!lastEnded?.ended_at) return null;
+
     return {
       status: "waiting",
       saleOpen: false,
-      targetDate: raisingSaleStartDate(
-        cycle.start_date,
-        settings?.raising_period_days,
-      ).toISOString(),
+      targetDate: rollingSaleStartDate(lastEnded.ended_at).toISOString(),
     };
-  }
-
-  // Between cycles. The admin's own date wins — he may know when the next chicks
-  // arrive long before he registers them — but **only while it is still ahead**.
-  //
-  // It is one date field, and it is the last thing on his mind the day a cycle
-  // closes: the one he set for the last sale simply stays there, goes by, and
-  // then wins forever over the estimate that exists for exactly this case. The
-  // customer's home sat on a countdown of zeros with no cycle even registered
-  // (Khaled, 2026-08-22).
-  //
-  // A date that has passed is not a promise he is still making, so the rolling
-  // estimate takes over — and takes over again every time one goes stale, which
-  // is what stops him ever having to remember this field at all.
-  if (
-    settings?.sale_starts_at &&
-    new Date(settings.sale_starts_at).getTime() > Date.now()
-  ) {
-    return {
-      status: "waiting",
-      saleOpen: false,
-      targetDate: settings.sale_starts_at,
-    };
-  }
-
-  const { data: lastEnded } = await supabase
-    .from("cycle")
-    .select("ended_at")
-    .eq("farm_id", farmId)
-    .not("ended_at", "is", null)
-    .order("ended_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!lastEnded?.ended_at) return null;
-
-  return {
-    status: "waiting",
-    saleOpen: false,
-    targetDate: rollingSaleStartDate(lastEnded.ended_at).toISOString(),
-  };
-}
+  },
+);
 
 /**
  * Whether the farm has an active cycle right now. The admin home shows the

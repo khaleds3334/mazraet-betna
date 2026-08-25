@@ -66,7 +66,13 @@ export function EmptyOrders({
         </div>
       </div>
 
-      <Link href={href} replace className={cn(actionBase, actionOutline)}>
+      {/* The one thing on an empty screen worth tapping, so it is ready. */}
+      <Link
+        href={href}
+        prefetch
+        replace
+        className={cn(actionBase, actionOutline)}
+      >
         {cta}
       </Link>
     </div>

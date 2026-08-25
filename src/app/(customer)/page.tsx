@@ -61,7 +61,10 @@ export default async function CustomerHomePage() {
 
         <div className="flex flex-col gap-5">
           {saleOpen ? (
-            <Link href="/order" replace className={PRIMARY_ACTION}>
+            // Both CTAs are fetched in full — they are the two things this
+            // screen exists to send him to, and they are on it from the moment
+            // it loads. (Production only — a dev server never prefetches.)
+            <Link href="/order" prefetch replace className={PRIMARY_ACTION}>
               اطلب فراخ طازجة دلوقتي
             </Link>
           ) : (
@@ -76,7 +79,7 @@ export default async function CustomerHomePage() {
             </div>
           )}
 
-          <Link href="/history" replace className={OUTLINE_ACTION}>
+          <Link href="/history" prefetch replace className={OUTLINE_ACTION}>
             الطلبات السابقة
           </Link>
         </div>

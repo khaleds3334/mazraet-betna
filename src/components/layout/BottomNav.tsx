@@ -116,6 +116,7 @@ export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
       {onTracking && (
         <Link
           href="/history"
+          prefetch
           replace
           className={cn(actionBase, actionPrimary, "mb-4")}
         >
@@ -130,6 +131,18 @@ export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
             <Link
               key={item.href}
               href={item.href}
+              // `prefetch` in full, not just down to the loading boundary. The
+              // default stops at `loading.tsx`, which buys the grey skeleton and
+              // nothing else — the tab's own data is still fetched on the tap,
+              // and the customer still waits, just with something to look at.
+              // In full, the page is already in hand when he presses, and Next
+              // holds it for five minutes (`staleTimes.static`).
+              //
+              // Three tabs on every screen is three page renders the server does
+              // in the background per screen. On a farm with tens of customers
+              // that is nothing, and it is exactly what the customer is waiting
+              // on. (Production only — a dev server never prefetches.)
+              prefetch
               // Replaces rather than pushes — see the note in `BackGuard`.
               replace
               aria-current={active ? "page" : undefined}

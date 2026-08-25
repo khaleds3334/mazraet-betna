@@ -106,7 +106,13 @@ export function OrderCardShell({
     "flex w-full flex-col gap-3.5 rounded-xl border border-border bg-surface-page py-[18px] shadow-card";
 
   return href ? (
-    <Link href={href} replace className={shape}>
+    // `prefetch` in full, not just to the loading boundary: a customer has
+    // a handful of orders, they are all on screen at once, and the page
+    // behind a card is one database read the server can just as well do
+    // while he is still reading the card. Same reasoning as `CycleRow` on
+    // the admin's side. Production only — Next never prefetches from a dev
+    // server.
+    <Link href={href} prefetch replace className={shape}>
       {body}
     </Link>
   ) : (

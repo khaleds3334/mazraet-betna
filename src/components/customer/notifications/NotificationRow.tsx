@@ -64,7 +64,10 @@ export function NotificationRow({
   );
 
   return orderId ? (
-    <Link href={`/tracking/${orderId}`} replace className={shape}>
+    // Prefetched in full, like the order cards: a notice about an order is
+    // opened to see the order, and the list is short enough to hold them all
+    // ready. (Production only — a dev server never prefetches.)
+    <Link href={`/tracking/${orderId}`} prefetch replace className={shape}>
       {content}
     </Link>
   ) : (

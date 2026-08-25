@@ -318,14 +318,20 @@ export async function getOrder(
   orderId: string,
 ): Promise<OrderListItem | null> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("orders")
-    .select(`${ORDER_COLUMNS}, cycle(seq)`)
-    .eq("farm_id", farmId)
-    .eq("id", orderId)
-    .maybeSingle();
+  // The settings read does not depend on the orders read, so the two go
+  // together. Waited in turn they were two round trips on every list screen —
+  // and `getFarmSettings` is `cache`d, so on the screens that ask twice the
+  // second caller still pays nothing.
+  const [{ data }, { pickupSlots }] = await Promise.all([
+    supabase
+      .from("orders")
+      .select(`${ORDER_COLUMNS}, cycle(seq)`)
+      .eq("farm_id", farmId)
+      .eq("id", orderId)
+      .maybeSingle(),
+    getFarmSettings(farmId),
+  ]);
 
-  const { pickupSlots } = await getFarmSettings(farmId);
   return data ? toOrderListItem(data, data.cycle?.seq ?? 0, pickupSlots) : null;
 }
 
@@ -338,14 +344,20 @@ export async function listCycleOrders(
   cycle: { cycleId: string; seq: number },
 ): Promise<OrderListItem[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("orders")
-    .select(ORDER_COLUMNS)
-    .eq("farm_id", farmId)
-    .eq("cycle_id", cycle.cycleId)
-    .order("created_at", { ascending: false });
+  // The settings read does not depend on the orders read, so the two go
+  // together. Waited in turn they were two round trips on every list screen —
+  // and `getFarmSettings` is `cache`d, so on the screens that ask twice the
+  // second caller still pays nothing.
+  const [{ data }, { pickupSlots }] = await Promise.all([
+    supabase
+      .from("orders")
+      .select(ORDER_COLUMNS)
+      .eq("farm_id", farmId)
+      .eq("cycle_id", cycle.cycleId)
+      .order("created_at", { ascending: false }),
+    getFarmSettings(farmId),
+  ]);
 
-  const { pickupSlots } = await getFarmSettings(farmId);
   return (data ?? []).map((order) =>
     toOrderListItem(order, cycle.seq, pickupSlots),
   );
@@ -376,15 +388,21 @@ export async function listCustomerActiveOrders(
   customerId: string,
 ): Promise<OrderListItem[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("orders")
-    .select(`${ORDER_COLUMNS}, cycle(seq)`)
-    .eq("farm_id", farmId)
-    .eq("customer_id", customerId)
-    .in("status", ACTIVE_STATUSES)
-    .order("created_at", { ascending: false });
+  // The settings read does not depend on the orders read, so the two go
+  // together. Waited in turn they were two round trips on every list screen —
+  // and `getFarmSettings` is `cache`d, so on the screens that ask twice the
+  // second caller still pays nothing.
+  const [{ data }, { pickupSlots }] = await Promise.all([
+    supabase
+      .from("orders")
+      .select(`${ORDER_COLUMNS}, cycle(seq)`)
+      .eq("farm_id", farmId)
+      .eq("customer_id", customerId)
+      .in("status", ACTIVE_STATUSES)
+      .order("created_at", { ascending: false }),
+    getFarmSettings(farmId),
+  ]);
 
-  const { pickupSlots } = await getFarmSettings(farmId);
   return (data ?? []).map((order) =>
     toOrderListItem(order, order.cycle?.seq ?? 0, pickupSlots),
   );
@@ -408,15 +426,21 @@ export async function listCustomerPastOrders(
   customerId: string,
 ): Promise<OrderListItem[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("orders")
-    .select(`${ORDER_COLUMNS}, cycle(seq)`)
-    .eq("farm_id", farmId)
-    .eq("customer_id", customerId)
-    .in("status", PAST_STATUSES)
-    .order("created_at", { ascending: false });
+  // The settings read does not depend on the orders read, so the two go
+  // together. Waited in turn they were two round trips on every list screen —
+  // and `getFarmSettings` is `cache`d, so on the screens that ask twice the
+  // second caller still pays nothing.
+  const [{ data }, { pickupSlots }] = await Promise.all([
+    supabase
+      .from("orders")
+      .select(`${ORDER_COLUMNS}, cycle(seq)`)
+      .eq("farm_id", farmId)
+      .eq("customer_id", customerId)
+      .in("status", PAST_STATUSES)
+      .order("created_at", { ascending: false }),
+    getFarmSettings(farmId),
+  ]);
 
-  const { pickupSlots } = await getFarmSettings(farmId);
   return (data ?? []).map((order) =>
     toOrderListItem(order, order.cycle?.seq ?? 0, pickupSlots),
   );
@@ -428,14 +452,20 @@ export async function listCustomerOrders(
   currentCycleId: string | null,
 ): Promise<CustomerOrder[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("orders")
-    .select(`${ORDER_COLUMNS}, cycle_id, cycle(seq)`)
-    .eq("farm_id", farmId)
-    .eq("customer_id", customerId)
-    .order("created_at", { ascending: false });
+  // The settings read does not depend on the orders read, so the two go
+  // together. Waited in turn they were two round trips on every list screen —
+  // and `getFarmSettings` is `cache`d, so on the screens that ask twice the
+  // second caller still pays nothing.
+  const [{ data }, { pickupSlots }] = await Promise.all([
+    supabase
+      .from("orders")
+      .select(`${ORDER_COLUMNS}, cycle_id, cycle(seq)`)
+      .eq("farm_id", farmId)
+      .eq("customer_id", customerId)
+      .order("created_at", { ascending: false }),
+    getFarmSettings(farmId),
+  ]);
 
-  const { pickupSlots } = await getFarmSettings(farmId);
   return (data ?? []).map((order) => ({
     ...toOrderListItem(order, order.cycle?.seq ?? 0, pickupSlots),
     inCurrentCycle: order.cycle_id === currentCycleId,

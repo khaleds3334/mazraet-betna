@@ -76,6 +76,10 @@ export function OrderSuccess({ orderId }: { orderId: string }) {
 
         <Link
           href={`/tracking/${orderId}`}
+          // The order was placed a second ago and this is the only button on
+          // the screen — it is going to be pressed. Fetched in full so the
+          // details are already there when it is.
+          prefetch
           replace
           className={cn(actionBase, actionPrimary)}
         >

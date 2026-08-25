@@ -2373,3 +2373,49 @@ because that is where rule 3 lives.
 a human and will be reworded; the event is what the row *is*. It also documents
 the seven in the schema, where the next person will look.
 **Date:** 2026-08-25
+
+### T-67 — The links the customer is going to press are prefetched **in full**
+The three tabs of the customer's bottom nav, the bell, the two home CTAs, the
+order cards on both lists, and the notification rows all carry `prefetch` (true),
+not the default. `loading.tsx` beside every route (T-37) is the other half and
+had never been done on this side of the app.
+**Why both halves, and what each one buys.** Next's default (`auto`) prefetches a
+dynamic route only as far as its nearest `loading.tsx`. With no such file — which
+was the state of every customer route — **nothing is prefetched at all**, and the
+tap produced one to three seconds of an unchanged screen. Adding the six loading
+files alone fixes the silence and buys the grey skeleton; the tab's own data is
+still fetched on the tap, so the customer still waits, just with something to look
+at. `prefetch` in full fetches the page's data too, so the screen is already in
+hand when he presses.
+**The cost, stated plainly:** a fully prefetched route is kept in the browser's
+router cache for **five minutes** (`staleTimes.static`), against zero for the
+default. So a customer sitting in the app can tap a tab and be shown data up to
+five minutes old. Three things close that window in practice — every server action
+calls `revalidatePath`, which clears the cache; `RefreshOnReturn` re-reads on
+coming back to the app; and what changes under him is the admin weighing, which
+arrives as a notification anyway. If it ever proves too long, the knob is
+`experimental.staleTimes.static` in `next.config.ts`, and it is one line.
+**Three tabs on every screen** means three page renders the server does in the
+background per screen view. On a farm with tens of customers that is nothing, and
+it is precisely the work the customer would otherwise be sitting and waiting for.
+**Precedent:** `CycleRow` on the admin's side has done this since 2026-08-20 for
+the same reason, written the same way.
+**Production only** — Next never prefetches from a dev server, so none of this is
+measurable on `pnpm dev`. Test on `pnpm build && pnpm start`.
+**Date:** 2026-08-25
+
+### T-68 — A read waits only on what it actually needs
+`getActiveSaleState` reads the cycle and the settings row together rather than one
+after the other, and is wrapped in React `cache`. The five order lists
+(`getOrder`, `listCycleOrders`, `listCustomerActiveOrders`,
+`listCustomerPastOrders`, `listCustomerOrders`) read their orders and
+`getFarmSettings` together, where each used to await the orders and *then* go and
+fetch the pickup slots it was always going to need.
+**Why:** these are round trips to a database in another country, on a phone on
+mobile data, and none of the second reads needed the first one's answer. The
+customer's home paid two of them before it could draw the countdown; every list
+screen paid one. The pattern to watch for is an `await` whose result is not
+mentioned in the next `await`.
+**Why `cache` on the sale state:** three customer screens ask that question, and
+the order form asks it beside `getFarmSettings`. One request, one answer.
+**Date:** 2026-08-25
