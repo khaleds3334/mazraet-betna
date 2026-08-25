@@ -137,7 +137,10 @@ links.
   before the words it marks, and the timestamp is parked where the eye finishes.
 - **Migration 029 must be run** before this screen opens — the read asks for
   `kind`, which does not exist without it.
-- No bottom bar: `/notifications` is in `SCREENS_WITHOUT_NAV`.
+- No bottom bar: `/notifications` is in `SCREENS_WITHOUT_NAV`. The title and its
+  back button are `sticky top-0` over `bg-background` — that button is the only
+  way off this screen, and a way out that scrolls away is one you have to scroll
+  back for.
 - Notifications are never deleted. A customer accumulates roughly one per order
   plus one per cycle; if that ever becomes a long list, the fix is paging this
   query, not pruning rows the customer might still want.

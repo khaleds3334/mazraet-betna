@@ -18,7 +18,10 @@ import { listNotifications } from "@/lib/queries/notifications";
  * are `NotificationFeed`'s — they have to survive a re-render, which is a thing
  * only a client component can do.
  *
- * A screen walked into, not tabbed to: back button, no bottom bar.
+ * A screen walked into, not tabbed to: back button, no bottom bar. The title and
+ * that button are pinned, and the notices scroll under them (Khaled,
+ * 2026-08-25) — the back button is the only way off this screen, and a way out
+ * that scrolls away is one you have to scroll back for.
  */
 export default async function NotificationsPage() {
   const customer = await getCurrentCustomer();
@@ -28,11 +31,17 @@ export default async function NotificationsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader
-        title="الرسائل و الاشعارات"
-        backHref="/"
-        className="px-screen pt-4"
-      />
+      {/* `sticky` and not `fixed`: the scroller is `<main>`, and a fixed block
+          would position against the viewport instead and land over the shell's
+          own chrome. `bg-background` because rows pass underneath it, and z-20 —
+          the tier the customer's home header sits on. */}
+      <div className="sticky top-0 z-20 bg-background pb-2">
+        <PageHeader
+          title="الرسائل و الاشعارات"
+          backHref="/"
+          className="px-screen pt-4"
+        />
+      </div>
 
       {notifications.length === 0 ? (
         // No crate and no call to action: an empty inbox is not a problem to
