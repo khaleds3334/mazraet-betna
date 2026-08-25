@@ -27,6 +27,7 @@ export function WeightPicker({
   cleaning,
   onCleaningChange,
   cleaningPrice,
+  missing = false,
 }: {
   weights: number[];
   weight: number | null;
@@ -34,6 +35,8 @@ export function WeightPicker({
   cleaning: boolean;
   onCleaningChange: (on: boolean) => void;
   cleaningPrice: number;
+  /** Star the weight question — the order was sent with none picked. */
+  missing?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-3 bg-white px-screen py-4">
@@ -41,6 +44,7 @@ export function WeightPicker({
         weights={weights}
         value={weight}
         onChange={onWeightChange}
+        missing={missing}
       />
 
       <ToggleCard

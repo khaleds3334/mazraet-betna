@@ -2,7 +2,7 @@
 
 import { Toggle } from "@/components/ui";
 import type { OrderListItem } from "@/lib/queries/orders";
-import { formatArabicNumber, pluralizeChicken } from "@/lib/format";
+import { formatPricePerKilo, pluralizeChicken } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { KnifeGlyph } from "./glyphs";
 
@@ -57,7 +57,7 @@ export function WeighingHeader({
         <div className="flex shrink-0 items-center gap-4 text-sm text-foreground">
           <span>{pluralizeChicken(chickenCount)}</span>
           <span className={cn(priceChanged && "font-bold text-error")}>
-            {formatArabicNumber(unitPrice)} ج/كجم
+            {formatPricePerKilo(unitPrice)}
           </span>
         </div>
 

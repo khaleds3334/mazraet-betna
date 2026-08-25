@@ -21,6 +21,14 @@ import {
 /** How far ahead the day strip reaches when the sale has no end date on it. */
 const DEFAULT_PICKUP_DAYS = 7;
 
+/**
+ * The weight the form opens on for a customer with no history (Khaled,
+ * 2026-08-25) — the middle of what the farm sells and the one most people ask
+ * for. If the farm has stopped offering it, the nearest weight it does offer
+ * stands in; the form must never open on a weight that is not on the row.
+ */
+const FALLBACK_WEIGHT = 2;
+
 export interface OrderForm {
   /** Orders can be placed right now (FR-11, FR-25). */
   saleOpen: boolean;
@@ -32,6 +40,19 @@ export interface OrderForm {
   cleaningPrice: number;
   /** Whether cleaning starts switched on. */
   defaultCleaning: boolean;
+  /**
+   * How many birds the counter opens on, and at which weight (Khaled,
+   * 2026-08-25).
+   *
+   * Both come from the customer's own last order when he has one: most people
+   * here buy the same thing every time, so the form that opens already filled in
+   * is the form he can send without answering anything. When he has never
+   * ordered, the counter opens empty and the weight on `FALLBACK_WEIGHT`.
+   *
+   * Both are checked against what the farm has *now* — see `lastOrderChoices`.
+   */
+  defaultCount: number;
+  defaultWeight: number | null;
   /** The approximate weights on offer (kg), largest first as the design shows. */
   weights: number[];
   /** The pickup slots on offer, in clock order. */
@@ -61,11 +82,57 @@ export async function countAvailableForCustomer(
   return typeof data === "number" ? data : 0;
 }
 
-export async function getOrderForm(farmId: string): Promise<OrderForm> {
-  const [settings, sale, available] = await Promise.all([
+/** What the customer asked for last time — the count and the weight, as ordered. */
+interface LastOrder {
+  count: number;
+  weight: number | null;
+}
+
+/**
+ * The customer's most recent order, as choices rather than as an order.
+ *
+ * Cancelled ones are skipped: an order that was called off is the least likely
+ * thing he wants repeated, and often the reason it was called off is that it was
+ * wrong. Everything else counts, including one still on the farm — a second
+ * order the same week is usually the same order.
+ *
+ * The count is the number of lines, because one line is one bird (D-13), and the
+ * weight is the one they were all asked at.
+ */
+async function lastOrderChoices(customerId: string): Promise<LastOrder | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("orders")
+    .select("id, order_line(approx_weight)")
+    .eq("customer_id", customerId)
+    .neq("status", "cancelled")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const lines = data?.order_line ?? [];
+  if (lines.length === 0) return null;
+  return { count: lines.length, weight: lines[0].approx_weight };
+}
+
+/** The nearest weight the farm actually offers to `wanted`, or null if it offers none. */
+function nearestWeight(weights: number[], wanted: number): number | null {
+  if (weights.length === 0) return null;
+  return weights.reduce((best, weight) =>
+    Math.abs(weight - wanted) < Math.abs(best - wanted) ? weight : best,
+  );
+}
+
+export async function getOrderForm(
+  farmId: string,
+  /** Who is ordering, so the form can open on what he ordered last. */
+  customerId?: string,
+): Promise<OrderForm> {
+  const [settings, sale, available, last] = await Promise.all([
     getFarmSettings(farmId),
     getActiveSaleState(farmId),
     countAvailableForCustomer(farmId),
+    customerId ? lastOrderChoices(customerId) : null,
   ]);
 
   const now = new Date();
@@ -76,14 +143,19 @@ export async function getOrderForm(farmId: string): Promise<OrderForm> {
   // A close date already behind us leaves no days at all, and a strip with
   // nothing on it reads as a broken screen rather than a shut sale. Today is
   // always offered; whether the sale takes the order is `saleOpen`'s answer.
-  const last = close && close.getTime() > now.getTime() ? close : fallback;
+  const lastDay = close && close.getTime() > now.getTime() ? close : fallback;
 
   // Both ends read on the farm's clock, not the server's. This runs on a machine
   // set to UTC, so between midnight and 2am in the village `new Date()` is still
   // on yesterday's date — and the strip would have opened on a day that had
   // already gone (see `farmToday`).
-  const days = daysBetween(farmToday(now), farmToday(last));
+  const days = daysBetween(farmToday(now), farmToday(lastDay));
   const opening = defaultPickup(days, settings.pickupSlots);
+
+  // Ascending, so in RTL the lightest bird sits on the right where the row
+  // starts reading (C-20, Khaled 2026-08-23) — the same order settings stores
+  // them in and the same order its own «الاوزان المتوفرة» row shows.
+  const weights = [...settings.availableWeights].sort((a, b) => a - b);
 
   return {
     saleOpen: sale?.saleOpen ?? false,
@@ -91,10 +163,12 @@ export async function getOrderForm(farmId: string): Promise<OrderForm> {
     salePrice: settings.salePrice,
     cleaningPrice: settings.cleaningPrice,
     defaultCleaning: settings.defaultCleaning,
-    // Ascending, so in RTL the lightest bird sits on the right where the row
-    // starts reading (C-20, Khaled 2026-08-23) — the same order settings stores
-    // them in and the same order its own «الاوزان المتوفرة» row shows.
-    weights: [...settings.availableWeights].sort((a, b) => a - b),
+    // Never more than the farm has left: the counter refuses to go past
+    // `available`, and a form that opens above its own ceiling is a form whose
+    // «+» is dead on arrival.
+    defaultCount: Math.min(last?.count ?? 0, available),
+    defaultWeight: nearestWeight(weights, last?.weight ?? FALLBACK_WEIGHT),
+    weights,
     slots: settings.pickupSlots,
     days,
     // Worked out here, on the server, so the form starts on the same value it

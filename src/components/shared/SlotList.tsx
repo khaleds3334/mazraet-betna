@@ -24,6 +24,27 @@ import { cn } from "@/lib/utils";
  */
 const PANEL_MAX_HEIGHT = 170;
 
+/** The box's own `py-4`, the `gap-4` between slots, and one slot's line of text. */
+const PANEL_PADDING = 32;
+const SLOT_GAP = 16;
+const SLOT_HEIGHT = 15; // text-xs at the app's 1.2 line-height
+
+/**
+ * How tall this will be with `slots` slots in it, so a caller can tell whether
+ * it has room to drop the panel below the field that opened it.
+ *
+ * The arithmetic lives here rather than in the caller because the numbers are
+ * this component's own: change the padding or the gap and the answer changes
+ * with it, in the same file. Three slots do not need the room six do — asking
+ * for the maximum every time is how a panel that would have fitted opens
+ * upwards anyway (Khaled, 2026-08-25).
+ */
+export function slotListHeight(slots: number): number {
+  if (slots <= 0) return PANEL_PADDING + SLOT_HEIGHT; // the empty line
+  const content = slots * SLOT_HEIGHT + (slots - 1) * SLOT_GAP;
+  return Math.min(PANEL_PADDING + content, PANEL_MAX_HEIGHT);
+}
+
 export function SlotList({
   id,
   slots,

@@ -83,6 +83,17 @@ export function formatCurrency(value: number): string {
 }
 
 /**
+ * A kilo price, the short way both apps write it: `٨٥ ج/كجم`.
+ *
+ * Not `formatCurrency` — that says «جنيه» in full, which is right for a total
+ * and too long for a rate sitting beside one. Here so the customer's confirm bar
+ * and the admin's weighing header cannot drift apart.
+ */
+export function formatPricePerKilo(value: number): string {
+  return `${formatArabicNumber(value)} ج/كجم`;
+}
+
+/**
  * Weight — always 3 decimals with a dot (rule 6): `١.٨٤٠ كجم`.
  * Set `withUnit: false` for the bare number inside a weighing input.
  */

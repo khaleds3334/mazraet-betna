@@ -27,6 +27,33 @@ type NavIconName = "home" | "order" | "track";
 const SCREENS_WITHOUT_NAV = ["/history"];
 const ORDER_DETAIL = /^\/tracking\/[^/]+$/;
 
+/**
+ * Where a screen can hang something inside the bar, above the tabs.
+ *
+ * The order screen's confirm bar goes here (Khaled, 2026-08-25): he asked for
+ * the two to read as one piece, and one piece is what this is — the same white
+ * surface under the same single top border, growing taller when the confirm
+ * content unfolds into it. Drawn as its own floating panel it was two surfaces
+ * with two borders and a seam between them, no matter how close they sat.
+ *
+ * It is a portal and not a prop because the bar lives in the layout while the
+ * order state lives in the page below it — nothing can be handed upwards.
+ *
+ * Same reasoning as «الطلبات السابقة» just below, which is drawn inside the
+ * bar's surface for the same reason; that one is hard-coded here because it
+ * needs nothing from the page.
+ */
+export const NAV_SLOT_ID = "nav-slot";
+
+/**
+ * The bar itself, for the one thing that has to know where its top edge is: a
+ * panel deciding whether to drop below the field that opened it or rise above
+ * it (`PickupPicker`). Measured and not assumed, because this bar is not one
+ * height — it is taller on the tracking section, and taller again while the
+ * confirm bar is unfolded into it.
+ */
+export const NAV_ID = "bottom-nav";
+
 interface NavEntry {
   href: string;
   label: string;
@@ -65,6 +92,7 @@ export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
 
   return (
     <nav
+      id={NAV_ID}
       className="fixed inset-x-0 z-40 mx-auto flex max-w-[430px] flex-col border-t-2 border-border bg-white px-screen py-2 text-primary-foreground"
       // The bar sits ON TOP of the phone's gesture strip instead of swallowing
       // it: `bottom` lifts it clear, and the strip underneath is left to the
@@ -75,6 +103,11 @@ export function BottomNav({ activeOrders = 0 }: { activeOrders?: number }) {
       // <main>'s bottom padding still clears it.
       style={{ bottom: "env(safe-area-inset-bottom)" }}
     >
+      {/* Whatever the screen underneath hangs in the bar — see NAV_SLOT_ID.
+          `contents` so the panel becomes a flex child of the bar itself and
+          takes its full width; an empty slot adds nothing to the layout. */}
+      <div id={NAV_SLOT_ID} className="contents" />
+
       {/* On the tracking section the bar carries «الطلبات السابقة» above the
           tabs — Component 63 in the design, used on every tracking state, not
           just the empty one. It lives here rather than on the page because the

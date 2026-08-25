@@ -1,11 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { InlineError } from "@/components/ui";
-import { placeOrder } from "@/lib/actions/customerOrders";
+import { openingValues, saveDraft } from "@/lib/orderDraft";
 import type { OrderForm as OrderFormData } from "@/lib/queries/ordering";
-import { useSound } from "@/hooks/useSound";
+import { revealTop, useSnapToEdges } from "@/hooks/useSnapToEdges";
 import { useToast } from "@/hooks/useToast";
 import { pluralizeChicken } from "@/lib/format";
 import { SALE_NOT_OPEN } from "@/lib/constants";
@@ -16,28 +15,14 @@ import { OrderHeader } from "./OrderHeader";
 import { OrderSuccess } from "./OrderSuccess";
 import { PickupPicker } from "./PickupPicker";
 import { WeightPicker } from "./WeightPicker";
+import { useOrderSubmit, type MissingAnswer } from "./useOrderSubmit";
 
 /**
  * The order form (C-20 → C-25, FR-27) — the customer's side of the same job the
  * admin does on A-56.
  *
- * **Nothing is confirmed twice.** The confirm bar reads the order back and the
- * button sends it; there is no "are you sure" in between. The customer here is
- * often elderly, and a dialog asking him to agree to what he just agreed to is a
- * step he can fail at, guarding an action the admin can undo (D-04) on an order
- * that costs nothing until the birds are weighed.
- *
- * A hen cackles when the order lands (Khaled, 2026-08-24) — the one moment on
- * this screen worth hearing from across a room.
- *
- * **Failures speak through the toast, not an inline error** (Khaled, 2026-08-24)
- * — a deliberate exception to rule 11 / T-09, and the reason it holds up: that
- * rule is written about the admin, who is standing over a scale with his hands
- * busy and may not be looking at the phone when a message flashes. This customer
- * is holding the phone and looking at it, and the inline error had the opposite
- * failure — it rendered at the foot of a long form, below the fold and behind a
- * fixed bar, where it was simply never seen. A message that fades is worse than
- * nothing; a message that never appears is worse still.
+ * **Sending it lives in `useOrderSubmit`** — the validation, the toast on
+ * failure, and the hen that cackles when it lands.
  *
  * The two standing states — sold out, sale closed — are *not* failures of a tap
  * and stay inline, next to the button they are explaining.
@@ -46,31 +31,64 @@ import { WeightPicker } from "./WeightPicker";
  * (Khaled, 2026-08-23) — see `OrderNote`.
  *
  * **The confirm bar comes and goes** — see `ConfirmBar` for the two conditions.
+ *
+ * **Tapping it with an answer missing does three things, not one** (Khaled,
+ * 2026-08-25): the toast says what is missing, the page travels to the question,
+ * and a red star goes up beside it. The button lives at the foot of the screen
+ * and the counter it is complaining about is a screen away — a sentence on its
+ * own leaves him looking for what to fix.
  */
 export function OrderForm({ data }: { data: OrderFormData }) {
-  const router = useRouter();
   const toast = useToast();
-  // A hen, once, when the order lands. See `useSound` for why it is unlocked on
-  // the tap and played a round trip later.
-  const cluck = useSound("/sounds/order-success.mp3");
 
-  const [count, setCount] = useState(0);
-  const [weight, setWeight] = useState<number | null>(null);
-  const [cleaning, setCleaning] = useState(data.defaultCleaning);
-  // Opens on the soonest pickup the farm can make — today and its next slot, or
-  // tomorrow's first once tonight is done (`defaultPickup`). A form that starts
-  // empty asks this customer to answer a question he mostly has no opinion on.
-  const [date, setDate] = useState(data.defaultDate);
-  const [time, setTime] = useState(data.defaultTime);
-  const [notes, setNotes] = useState("");
-  const [noteOpen, setNoteOpen] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [placedOrderId, setPlacedOrderId] = useState<string | null>(null);
+  // The question the last tap on «تأكيد الطلب» found unanswered — starred until
+  // he answers it, and cleared the moment he does rather than on the next tap.
+  const [missing, setMissing] = useState<MissingAnswer | null>(null);
+  const countSection = useRef<HTMLDivElement>(null);
+  const weightSection = useRef<HTMLDivElement>(null);
+
+  const { submit, sending, placedOrderId } = useOrderSubmit({
+    onMissing(answer) {
+      setMissing(answer);
+      revealTop(
+        (answer === "count" ? countSection : weightSection).current,
+      );
+    },
+  });
+
+  // The form opens filled in, not empty (Khaled, 2026-08-25): on the order he
+  // is part-way through if he stepped away to another tab, otherwise on what he
+  // ordered last time, otherwise on the farm's own suggestion — two kilos and
+  // the soonest pickup it can make. A form that starts blank asks this customer
+  // four questions he mostly has no opinion on. See `openingValues`.
+  const [opening] = useState(() => openingValues(data));
+
+  const [count, setCount] = useState(opening.count);
+  const [weight, setWeight] = useState<number | null>(opening.weight);
+  const [cleaning, setCleaning] = useState(opening.cleaning);
+  const [date, setDate] = useState(opening.date);
+  const [time, setTime] = useState(opening.time);
+  const [notes, setNotes] = useState(opening.notes);
+  // Unfolded if he had written something in it — a restored note hidden behind
+  // «اضافة ملاحظة» is a note he would think had been thrown away.
+  const [noteOpen, setNoteOpen] = useState(opening.notes.length > 0);
 
   // The last "that's all there is" is dismissed before the next goes up: a
   // customer presses «+» again to check, and a queue of identical toasts would
   // outlast the screen (same reasoning as the admin's add-order sheet).
   const limitToast = useRef<number | null>(null);
+
+  // One flick takes the whole screen (Khaled, 2026-08-25) — see the hook. Off
+  // once the order is in: the success screen is one screenful and has nothing
+  // to snap between.
+  useSnapToEdges(!placedOrderId);
+
+  // Kept where a tab change cannot reach it. Written on every keystroke rather
+  // than on the way out, because there is no "way out" to hook: the tabs unmount
+  // this component without asking it anything.
+  useEffect(() => {
+    saveDraft({ count, weight, cleaning, date, time, notes });
+  }, [count, weight, cleaning, date, time, notes]);
 
   function sayTheLimit() {
     if (limitToast.current !== null) toast.dismiss(limitToast.current);
@@ -81,46 +99,6 @@ export function OrderForm({ data }: { data: OrderFormData }) {
     );
   }
 
-  async function submit() {
-    // Before any `await` — this is the only moment the browser will grant the
-    // sound permission, and it costs nothing if the order then fails.
-    cluck.prime();
-
-    if (count < 1) {
-      toast.error("اختار عدد الفراخ الأول.");
-      return;
-    }
-    if (weight == null) {
-      toast.error("اختار الوزن المطلوب.");
-      return;
-    }
-    if (!date || !time) {
-      toast.error("اختار يوم ووقت الاستلام.");
-      return;
-    }
-
-    setSending(true);
-    const result = await placeOrder({
-      count,
-      weight,
-      cleaning,
-      pickupDate: date,
-      pickupTime: time,
-      notes,
-    });
-
-    if (!result.ok) {
-      setSending(false);
-      toast.error(result.error);
-      return;
-    }
-
-    setSending(false);
-    cluck.play();
-    router.refresh(); // the home badge and the tracking list both count orders
-    setPlacedOrderId(result.orderId);
-  }
-
   if (placedOrderId) return <OrderSuccess orderId={placedOrderId} />;
 
   const soldOut = data.available <= 0;
@@ -129,21 +107,33 @@ export function OrderForm({ data }: { data: OrderFormData }) {
     <div className="flex flex-1 flex-col gap-1">
       <OrderHeader salePrice={data.salePrice} />
 
-      <CountPicker
-        count={count}
-        onChange={setCount}
-        max={data.available}
-        onMax={sayTheLimit}
-      />
+      <div ref={countSection}>
+        <CountPicker
+          count={count}
+          onChange={(next) => {
+            setCount(next);
+            if (next > 0) setMissing(null);
+          }}
+          max={data.available}
+          onMax={sayTheLimit}
+          missing={missing === "count"}
+        />
+      </div>
 
-      <WeightPicker
-        weights={data.weights}
-        weight={weight}
-        onWeightChange={setWeight}
-        cleaning={cleaning}
-        onCleaningChange={setCleaning}
-        cleaningPrice={data.cleaningPrice}
-      />
+      <div ref={weightSection}>
+        <WeightPicker
+          weights={data.weights}
+          weight={weight}
+          onWeightChange={(kg) => {
+            setWeight(kg);
+            setMissing(null);
+          }}
+          cleaning={cleaning}
+          onCleaningChange={setCleaning}
+          cleaningPrice={data.cleaningPrice}
+          missing={missing === "weight"}
+        />
+      </div>
 
       <PickupPicker
         days={data.days}
@@ -182,15 +172,19 @@ export function OrderForm({ data }: { data: OrderFormData }) {
         )}
       </div>
 
-      {/* Room for the confirm bar, kept whether or not it is on screen — a
-          padding that came and went with it would shift the whole form under a
-          reading thumb. */}
-      <div aria-hidden className="h-50 shrink-0" />
+      {/* Room for the height the nav gains when the confirm bar unfolds into
+          it, kept whether or not it is on screen — a padding that came and went
+          with it would shift the whole form under a reading thumb. `<main>`
+          already clears the nav's own height on top of this. */}
+      <div aria-hidden className="h-34 shrink-0" />
 
       <ConfirmBar
         count={count}
         weight={weight}
-        onConfirm={submit}
+        salePrice={data.salePrice}
+        cleaning={cleaning}
+        cleaningPrice={data.cleaningPrice}
+        onConfirm={() => submit({ count, weight, cleaning, date, time, notes })}
         disabled={!data.saleOpen || soldOut}
         isSending={sending}
       />

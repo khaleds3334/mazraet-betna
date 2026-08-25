@@ -1,6 +1,6 @@
 "use client";
 
-import { Stepper } from "@/components/ui";
+import { RequiredMark, Stepper } from "@/components/ui";
 import { ChickenTray } from "./ChickenTray";
 
 /**
@@ -21,6 +21,7 @@ export function CountPicker({
   onChange,
   max,
   onMax,
+  missing = false,
 }: {
   count: number;
   onChange: (next: number) => void;
@@ -28,6 +29,8 @@ export function CountPicker({
   max: number;
   /** Asked for more than there are — the screen says how many there are. */
   onMax: () => void;
+  /** Star the question — the order was sent with no count picked. */
+  missing?: boolean;
 }) {
   return (
     <div className="rounded-lg bg-white px-screen py-4">
@@ -41,6 +44,7 @@ export function CountPicker({
             4px / 4px / 10px the design measures (Figma 3906:13771). */}
         <div className="flex min-w-0 flex-1 flex-col items-start gap-1 pb-7">
           <p className="whitespace-nowrap text-base text-heading">
+            {missing && <RequiredMark />}
             محتاج كام فرخة؟
           </p>
           <div className="w-full px-1 py-2.5">

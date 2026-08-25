@@ -1,20 +1,31 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui";
+import { NAV_SLOT_ID } from "@/components/layout/BottomNav";
+import { useIsHydrated } from "@/hooks/useIsHydrated";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
-import { formatWeight, pluralizeChicken } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { ChickenTray } from "./ChickenTray";
+import { ConfirmSummary } from "./ConfirmSummary";
 
 /**
  * The confirm bar (C-22, Figma 3155:4389) — what the order says, then the button
  * that sends it.
  *
- * It reads the order back before it is sent: the count in words, the weight, and
- * the tray again, small. That repetition is the point. This customer scrolled
- * past the counter three sections ago and is about to commit; the alternative is
- * a confirmation dialog, which is a second screen for the same reassurance and
- * one more tap for someone who does not want any.
+ * It reads the order back before it is sent — see `ConfirmSummary` for what it
+ * says and why. This file owns where it sits and how it arrives.
+ *
+ * ## Where it lives
+ *
+ * **Inside the bottom nav, not above it** (Khaled, 2026-08-25) — rendered
+ * through `NAV_SLOT_ID`, so the two are one white surface under one top border
+ * rather than two panels with a seam between them. Figma draws them as two
+ * (C-22, 3155:4402); this is a deliberate step past the design, and stepping
+ * back is a matter of rendering the same markup in place instead of portalling.
+ *
+ * A portal because the state is in the wrong direction: the nav is mounted by
+ * the customer layout and the order lives in the page underneath it, so there is
+ * no prop that could carry the count upwards.
  *
  * ## When it is on screen
  *
@@ -32,18 +43,32 @@ import { ChickenTray } from "./ChickenTray";
  * down again brings it back. That is why the design names the state
  * «ConfirmVisible» rather than drawing the bar into C-20.
  *
- * Fixed above the bottom nav rather than sticky in the flow: it has to be
- * reachable from anywhere on a long form, not only once the form is scrolled to
- * its end. It sits under the pickup panels in the layer order — a panel opened
- * near the foot of the screen must not end up behind it.
+ * ## How it comes and goes
+ *
+ * The nav grows. `grid-rows-[0fr] → [1fr]` over a clipped row is the one way to
+ * animate to a height nobody has measured; because the nav is pinned to the
+ * bottom of the screen, the height it gains pushes its own top edge — and its
+ * border — upward. So the bar is not something that arrives over the nav, it is
+ * the nav unfolding.
+ *
+ * Arriving is slower than leaving, and overshoots a little on the way: an
+ * announcement is worth watching, a dismissal is not.
+ *
+ * What it says settles a beat behind the surface it says it on. That delay is
+ * the whole trick — the eye lands on the bar first and finds the order already
+ * written in it.
  */
 
-/** Height of the customer's bottom nav, which this sits directly on top of. */
-const NAV_HEIGHT = 76;
+/** Arriving overshoots a touch and takes its time; leaving does neither. */
+const ENTER = "duration-300 ease-[cubic-bezier(0.22,1.15,0.36,1)]";
+const LEAVE = "duration-200 ease-[cubic-bezier(0.4,0,1,1)]";
 
 export function ConfirmBar({
   count,
   weight,
+  salePrice,
+  cleaning,
+  cleaningPrice,
   onConfirm,
   disabled,
   isSending,
@@ -51,47 +76,68 @@ export function ConfirmBar({
   count: number;
   /** The chosen approximate weight (kg), or null before one is picked. */
   weight: number | null;
+  salePrice: number;
+  cleaning: boolean;
+  cleaningPrice: number;
   onConfirm: () => void;
   disabled: boolean;
   isSending: boolean;
 }) {
   const direction = useScrollDirection();
+  const hydrated = useIsHydrated();
   const shown = direction === "down";
 
-  return (
+  // The slot is looked up rather than held in state, the same way `Modal` and
+  // `BottomSheet` reach `document.body`: there is nothing to subscribe to, the
+  // nav is mounted by the layout above this page, and a portal with no target
+  // throws. `useIsHydrated` is what keeps the server out of it.
+  const slot = hydrated ? document.getElementById(NAV_SLOT_ID) : null;
+  if (!slot) return null;
+
+  return createPortal(
     <div
-      // Kept mounted and slid away, not unmounted: a bar that pops into
-      // existence under a thumb is a bar that gets tapped by accident.
-      aria-hidden={!shown}
-      style={{ bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom))` }}
+      // Kept mounted and folded away, not unmounted: a button that pops into
+      // existence under a thumb is a button that gets tapped by accident.
+      // `inert` takes it out of the tab order and off the screen reader while
+      // it is folded — `overflow-hidden` only hides it from the eye.
+      inert={!shown}
       className={cn(
-        "fixed inset-x-0 z-20 mx-auto flex w-full max-w-[430px] flex-col items-center gap-3 bg-white px-screen py-2",
-        "transition-[transform,opacity] duration-200",
-        shown
-          ? "translate-y-0 opacity-100"
-          : "pointer-events-none translate-y-4 opacity-0",
+        "grid w-full overflow-hidden",
+        "transition-[grid-template-rows] motion-reduce:transition-none",
+        shown ? `grid-rows-[1fr] ${ENTER}` : `grid-rows-[0fr] ${LEAVE}`,
       )}
     >
-      <div className="flex w-full items-center justify-end gap-3">
-        <div className="flex flex-1 flex-wrap items-center justify-end gap-x-2.5 gap-y-1 text-right text-foreground">
-          <span className="whitespace-nowrap">
-            <span className="text-base font-bold">عدد : </span>
-            <span className="text-lg">{pluralizeChicken(count)}</span>
-          </span>
-          {weight != null && (
-            <span className="whitespace-nowrap">
-              <span className="text-base font-bold">الوزن : </span>
-              <span className="text-sm">في حدود {formatWeight(weight)}</span>
-            </span>
+      {/* `min-h-0` — without it the row refuses to shrink under its content and
+          the fraction never reaches zero. */}
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={cn(
+            "flex flex-col items-center gap-3 pb-4",
+            "transition-opacity motion-reduce:transition-none",
+            shown ? `opacity-100 ${ENTER}` : `opacity-0 ${LEAVE}`,
           )}
+        >
+          <div
+            className={cn(
+              "w-full transition-transform motion-reduce:transition-none",
+              shown ? `scale-100 delay-100 ${ENTER}` : `scale-95 ${LEAVE}`,
+            )}
+          >
+            <ConfirmSummary
+              count={count}
+              weight={weight}
+              salePrice={salePrice}
+              cleaning={cleaning}
+              cleaningPrice={cleaningPrice}
+            />
+          </div>
+
+          <Button onClick={onConfirm} disabled={disabled} isLoading={isSending}>
+            تأكيد الطلب
+          </Button>
         </div>
-
-        <ChickenTray count={count} className="w-[59px]" />
       </div>
-
-      <Button onClick={onConfirm} disabled={disabled} isLoading={isSending}>
-        تأكيد الطلب
-      </Button>
-    </div>
+    </div>,
+    slot,
   );
 }

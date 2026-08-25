@@ -2202,3 +2202,94 @@ the second tap must not rewrite the moment of the first.
 **Same family as** `available_chickens` (T-59) and `create_farm`: definer rights
 buy exactly one narrow thing and no more.
 **Date:** 2026-08-25
+
+---
+
+## Session — 2026-08-25 (order screen, second pass)
+
+### D-68 — The confirm bar is part of the bottom nav, not a panel above it
+«تأكيد الطلب» and its read-back are rendered **inside** `BottomNav`, through a
+portal (`NAV_SLOT_ID`). The nav grows taller when they unfold into it.
+**Why:** drawn as its own fixed panel, the pair was two white surfaces with two
+top borders and a seam between them — the bar's, then the nav's. One surface with
+one border is the only way they read as one thing (Khaled, 2026-08-25).
+**A portal because state runs the wrong way:** the nav is mounted by
+`(customer)/layout.tsx` and the order lives in the page underneath it, so no prop
+could carry the count upwards.
+**This is a deliberate step past Figma** — C-22 (3155:4402) draws them as two.
+**Cost, accepted:** the confirm content is now on the nav's layer (z-40), so the
+pickup panels can no longer float over it. That is what D-70 answers.
+**Date:** 2026-08-25
+
+### D-69 — A flick on the order screen takes the whole page, and turns itself off
+Any scroll past 6px carries `/order` to its foot or its head, on a 240ms tween of
+our own (`useSnapToEdges`).
+**Why:** the screen has two things to look at — «كام فرخة» and everything after
+it — and this customer is worst at landing a thumb precisely between them.
+**Not `behavior: "smooth"`:** the browser's duration grows with the distance and
+cannot be set; it read as slow.
+**It waits for `touchend`:** animating under a dragging thumb is a tug-of-war the
+thumb loses.
+**`MAX_OVERFLOW = 0.5`, re-checked every gesture:** a screen with more than half a
+screenful of overflow has a middle, and snapping to the ends makes a middle
+unreachable. Above that the hook does nothing and ordinary scrolling returns.
+**Date:** 2026-08-25
+
+### D-70 — Both pickup panels float, and flip up only when they must
+The day strip used to be a section in the flow; it is now absolutely positioned
+like the slot list, and either panel opens **upwards** when the room under its
+field is less than the height it will actually be.
+**Why float:** opening the day strip shoved the note and everything below it 90px
+down the page, under a thumb that was reaching for a day.
+**Why flip:** floating is what makes a panel able to come out underneath the
+bottom nav and be read by nobody.
+**Why the *actual* height and not the maximum:** asking for the slot list's
+ceiling (170px) every time made a two-slot panel that had plenty of room open
+upwards anyway. `slotListHeight()` lives in `SlotList` because the padding, gap
+and line height it counts are that component's own.
+**The nav is measured, never assumed:** it is one height normally, taller with
+the confirm bar unfolded (D-68), taller again on the tracking section.
+**Date:** 2026-08-25
+
+### D-71 — The order form opens filled in
+`/order` opens on the customer's own last order — same count, same weight — or on
+`FALLBACK_WEIGHT` (2 kg) with an empty counter for someone who has never ordered.
+An order he was part-way through survives a trip to another tab (`orderDraft.ts`).
+**Why:** most people here buy the same thing every time, so the form that opens
+already filled in is the form he can send without answering anything. And a tab
+tapped by mistake must not cost him the four answers he had given.
+**Everything restored is re-checked against the farm as it is now** — the count
+against what is left, the weight against the row on offer, the slot against the
+clock. A form that opened on a stale answer would be a form whose confirm button
+refuses for a reason he cannot see.
+**Cancelled orders don't count** as "last order": the one thing he is least
+likely to want repeated.
+**A module variable, not `sessionStorage`:** the tabs navigate without reloading,
+so a module lives exactly as long as the trip it must survive, and dies on a real
+reload — which is where a clean form is what he expects. Never read on the
+server, where a module belongs to the process and would hand one customer's draft
+to the next.
+**Date:** 2026-08-25
+
+### D-72 — A missing answer is a toast, a scroll, and a star
+Tapping «تأكيد الطلب» without a count or a weight says what is missing, carries
+the page to that question (`revealTop`), and puts a red star beside it.
+**Why:** the button is at the foot of the screen and the counter it is
+complaining about is a screen away. A sentence about a control he cannot see is a
+sentence he cannot act on.
+**The star is only on the one he skipped**, and clears the moment he answers — a
+star on every question marks them all equally and so marks none.
+**`revealTop` belongs to `useSnapToEdges`:** any scroll that hook did not start
+looks to it exactly like a finger, so a `scrollIntoView` would have been read as
+a gesture and snapped away mid-flight. One owner of the scroll, one animation.
+**Date:** 2026-08-25
+
+### T-64 — The tray's size is a prop, because `cn()` does not merge
+`ChickenTray` takes `size: "counter" | "bar"` instead of a `className` width.
+**Why:** `cn()` joins strings — it is not `tailwind-merge`. A width passed from
+outside landed *beside* the default rather than replacing it, and which of the
+two won came down to their order in the built stylesheet. The confirm bar asked
+for 59px and got 136px.
+**The general rule this sets:** any dimension a component draws itself at is a
+prop with named options, never a class the caller is trusted to override.
+**Date:** 2026-08-25

@@ -31,6 +31,7 @@ export { StatItem } from "./StatItem";
 export { StepButton } from "./StepButton";
 export { Stepper } from "./Stepper";
 export { TextareaField } from "./TextareaField";
+export { RequiredMark } from "./RequiredMark";
 export { Toggle } from "./Toggle";
 export { ToggleCard } from "./ToggleCard";
 export { WeightBadge } from "./WeightBadge";

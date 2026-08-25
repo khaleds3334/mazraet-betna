@@ -24,7 +24,9 @@ export default async function OrderPage() {
   const customer = await getCurrentCustomer();
   if (!customer) redirect("/logout");
 
-  const data = await getOrderForm(customer.farmId);
+  // The customer, not just his farm: the form opens on what he ordered last
+  // (Khaled, 2026-08-25) — see `getOrderForm`.
+  const data = await getOrderForm(customer.farmId, customer.id);
 
   return <OrderForm data={data} />;
 }

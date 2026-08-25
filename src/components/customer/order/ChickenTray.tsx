@@ -47,11 +47,32 @@ const BLEED = {
   left: `${((-PAD_LEFT / BOX_W) * 100).toFixed(4)}%`,
 };
 
+/**
+ * The two places the tray appears, and how wide it is in each.
+ *
+ * A prop and not a `className` override: `cn()` only joins strings, so a width
+ * passed in from outside landed in the class list *beside* the default instead
+ * of replacing it, and which of the two won came down to their order in the
+ * built stylesheet. The confirm bar asked for 59px and got 136px.
+ *
+ * - `counter` — C-21, the counter's own tray. 136×108 at the 393px design
+ *   width, fluid below it (the responsive guide's 320→430 rule) so the number
+ *   beside it never runs out of room.
+ * - `bar` — C-22, the read-back in the confirm bar (Figma 3155:4389 → 59×47).
+ *   Fixed, because it sits next to one line of text and has no room to grow.
+ */
+const WIDTHS = {
+  counter: "w-[clamp(112px,36vw,136px)]",
+  bar: "w-[59px]",
+} as const;
+
 export function ChickenTray({
   count,
+  size = "counter",
   className,
 }: {
   count: number;
+  size?: keyof typeof WIDTHS;
   className?: string;
 }) {
   // Thirteen is both "thirteen" and "more than thirteen" — see above.
@@ -61,12 +82,9 @@ export function ChickenTray({
     <div
       role="img"
       aria-label={count > 0 ? `طبق فيه ${pluralizeChicken(count)}` : "طبق فاضي"}
-      className={cn(
-        // 136×108 at the 393px design width, and fluid below it (the responsive
-        // guide's 320→430 rule) so the counter beside it never runs out of room.
-        "relative aspect-[136/108] w-[clamp(112px,36vw,136px)] shrink-0",
-        className,
-      )}
+      // The 136:108 box is the design's, at both sizes — 59×47 is the same
+      // shape a fraction smaller, so one aspect ratio covers both.
+      className={cn("relative aspect-[136/108] shrink-0", WIDTHS[size], className)}
     >
       {Array.from({ length: TRAY_IMAGES }, (_, index) => (
         <Image

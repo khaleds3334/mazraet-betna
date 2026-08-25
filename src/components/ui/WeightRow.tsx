@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
+import { RequiredMark } from "./RequiredMark";
 import { WeightBadge } from "./WeightBadge";
 
 /**
@@ -36,6 +37,7 @@ export function WeightRow({
   onSelect,
   multiSelect = false,
   selectionLabel,
+  missing = false,
 }: {
   /** The question above the row, in the caller's own words. */
   title: string;
@@ -46,6 +48,8 @@ export function WeightRow({
   multiSelect?: boolean;
   /** What a screen reader calls the group. */
   selectionLabel: string;
+  /** Star the heading: the order was sent without this answered (`RequiredMark`). */
+  missing?: boolean;
 }) {
   const row = useRef<HTMLDivElement>(null);
   /** Whether the row scrolls at all — false when the badges all fit. */
@@ -94,7 +98,10 @@ export function WeightRow({
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-right text-base text-heading">{title}</p>
+        <p className="text-right text-base text-heading">
+          {missing && <RequiredMark />}
+          {title}
+        </p>
 
         {scrolls && (
           <button

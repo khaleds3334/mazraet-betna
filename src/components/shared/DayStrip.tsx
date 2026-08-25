@@ -20,6 +20,16 @@ import { cn } from "@/lib/utils";
  * The strip fills whatever it is given and scrolls sideways inside it — the
  * caller decides whether that is a column or the whole width of the phone.
  */
+
+/**
+ * One fixed height, whatever is in it: the chips are one row and the row does
+ * not wrap. A caller floating this over the page needs the number to know which
+ * side of the field it has room to open on.
+ *
+ * The strip's `py-[11px]`, plus a chip: `py-3`, a 28px ring, the 1px gap under
+ * it and the day's name at the app's 1.2 line-height.
+ */
+export const DAY_STRIP_HEIGHT = 90;
 export function DayStrip({
   id,
   days,

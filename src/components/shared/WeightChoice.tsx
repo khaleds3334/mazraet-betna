@@ -19,15 +19,19 @@ export function WeightChoice({
   weights,
   value,
   onChange,
+  missing = false,
 }: {
   /** The weights the farm offers, from settings (FR-5). */
   weights: number[];
   /** The chosen weight in kg, or null before one is picked. */
   value: number | null;
   onChange: (kg: number) => void;
+  /** Star the question — the order was sent with no weight picked. */
+  missing?: boolean;
 }) {
   return (
     <WeightRow
+      missing={missing}
       title="اختار الوزن المطلوب في حدود كام بالكجم؟"
       selectionLabel="الوزن المطلوب"
       weights={weights}
