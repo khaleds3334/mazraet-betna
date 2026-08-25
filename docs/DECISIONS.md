@@ -2488,3 +2488,31 @@ pinning the region would have made *every* request pay the long hop.
 **If Supabase ever moves,** this file moves with it. The two region codes are one
 decision written in two places.
 **Date:** 2026-08-25
+
+### T-72 — A failure has an Arabic face, or rule 4 is only true when things work
+`app/error.tsx` and `app/not-found.tsx` — one of each, at the root of `app/`, so
+they cover both halves of the site.
+**Why:** several reads throw on purpose rather than hand back zeros (T-58, the
+day a failed settings read priced the kilo at «٠ جنيه» and the admin saved over
+his own prices trying to fix it). Throwing is right. But the project had **no
+error boundary and no 404 page anywhere**, so what a throw actually produced was
+Next's own page — *in English* — to an admin who reads none and a customer who
+reads less. Rule 4 held on every screen that had been drawn and broke on the two
+that had not.
+**Not inside the app shells, deliberately.** At the root they render without the
+bottom bar, whose four links point at screens that may be failing for the same
+reason this one is. A way out that leads back into the fault is not a way out, so
+each page carries its own.
+**«حاول تاني» before «الرجوع للرئيسية»:** most of these are a phone in a village
+losing its connection, and the second attempt works. `reset()` re-renders only
+the segment that threw, so nothing typed elsewhere is lost.
+**The error page's way home is a plain `<a>`; the 404's is a `<Link>`.** On the
+error page the router itself has just failed, and a client-side navigation asks
+the broken thing to carry him out — a full load starts again from nothing. On the
+404 nothing has broken; it was asked for something that is not there.
+**Neither says what went wrong.** Neither user can act on «PGRST301», and a code
+on the screen reads as blame. It goes to the console, for whoever comes looking.
+**Still uncovered:** an error thrown by the root layout itself, which only
+`global-error.tsx` can catch. That layout reads nothing and renders a font and a
+`<body>`, so there is nothing in it to fail — noted rather than built.
+**Date:** 2026-08-25
