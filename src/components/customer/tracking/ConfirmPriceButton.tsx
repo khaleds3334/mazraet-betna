@@ -11,8 +11,12 @@ import { useToast } from "@/hooks/useToast";
  * gone from the screen it comes back on, because the stage it belongs to has
  * passed.
  *
- * Grey, not lime, and that is the design: the loud thing on this screen is the
- * invoice, and this button is agreement with it rather than a call to action.
+ * **Dark green, the admin's «دفع» green** (Khaled, 2026-08-25) — `CardAction`'s
+ * `brand`, minus its icon chip, and the same fill the round way-down-to-the
+ * weights wears at the foot of this screen. It was the design's grey, which read
+ * as agreement with the invoice rather than a call to action; but it is the only
+ * thing the customer can do on this screen, and a control that is the whole
+ * reason he opened it should not be the quietest thing on it.
  *
  * Disabled while the action is in flight, and the label says why — a customer
  * who gets no answer taps again, which is the whole reason rule 11 exists. The
@@ -47,7 +51,7 @@ export function ConfirmPriceButton({ orderId }: { orderId: string }) {
       onClick={confirm}
       disabled={sending}
       aria-busy={sending || undefined}
-      className="flex min-h-10 shrink-0 items-center justify-center rounded-md border border-control-border bg-control-border px-3 text-base text-foreground disabled:opacity-60"
+      className="flex min-h-10 shrink-0 items-center justify-center rounded-md border border-brand bg-brand px-3 text-base text-surface-page disabled:opacity-60"
     >
       <span className="optical-center">
         {sending ? "بنأكد الطلب…" : "التأكيد و الذبح"}
