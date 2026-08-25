@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui";
-import { NotificationRow } from "@/components/customer/notifications/NotificationRow";
-import { MarkNotificationsRead } from "@/components/customer/notifications/MarkNotificationsRead";
+import { NotificationFeed } from "@/components/customer/notifications/NotificationFeed";
 import { getCurrentCustomer } from "@/lib/queries/customers";
 import { listNotifications } from "@/lib/queries/notifications";
 
@@ -15,10 +14,9 @@ import { listNotifications } from "@/lib/queries/notifications";
  * order — and a rule that must hold whoever is acting belongs where the thing
  * happens, which is the same conclusion migration 026 reached about the sale.
  *
- * **New above old, and the order of operations is the point.** The list is read,
- * split on `is_read`, and rendered — and only then are the unread ones marked
- * (`MarkNotificationsRead`). Marking first would file everything under «القديمة»
- * while he is reading it for the first time.
+ * The split into «الجديدة» and «القديمة», and the mark-as-read that follows it,
+ * are `NotificationFeed`'s — they have to survive a re-render, which is a thing
+ * only a client component can do.
  *
  * A screen walked into, not tabbed to: back button, no bottom bar.
  */
@@ -27,8 +25,6 @@ export default async function NotificationsPage() {
   if (!customer) redirect("/logout");
 
   const notifications = await listNotifications(customer.id);
-  const fresh = notifications.filter((n) => !n.isRead);
-  const old = notifications.filter((n) => n.isRead);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -45,39 +41,8 @@ export default async function NotificationsPage() {
           مفيش اشعارات لسه
         </p>
       ) : (
-        <div className="flex flex-col gap-6 px-screen pt-6 pb-6">
-          <Group title="الجديدة" notifications={fresh} />
-          <Group title="القديمة" notifications={old} />
-        </div>
+        <NotificationFeed notifications={notifications} />
       )}
-
-      <MarkNotificationsRead unread={fresh.length} />
     </div>
-  );
-}
-
-/**
- * One heading and its notices. Absent entirely when it has none — a «الجديدة»
- * with nothing under it says there is something to catch up on when there is
- * not.
- */
-function Group({
-  title,
-  notifications,
-}: {
-  title: string;
-  notifications: Awaited<ReturnType<typeof listNotifications>>;
-}) {
-  if (notifications.length === 0) return null;
-
-  return (
-    <section className="flex flex-col gap-1">
-      <h2 className="pb-1 text-right text-base font-bold text-heading">
-        {title}
-      </h2>
-      {notifications.map((notification) => (
-        <NotificationRow key={notification.id} notification={notification} />
-      ))}
-    </section>
   );
 }

@@ -64,23 +64,25 @@ right, where a total frozen into a sentence would be a second copy of
 
 `is_read`. The order of operations is the whole design:
 
-1. read the list
-2. split on `is_read` — «الجديدة» at full strength, «القديمة» at half
-3. render
-4. **then** mark the unread ones read (`MarkNotificationsRead`, a client component
-   mounted at the foot of the page)
+`NotificationFeed` (client) holds the list in `useState` at mount, splits *that*,
+and fires the mark-as-read from an effect afterwards.
 
-Marking before rendering would file everything under «القديمة» while he is reading
-it for the first time. Marking after means new today, old tomorrow.
+**The freeze is the mechanism, and it took two failures to find.** First, marking
+read in the page body ran before the markup was produced, so everything arrived
+already old. Second — and this is the one worth remembering — marking read from an
+effect was still undone, because **a Server Action refreshes the route it was
+called from, always**, whatever `revalidatePath` is given. The page re-rendered
+from the rows the action had just written and every notice slid into «القديمة»
+while the customer was reading it.
 
-Nothing on screen waits for step 4 — it is for the bell's badge, on the screen he
-goes back to.
+So the screen stops depending on the server's answer holding still. `useState`
+with an initialiser runs once for the life of the component; re-renders from the
+action, from `RefreshOnReturn`, from anything, flow past it. Leaving unmounts the
+component; coming back mounts it fresh against a server where they are read.
 
-**And it revalidates `"/"`, never `("/", "layout")`.** The layout form invalidates
-every route beneath it, this page included, so the screen re-rendered from the
-rows step 4 had just written and every notice slid into «القديمة» under the
-customer's eyes — steps 1-3 undone by step 4. The badge is counted by the home
-page, not the layout, so the narrow form reaches it and touches nothing else.
+That is also the honest description of the screen: it shows the notifications as
+they were when you opened it. Nothing on screen waits for the write — it is for
+the bell's badge, on the screen he goes back to.
 
 A heading with nothing under it is not drawn: an empty «الجديدة» claims there is
 something to catch up on.
@@ -93,7 +95,7 @@ is allowed, and `notification_update` already allowed exactly it.
 
 ## Components
 
-New: `StatusBubble` (`/components/ui`) · `NotificationRow` · `MarkNotificationsRead`
+New: `StatusBubble` (`/components/ui`) · `NotificationRow` · `NotificationFeed`
 · `formatTimeAgo()`
 Reused: `PageHeader` · `CountBadge` (the bell's badge already existed)
 
@@ -111,9 +113,12 @@ Inlined rather than three files in `/public`: this screen draws one per row, and
 list that fetches an image per line flickers its way down the page the first time
 it opens.
 
-`CountBadge` gained a `tone`: lime on the nav, the contact pill's orange on the
-bell. Lime on the bell sat an inch above a lime tab bar and read as decoration
-rather than a number.
+`CountBadge` gained a `tone` and a `placement`: lime and overhanging on the nav,
+the contact pill's orange and tucked flush on the bell. Lime sat an inch above a
+lime tab bar and read as decoration; the 5px overhang leaned out of a tap target
+that is already at the edge of the header. Both are named props rather than a
+`className` to override with — `cn()` does not merge Tailwind (T-64) — so the
+admin's own badge can pick its pair when it needs one.
 
 ## Connected screens
 
@@ -124,6 +129,10 @@ links.
 
 ## Watch out
 
+- The bubbles are **mirrored** (`-scale-x-100`): Figma exports these three assets
+  flipped from what it draws on the canvas. Measured, not guessed — the success
+  tail is at x≈11 on the canvas and x≈26 in the export, and the tick's long arm
+  rises right on the canvas and left in the export.
 - The bubble is on the **right** and «منذ …» on the **left** — the mark comes
   before the words it marks, and the timestamp is parked where the eye finishes.
 - **Migration 029 must be run** before this screen opens — the read asks for

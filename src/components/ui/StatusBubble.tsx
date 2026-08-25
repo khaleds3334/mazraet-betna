@@ -16,6 +16,14 @@ import { cn } from "@/lib/utils";
  * their colours from tokens instead of the hex baked into the export — the two
  * fills per bubble are `Surface/*` behind `Icons/*`, the same pairs the toast
  * uses (see `Toast`).
+ *
+ * **Mirrored, because the export is** (`-scale-x-100`). Figma hands out these
+ * three assets flipped from what it draws on the canvas — measured against the
+ * rendered masters rather than guessed: the success tail sits at x≈11 on the
+ * canvas and x≈26 in the file it exports, and the tick's long arm rises to the
+ * right on the canvas and to the left in the export. One flip on the `<svg>`
+ * puts the tail back under the text it belongs to and the tick back the way a
+ * tick goes.
  */
 const TONE = {
   success: {
@@ -62,7 +70,7 @@ export function StatusBubble({
       height={look.size}
       viewBox={`0 0 ${look.size} ${look.size}`}
       fill="none"
-      className={cn("shrink-0", className)}
+      className={cn("shrink-0 -scale-x-100", className)}
     >
       <path d={look.bubble} className={look.bubbleFill} />
       <path

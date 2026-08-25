@@ -11,8 +11,16 @@ import { cn } from "@/lib/utils";
  * below and read as decoration rather than a number.
  *
  * **The parent must be `relative` and sized to the icon**, since the disc pins
- * itself to that box: level with the top of the icon, overhanging its inline
- * start by 5px.
+ * itself to that box, level with the top of the icon.
+ *
+ * **Two placements.** `overhang` hangs it 5px past the icon's inline start — the
+ * bottom nav, where the tab label underneath leaves room for it. `inset` tucks it
+ * flush instead, for the bell, whose 44px tap target sits at the very edge of the
+ * header and had the disc leaning out of it (Khaled, 2026-08-25).
+ *
+ * A prop with named options rather than a `className` to override with: `cn()`
+ * joins strings and does not merge Tailwind, so a position passed in would land
+ * beside the default and win or lose on stylesheet order (T-64).
  *
  * It carries no horizontal padding on purpose. The 18px disc leaves 16.6px
  * inside its hairline, and at 12px Almarai the counts that actually turn up here
@@ -21,19 +29,27 @@ import { cn } from "@/lib/utils";
  * stretches it into a pill on its own, which is the right answer for one that
  * long.
  */
+const PLACEMENT = {
+  overhang: "-start-[5px] top-[1px]",
+  inset: "start-[1px] top-[1px]",
+} as const;
+
 export function CountBadge({
   count,
   tone = "primary",
+  placement = "overhang",
 }: {
   count: number;
   tone?: "primary" | "accent";
+  placement?: keyof typeof PLACEMENT;
 }) {
   if (count <= 0) return null;
 
   return (
     <span
       className={cn(
-        "absolute -start-[5px] top-[1px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-[0.7px] border-white text-[12px] font-bold leading-none",
+        "absolute flex h-[15px] min-w-[15px] items-center justify-center rounded-full border-[1px] border-white text-[12px] font-bold leading-none",
+        PLACEMENT[placement],
         tone === "accent"
           ? "bg-accent-orange text-primary-foreground"
           : "bg-primary text-foreground",
