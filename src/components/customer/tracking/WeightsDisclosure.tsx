@@ -118,6 +118,9 @@ export function WeightsDisclosure({ invoice }: { invoice: Invoice }) {
           type="button"
           onClick={() => setOpen(!open)}
           aria-expanded={open}
+          // How `JumpToWeights` finds this — it watches whether this button is
+          // on screen and offers a way down to it when it is not.
+          data-weights-toggle
           className="inline-flex min-h-11 items-center gap-1 text-base text-foreground"
         >
           <span className="optical-center">عرض الاوزان بالتفصيل</span>

@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { ComingSoon, PageHeader } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { ContactButton } from "@/components/customer/ContactButton";
+import { JumpToWeights } from "@/components/customer/tracking/JumpToWeights";
 import { OrderInvoiceView } from "@/components/customer/tracking/OrderInvoiceView";
 import { OrderReview } from "@/components/customer/tracking/OrderReview";
 import type { TrackedStage } from "@/components/customer/tracking/OrderTrackStrip";
@@ -112,15 +113,19 @@ export default async function OrderTrackingPage({
       {/* Floats rather than scrolling away, like the pill on home. Full-width
           strip so it centres on the app column, `justify-end` to park it at the
           inline end (the left in RTL), and taps pass through everywhere but the
-          pill itself. Gone on a finished order — see the note above. */}
-      {!done && (
-        <div
-          className="pointer-events-none fixed inset-x-0 z-30 mx-auto flex max-w-[430px] justify-end px-screen"
-          style={{ bottom: "calc(2rem + env(safe-area-inset-bottom))" }}
-        >
-          <ContactButton className="pointer-events-auto" />
-        </div>
-      )}
+          buttons themselves.
+
+          Two of them, and RTL puts the first on the right: the round way down to
+          the weights sits inboard of «تواصل معنا», which stays on the edge it
+          has on every other screen. On a finished order the pill is gone and the
+          circle keeps the corner to itself. */}
+      <div
+        className="pointer-events-none fixed inset-x-0 z-30 mx-auto flex max-w-[430px] items-center justify-end gap-2 px-screen"
+        style={{ bottom: "calc(2rem + env(safe-area-inset-bottom))" }}
+      >
+        <JumpToWeights />
+        {!done && <ContactButton className="pointer-events-auto" />}
+      </div>
     </div>
   );
 }

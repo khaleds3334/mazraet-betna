@@ -39,6 +39,16 @@ with money outstanding a call button floating over the amount reads as the farm
 chasing him for it. The page's bottom padding is that pill's clearance, so it
 shrinks with it.
 
+**A round button goes and fetches the weights.** With المدفوع and المتبقي on the
+invoice the page runs two lines longer, and «عرض الاوزان بالتفصيل» falls off the
+bottom — the customer reads to the total, finds the page apparently finished, and
+never learns the table exists. So when that control is not fully on screen,
+`JumpToWeights` appears beside «تواصل معنا» and points at it; the moment it is in
+view, it goes. Outlined rather than filled: the orange is spoken for by the thing
+you *do*, and this is a way to get somewhere. It watches the control with an
+`IntersectionObserver` rather than measuring scroll, so it stays right when the
+table opens and the page grows underneath it.
+
 **Back goes to `/history`**, not `/tracking` — a finished order is not in the
 tracking list, and returning him there would look like it had vanished.
 
@@ -54,7 +64,7 @@ the history card makes, so a card and the screen it opens can never disagree.
 
 ## Components
 
-New: `OrderStatusHead`
+New: `OrderStatusHead` · `JumpToWeights`
 Reused: `PageHeader` · `OrderStatusBadge` · `OrderTrackStrip` (new `delivered`
 row) · `InvoiceSection` · `WeightsDisclosure` · `WeightsSection`
 
@@ -74,3 +84,8 @@ two numbers.
   for one, since a typed URL can reach it.
 - `WeightsDisclosure` scrolls to the end of the *content*, not to the end of the
   table, which is why the smaller bottom padding here needs no change in it.
+- **Tailwind v4 compiles `scale-*` to the standalone `scale` property**, not to
+  `transform`. `transition-[…,transform]` therefore does not animate it — use
+  `transition-transform` (which expands to transform, translate, scale, rotate)
+  or name `scale` explicitly. Every arbitrary transition in the app was checked
+  against the built CSS after this was found.
