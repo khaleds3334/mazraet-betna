@@ -20,11 +20,12 @@ type NavIconName = "home" | "order" | "track";
 
 /**
  * Customer screens walked into rather than tabbed to: a back button at the top
- * and no bar at all. `/tracking` itself keeps its bar — only one order's page
- * below it drops it, which is why that one is matched as a sub-route and not
- * through `isActivePath`.
+ * and no bar at all — «الطلبات السابقة», reached from the tracking bar, and
+ * «الرسائل و الاشعارات», reached from the bell. `/tracking` itself keeps its bar;
+ * only one order's page below it drops it, which is why that one is matched as a
+ * sub-route and not through `isActivePath`.
  */
-const SCREENS_WITHOUT_NAV = ["/history"];
+const SCREENS_WITHOUT_NAV = ["/history", "/notifications"];
 const ORDER_DETAIL = /^\/tracking\/[^/]+$/;
 
 /**

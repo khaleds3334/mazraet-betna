@@ -371,6 +371,7 @@ export type Database = {
           farm_id: string
           id: string
           is_read: boolean
+          kind: Database["public"]["Enums"]["notification_kind"]
           order_id: string | null
           title: string
         }
@@ -382,6 +383,7 @@ export type Database = {
           farm_id: string
           id?: string
           is_read?: boolean
+          kind?: Database["public"]["Enums"]["notification_kind"]
           order_id?: string | null
           title: string
         }
@@ -393,6 +395,7 @@ export type Database = {
           farm_id?: string
           id?: string
           is_read?: boolean
+          kind?: Database["public"]["Enums"]["notification_kind"]
           order_id?: string | null
           title?: string
         }
@@ -693,6 +696,7 @@ export type Database = {
       expense_category: "feed" | "utilities" | "medicine" | "other"
       feed_phase: "badi" | "nami"
       notification_audience: "customer" | "admin"
+      notification_kind: "success" | "warning" | "error"
       order_source: "customer" | "admin"
       order_status: "pending" | "weighed" | "ready" | "delivered" | "cancelled"
     }
@@ -825,6 +829,7 @@ export const Constants = {
       expense_category: ["feed", "utilities", "medicine", "other"],
       feed_phase: ["badi", "nami"],
       notification_audience: ["customer", "admin"],
+      notification_kind: ["success", "warning", "error"],
       order_source: ["customer", "admin"],
       order_status: ["pending", "weighed", "ready", "delivered", "cancelled"],
     },

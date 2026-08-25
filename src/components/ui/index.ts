@@ -33,6 +33,7 @@ export { Stepper } from "./Stepper";
 export { TextareaField } from "./TextareaField";
 export { KnifeGlyph } from "./KnifeGlyph";
 export { RequiredMark } from "./RequiredMark";
+export { StatusBubble, type StatusTone } from "./StatusBubble";
 export { Toggle } from "./Toggle";
 export { ToggleCard } from "./ToggleCard";
 export { WeightBadge } from "./WeightBadge";

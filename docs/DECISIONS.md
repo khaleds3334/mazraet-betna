@@ -2309,3 +2309,47 @@ registered; it is not the whole inventory of shapes the app draws.
 `badge-dollar-sign` resolved to `BadgeDollarSignIcon` on the first try — the name
 in the node was the answer, not a starting point for guessing.
 **Date:** 2026-08-25
+
+### D-73 — Notifications are written by the database, never by the app
+All six customer notices come from triggers on the events themselves (migration
+029), not from the Server Actions that cause them.
+**Why, concretely:** `notification_insert` is admin-only. A customer placing an
+order cannot write «تم استلام طلبك بنجاح» for himself — his session is refused —
+and loosening the policy to allow it would equally let one customer write
+notifications to another.
+**And why that is the right answer anyway:** the same reasoning as migration 026.
+A rule that must hold no matter who is acting belongs where the thing happens.
+The writers are already the customer app, the admin app and a psql prompt, and
+FR-16 will be a fourth; the one that forgets is always the one added later.
+**The six:** account created · order placed · order weighed · order ready · order
+cancelled (with the reason) · sale opened. «تم الوزن» is not in the design but is
+the only one the customer has something to *do* about (D-67).
+**The sale opening is the only fan-out** — one row per customer, guarded on the
+`false → true` edge because `sync_sale_with_flock` rewrites `sale_open` on every
+order and every mortality row.
+**Date:** 2026-08-25
+
+### D-74 — A notification stores a sentence, never a number
+No order number, no total, no date in `notification.body`. Bodies are written to
+read *after* «طلبك رقم ١٢٢٤#», and `NotificationRow` puts that on the front with
+`formatOrderNumber`.
+**Why:** rule 3 says every number a human reads goes through `/lib/format.ts` in
+Arabic-Indic digits. Storing the number would have meant implementing that in SQL
+— a second copy of a non-negotiable rule, in a language where nobody would think
+to look for it.
+**What it costs:** FR-31 asks for the «جاهز» notice to carry the total. It does
+not; tapping it opens the invoice instead. The alternative was `computeInvoice`
+rewritten in PL/pgSQL and frozen into a sentence at the moment of writing —
+two ways to price one order, which is exactly what D-05 exists to prevent.
+**Date:** 2026-08-25
+
+### T-66 — Mark-as-read runs after the render, not before it
+`/notifications` renders the list, then a client component at the foot of the page
+fires `markNotificationsRead()`.
+**Why:** the page is a Server Component, so a write in its body would run before
+the markup is produced — the customer would open the screen and find every notice
+already filed under «القديمة», the screen telling him that what he is reading for
+the first time is old news.
+**Nothing on screen waits for it.** It exists for the bell's badge on the screen
+he returns to, which `revalidatePath("/", "layout")` redraws.
+**Date:** 2026-08-25

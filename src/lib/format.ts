@@ -6,7 +6,7 @@
  * so every digit shown to a user is Arabic-Indic (٠١٢٣٤٥٦٧٨٩). The only exception
  * is phone numbers, which stay Latin — use `formatPhone` for those.
  */
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 
 const ARABIC_DIGITS = [
@@ -228,6 +228,26 @@ export function pluralizeDay(count: number): string {
   if (count === 2) return `${n} يومين`;
   if (count >= 3 && count <= 10) return `${n} ايام`;
   return `${n} يوم`; // 0, 1, and 11+
+}
+
+/**
+ * How long ago, in words: «دلوقتي» · «منذ ٤ ساعات» · «منذ ٣ ايام» (C-15).
+ *
+ * `date-fns` writes the sentence and the Arabic locale declines it — «ساعة»,
+ * «ساعتين», «٤ ساعات» are three different words and none of them is a rule worth
+ * writing twice. The digits it produces are Latin, so they come back through
+ * `toArabicDigits` like every other number in this app (rule 3).
+ *
+ * Under a minute reads «دلوقتي» rather than «منذ أقل من دقيقة»: on a screen the
+ * customer opens straight after placing an order, the second is a sentence about
+ * the clock where the first is an answer.
+ */
+export function formatTimeAgo(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Date.now() - d.getTime() < 60_000) return "دلوقتي";
+  return toArabicDigits(
+    formatDistanceToNow(d, { locale: ar, addSuffix: true }),
+  );
 }
 
 /** A date in Arabic month names + Arabic-Indic digits, e.g. `٢٢ يوليو ٢٠٢٦`. */
