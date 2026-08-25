@@ -48,7 +48,7 @@ export function CountBadge({
   return (
     <span
       className={cn(
-        "absolute flex h-[15px] min-w-[15px] items-center justify-center rounded-full border-[1px] border-white text-[12px] font-bold leading-none",
+        "absolute flex h-[16px] min-w-[16px] items-center justify-center rounded-full border-[1px] border-white text-[12px] font-bold leading-none",
         PLACEMENT[placement],
         tone === "accent"
           ? "bg-accent-orange text-primary-foreground"
