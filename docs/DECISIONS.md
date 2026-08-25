@@ -2548,4 +2548,14 @@ bespoke design SVGs (T-19) and three places now draw them — the admin's custom
 row and order card through `ContactLinks`, and this popup at its own sizes.
 Copied instead, the first nudge to a path would land in one place and the app
 would be quietly showing two different handsets.
+**Their size is a `size` prop, not a class** — the API `Icon` already uses. Built
+the other way first and it broke exactly as T-64 says it must: `cn()` joins
+strings, so the caller's `size-[14px]` landed beside the component's own
+`size-full` and the stylesheet's order decided which won. The circle and the mark
+inside it ended up sized by different rules (Khaled, 2026-08-25). **T-64 is not
+about the tray — it is about every dimension a component draws itself at.**
+**Inside each button the glyph comes BEFORE the word.** The design hangs it on
+the button's right with the word beside it, and in RTL the first child is the
+right-hand one. Written after the word it landed on the left, which is where it
+first shipped.
 **Date:** 2026-08-25

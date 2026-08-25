@@ -27,7 +27,7 @@ export function ContactLinks({
   return (
     <div className={cn("flex items-center gap-1", className)}>
       <a href={`tel:${phone}`} aria-label="اتصال بالعميل" className={CIRCLE}>
-        <PhoneGlyph className="size-[18px]" />
+        <PhoneGlyph size={18} />
       </a>
 
       <a
@@ -37,7 +37,7 @@ export function ContactLinks({
         aria-label="مراسلة على واتساب"
         className={CIRCLE}
       >
-        <WhatsAppGlyph className="size-[18px]" />
+        <WhatsAppGlyph size={18} />
       </a>
     </div>
   );

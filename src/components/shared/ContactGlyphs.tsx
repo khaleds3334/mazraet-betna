@@ -15,17 +15,32 @@ import { cn } from "@/lib/utils";
  * its own sizes. Copied instead, the first nudge to a path would land in one
  * place and the app would be quietly showing two different handsets.
  *
- * **They carry no size.** Each is traced to fill its box, and every caller wraps
- * it in one — a 38px circle on the admin's rows, 24px and 14px in the popup. So
- * the size is the caller's and `className` is how it is given.
+ * **Size is a `size` prop, never a class** — the same API `Icon` gives every
+ * other glyph in the app, and for the reason T-64 was written: `cn()` joins
+ * strings and does not merge Tailwind, so a `size-[14px]` passed in landed
+ * *beside* the component's own `size-full` and which of the two won came down to
+ * their order in the built stylesheet. The popup asked for 14px and did not get
+ * it (Khaled, 2026-08-25). A width the component draws itself at is a prop.
+ *
+ * `className` is for colour only. Both are painted with `currentColor`, so a
+ * caller sets it with a text class like every other icon in the app.
  */
 
 /** The handset, traced at 38px — the viewBox crops to the glyph's own 18px box. */
-export function PhoneGlyph({ className }: { className?: string }) {
+export function PhoneGlyph({
+  size,
+  className,
+}: {
+  /** Edge length in px. 18 on the admin's rows, 14 in the contact popup. */
+  size: number;
+  className?: string;
+}) {
   return (
     <svg
       viewBox="10 10 18 18"
-      className={cn("size-full", className)}
+      width={size}
+      height={size}
+      className={cn("shrink-0", className)}
       aria-hidden
     >
       <path
@@ -37,9 +52,22 @@ export function PhoneGlyph({ className }: { className?: string }) {
 }
 
 /** The WhatsApp mark: the speech bubble's outline, and the handset inside it. */
-export function WhatsAppGlyph({ className }: { className?: string }) {
+export function WhatsAppGlyph({
+  size,
+  className,
+}: {
+  /** Edge length in px. 18 on the admin's rows, 14 in the contact popup. */
+  size: number;
+  className?: string;
+}) {
   return (
-    <svg viewBox="0 0 18 18" className={cn("size-full", className)} aria-hidden>
+    <svg
+      viewBox="0 0 18 18"
+      width={size}
+      height={size}
+      className={cn("shrink-0", className)}
+      aria-hidden
+    >
       <path
         d="M0.0752344 8.91898C0.0747422 10.4909 0.487266 12.0255 1.27153 13.3782L0 18L4.75109 16.7598C6.06016 17.4704 7.53405 17.845 9.03382 17.8456H9.03769C13.977 17.8456 17.9979 13.8439 18 8.92612C18.0008 6.54279 17.0693 4.30164 15.3773 2.61572C13.6851 0.930005 11.4351 0.000979984 9.03769 0C4.09753 0 0.0772031 4.00114 0.0752344 8.91898ZM2.90468 13.1452L2.72728 12.8649C1.98155 11.6844 1.58794 10.3203 1.5885 8.91954C1.59005 4.83195 4.93158 1.50638 9.0405 1.50638C11.0303 1.50722 12.9004 2.27944 14.3069 3.68054C15.7134 5.08178 16.4873 6.94445 16.4868 8.92556C16.485 13.0131 13.1434 16.3391 9.03769 16.3391H9.03473C7.69788 16.3384 6.38677 15.981 5.24334 15.3056L4.97123 15.145L2.15184 15.8809L2.90468 13.1452Z"
         fill="currentColor"

@@ -41,7 +41,7 @@ export function ContactSheet({
 }) {
   return (
     <Modal open={open} onClose={onClose} label="تواصل معنا">
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
         {/* RTL: the first child lands on the RIGHT, so the sentence is written
             first and the close button, on the left, second — which is where the
             design puts it. */}
@@ -67,7 +67,7 @@ export function ContactSheet({
         <div className="flex flex-col gap-[9px]">
           <div className="flex items-center justify-between gap-2">
             {/* The number and its label on the right, the farmer on the left. */}
-            <div className="flex min-w-0 flex-col items-end gap-2 text-right font-bold text-primary-foreground">
+            <div className="flex min-w-0 flex-col gap-2 text-right font-bold text-primary-foreground">
               <p className="text-base">رقم التليفون الخاص بنا</p>
               <p className="text-h6" dir="ltr">
                 {phone ?? "—"}
@@ -83,10 +83,19 @@ export function ContactSheet({
             />
           </div>
 
-          {/* Both are `min-h-11` rather than the canvas's 42px — rule 8's floor
-              is 44, and these are the two controls the whole popup exists for.
-              Disabled outright with no number behind them: a «الهاتف» that opens
-              an empty dialler is worse than one that visibly cannot be pressed. */}
+          {/* «الواتس اب» first so RTL lands it on the RIGHT, «الهاتف» on the
+              left — the side each is drawn on. Inside each button the glyph is
+              written BEFORE the word for the same reason: the design hangs it on
+              the button's right and the word beside it (Khaled, 2026-08-25).
+
+              Both circles are 24px with a 14px mark, as drawn — the design bakes
+              the phone's circle into its export and builds the WhatsApp one out
+              of 5px of padding around the same 14px.
+
+              `min-h-11` rather than the canvas's 42px: rule 8's floor is 44, and
+              these are the two controls the whole popup exists for. Disabled
+              outright with no number behind them — a «الهاتف» that opens an empty
+              dialler is worse than one that visibly cannot be pressed. */}
           <div className="flex items-stretch justify-center gap-4">
             <a
               href={phone ? `https://wa.me/${whatsappNumber(phone)}` : undefined}
@@ -95,10 +104,10 @@ export function ContactSheet({
               aria-disabled={!phone}
               className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-brand bg-brand px-3 py-[9px] text-base text-white aria-disabled:pointer-events-none aria-disabled:opacity-50"
             >
-              الواتس اب
               <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface text-brand">
-                <WhatsAppGlyph className="size-[14px]" />
+                <WhatsAppGlyph size={14} />
               </span>
+              الواتس اب
             </a>
 
             <a
@@ -106,10 +115,10 @@ export function ContactSheet({
               aria-disabled={!phone}
               className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-md border border-brand-olive bg-surface-page px-3 py-[9px] text-base text-foreground aria-disabled:pointer-events-none aria-disabled:opacity-50"
             >
-              الهاتف
               <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface text-foreground">
-                <PhoneGlyph className="size-[14px]" />
+                <PhoneGlyph size={14} />
               </span>
+              الهاتف
             </a>
           </div>
         </div>
