@@ -1,11 +1,14 @@
 "use client";
 
+import { useRef } from "react";
 import { BottomSheet, CardAction, CloseButton } from "@/components/ui";
 import { InvoiceSection } from "@/components/shared/invoice/InvoiceSection";
 import { WeightsSection } from "@/components/shared/invoice/WeightsSection";
 import type { Invoice } from "@/lib/calculations/invoice";
 import type { OrderListItem } from "@/lib/queries/orders";
 import { formatArabicDate, formatArabicTime } from "@/lib/format";
+import { FEATURE_NOT_READY } from "@/lib/constants";
+import { useToast } from "@/hooks/useToast";
 
 /** When the birds actually went — replaces «تعديل» once the order is done. */
 function DeliveredAt({ at }: { at: string }) {
@@ -59,8 +62,19 @@ export function InvoiceSheet({
   /** Opens the payment dialog — owned by the card, which also owns the action. */
   onPay: () => void;
 }) {
+  const toast = useToast();
   const delivered = order.status === "delivered";
   const owing = invoice.remaining > 0 && !order.isHouse;
+
+  // The last one is dismissed before the next goes up: he taps a button that
+  // does not move twice, and a queue of the same sentence would outlast the
+  // sheet (the pattern `OrderForm` and the add-order sheet both use).
+  const notReadyToast = useRef<number | null>(null);
+
+  function sayNotReady() {
+    if (notReadyToast.current !== null) toast.dismiss(notReadyToast.current);
+    notReadyToast.current = toast.info(FEATURE_NOT_READY);
+  }
 
   return (
     <BottomSheet
@@ -88,12 +102,23 @@ export function InvoiceSheet({
           {delivered && order.deliveredAt ? (
             <DeliveredAt at={order.deliveredAt} />
           ) : (
-            // Inert until editing a weighed order is built (FR-16).
+            // FR-16 is not built. It was a plain box until now — the shape with
+            // no control inside it — on the reasoning that something looking
+            // tappable and doing nothing is worse than something plainly
+            // waiting. True of a button that stays silent; not true of one that
+            // answers. He presses it either way (Khaled, 2026-08-28), and being
+            // told it is on the way beats pressing a picture of a button and
+            // wondering whether the app heard him — which is rule 11 exactly.
+            //
+            // `aria-disabled`, never `disabled`: a disabled button takes no
+            // click, so there would be nothing to answer with. Same shape as the
+            // customer's confirm bar over a shut sale.
             <CardAction
               variant="outline"
               icon="edit"
-              interactive={false}
-              className="px-6"
+              aria-disabled
+              onClick={sayNotReady}
+              className="px-6 opacity-60"
             >
               تعديل
             </CardAction>

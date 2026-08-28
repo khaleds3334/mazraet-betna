@@ -303,6 +303,14 @@ export const SALE_CLOSED_CUSTOMER =
  */
 export const SOLD_OUT_CUSTOMER = "الفراخ خلصت من المزرعة دلوقتي.";
 
+/**
+ * A control the design draws and the app has not built yet — «تعديل» on the
+ * invoice (FR-16) is the only one today. Said as work in progress rather than as
+ * a refusal: nothing is wrong, it is simply not here yet, and the admin should
+ * stop waiting for it to start working this week.
+ */
+export const FEATURE_NOT_READY = "لسه بنشتغل على الخاصية دي، هتبقى جاهزة قريب.";
+
 export const NO_FEED_IN_STORE = "مفيش علف متوفر في المخزن، سجّل شراء علف الأول.";
 
 export const FEED_PHASE_LABEL: Record<FeedPhase, string> = {

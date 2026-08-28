@@ -49,12 +49,6 @@ type CardActionProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   grow?: boolean;
   /** Spins in place of the icon while the action is in flight. */
   isLoading?: boolean;
-  /**
-   * Renders the same shape as a plain box instead of a control — for an action
-   * whose screen is designed but not built yet. Something that looks tappable
-   * and isn't is worse than something that plainly waits.
-   */
-  interactive?: boolean;
 };
 
 export function CardAction({
@@ -62,7 +56,6 @@ export function CardAction({
   icon,
   grow = false,
   isLoading = false,
-  interactive = true,
   className,
   children,
   type = "button",
@@ -87,8 +80,6 @@ export function CardAction({
       <span className="optical-center">{children}</span>
     </>
   );
-
-  if (!interactive) return <div className={shape}>{content}</div>;
 
   return (
     <button
