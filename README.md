@@ -8,6 +8,37 @@ Built for one real user I know well: my father.
 
 ---
 
+## ▶ Try it
+
+**[mazraet-betna-demo.vercel.app](https://mazraet-betna-demo.vercel.app)**
+
+Sign in with either account — the app decides which of the two apps you get from
+the number alone (there is no "admin login" screen; see
+[Authentication](#authentication-phone-only-no-otp-no-passwords)).
+
+| | Phone | PIN |
+|---|---|---|
+| **Admin** — cycles, weighing, invoices, accounting | `01000000000` | `123456` |
+| **Customer** — ordering and tracking | `01111111111` | — |
+
+The admin account is the one worth your time: it opens on a flock 28 days into a
+cycle with the sale running, has orders at every stage waiting to be weighed, and
+two finished cycles behind it with real profit and debt figures.
+
+**Or drive it.** Sign in as the customer and place an order; sign in as the admin
+and it is there on the orders screen. Weigh it bird by bird, take a payment
+against the invoice it computes, hand it over. That loop is the whole app, and
+the weighing screen in the middle of it is the screen everything else was built
+to support.
+
+> This is a **separate Supabase project** seeded with invented data — a different
+> database from the one the farm actually runs on, so nothing here belongs to a
+> real customer. Any number you type that isn't listed above will register you as
+> a new customer of the demo farm, which is fine; it is what the farm's own
+> customers do.
+
+---
+
 ## Why this project exists
 
 My father runs a small poultry farm. Everything lived in a paper notebook — who ordered, how many birds, what each one weighed, who paid, who still owes. Orders were taken over the phone and written on whatever was nearby. At the end of a cycle, working out whether it made money meant an evening with a calculator.
@@ -239,7 +270,41 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=           # server only — never exposed to the browser
 ```
 
-Apply the migrations in `supabase/migrations/` in filename order, then:
+### Setting up the database
+
+`supabase/migrations/` is a record of what was applied to the live database over
+time, **not a script that replays from empty.** Each migration was applied the day
+it was written, so the two data files drifted forward past their own position:
+`003_seed.sql` uses columns added in `005`, `007` and `027`, and writes a column
+`024` drops. Running the folder in filename order fails on the third file.
+
+Schema replays; data does not. So:
+
+1. Run every migration in filename order, **skipping `003_seed.sql` and
+   `014_demo_ended_cycles.sql`**.
+2. Then run those two, in that order, against the finished schema — `003` needs
+   `settings.sale_closes_at` in place of the dropped `cycle.sale_closes_at`, and a
+   seeded `cycle.selling_started_at`. `014` looks the farm up and exits quietly if
+   `003` has not run.
+
+If you create the `public` schema yourself rather than using the one Supabase
+provides, re-grant it **after** the tables exist — a fresh schema has none of
+Supabase's default privileges, and `authenticated` with no table grant fails
+every read regardless of RLS:
+
+```sql
+grant usage on schema public to anon, authenticated, service_role;
+grant all on all tables    in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+alter default privileges in schema public grant all on tables    to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+```
+
+Not functions: `verify_admin_pin`, `set_admin_pin` and `create_farm` are
+deliberately executable by `service_role` alone, and the migrations grant them
+themselves. See `T-76` in [`DECISIONS.md`](docs/DECISIONS.md).
+
+Then:
 
 ```bash
 pnpm dev            # http://localhost:3000
@@ -289,6 +354,7 @@ Both apps are feature-complete. `pnpm build` and `pnpm lint` pass clean, with no
 | **FR-16 — editing a weighed order** | Deliberately deferred; the `تعديل` button in the invoice sheet is inert until it lands |
 | **Social links in the contact sheet** | No field in the schema to hold them yet |
 | **Loss visualisation** | A cycle that lost 3,000 EGP and a cycle that broke even currently look the same on the comparison chart |
+| **One farm per deployment** | The schema, RLS and both login paths are multi-tenant; self-registration is not — it attaches a new customer to `farm limit 1`, because nothing tells it which farm the visitor came for. Real multi-tenancy needs a farm-scoped entry point (a subdomain, a `/f/<slug>` path, or an invite link) — `D-76` |
 
 ### Deliberately not built
 
