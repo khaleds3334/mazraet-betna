@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Supabase CLI local state
 supabase/.temp
+
+# Generated from supabase/migrations/ for setting up a demo database — disposable.
+demo-setup.sql

@@ -2648,3 +2648,72 @@ which would have handed the world the check this migration exists to build.
 justified with «بيانات العميل مش حسّاسة», written before the app held invoices,
 debts and an order button.
 **Date:** 2026-08-26
+
+## Session — 2026-08-28 (a demo database, and what building one exposed)
+
+### T-76 — The migrations do not replay from an empty database
+`supabase/migrations/` is a **log of what was applied**, not a script that can be
+run from nothing. Building a second database for the demo was the first time
+anybody tried, and it failed on the third file.
+
+`003_seed.sql` uses `farm.owner_name` (added in `005`), the `feed_withdrawal`
+table (`007`), and `settings.pickup_slots` (`027`). It also writes
+`cycle.sale_closes_at`, which `024` **drops**.
+
+**Why it drifted:** every migration was applied by hand the day it was written,
+against a database that already held the seed. So when a later migration changed
+the shape of something the seed touches, the seed was edited to match the new
+shape — correctly, for a database where it had already run. Nothing ever replayed
+it from the beginning, so nothing ever noticed that it had travelled forward in
+time past its own position in the sequence.
+
+**The rule going forward: schema migrations replay, data does not.** The demo is
+built by running every schema migration in file order with `003` and `014`
+skipped, then the two data files last, against the finished schema. `003` needs
+two edits to survive that move — `settings.sale_closes_at` instead of the dropped
+`cycle.sale_closes_at`, and a seeded `cycle.selling_started_at`, without which the
+cycle reads as التربية (D-57) and the admin opens on the wrong dashboard.
+
+`014` must still run **after** `003`: it looks the farm up with
+`select id from farm limit 1` and returns silently when there is none.
+
+**Not fixed retroactively**, and deliberately. Renumbering the seed would rewrite
+history that the live database was actually built from, and the live database is
+correct. The generated `demo-setup.sql` carries the ordering instead, and this
+entry is the reason it looks the way it does.
+**Date:** 2026-08-28
+
+### D-76 — The link on a CV points at its own database, not the farm's
+The demo is a separate Supabase project and a separate Vercel project, from the
+same repo and the same branch. No code differs between them; only the three
+environment variables do.
+
+**Why not a second farm on the live database.** The schema has been multi-tenant
+since day one (D-08) — `farm_id` on every table, `unique (farm_id, phone)` on
+customers, RLS scoped by farm — and admin login and existing-customer login both
+resolve to the right farm on their own. Two farms would genuinely be isolated.
+
+**Registration is the exception, and it is exactly the door a stranger opens.**
+`registerCustomer` attaches a new customer with `from("farm").select("id").limit(1)`
+— no `order by`, so not even "the first farm", but an arbitrary one. A recruiter
+who types his own number self-registers into whichever farm Postgres returns, can
+place an order, and that order lands on the admin's screen while he is weighing.
+
+There is a second edge behind it: `startLogin` reads a customer with
+`.eq("phone", phone).maybeSingle()`, which **errors on more than one row** — while
+the schema deliberately allows the same number at two farms. Today that cannot
+happen, because there is one farm. The day there are two, that customer's login
+breaks and drops him into registration.
+
+**So the isolation that matters is the database, not the row.**
+`createAdminClient()` bypasses RLS entirely and is what registration runs on, so
+while real rows sit in the same database, a mistake there crosses the boundary.
+A separate project makes the blast radius of that one unscoped query a database
+with nobody real in it.
+
+**Making this properly multi-tenant is a feature, not configuration.** The
+customer has to arrive already knowing which farm he belongs to — a subdomain, a
+`/f/<slug>` path, or an invite link — and `limit(1)` then reads from that.
+A fourth route already works: the admin adds the customer first, and login finds
+the existing row. Self-registration is the only path that guesses.
+**Date:** 2026-08-28
