@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { InlineError } from "@/components/ui";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { openingValues, saveDraft } from "@/lib/orderDraft";
 import type { OrderForm as OrderFormData } from "@/lib/queries/ordering";
 import { revealTop, useSnapToEdges } from "@/hooks/useSnapToEdges";
 import { useToast } from "@/hooks/useToast";
 import { pluralizeChicken } from "@/lib/format";
-import { SALE_NOT_OPEN } from "@/lib/constants";
+import { SALE_CLOSED_CUSTOMER, SOLD_OUT_CUSTOMER } from "@/lib/constants";
 import { OrderNote } from "@/components/shared/OrderNote";
 import { ConfirmBar } from "./ConfirmBar";
 import { CountPicker } from "./CountPicker";
@@ -24,8 +23,20 @@ import { useOrderSubmit, type MissingAnswer } from "./useOrderSubmit";
  * **Sending it lives in `useOrderSubmit`** — the validation, the toast on
  * failure, and the hen that cackles when it lands.
  *
- * The two standing states — sold out, sale closed — are *not* failures of a tap
- * and stay inline, next to the button they are explaining.
+ * **The two standing states — sold out, sale closed — announce themselves in a
+ * toast on arrival** (Khaled, 2026-08-28). They used to sit inline above the
+ * confirm bar, in the same red panel the admin gets on A-56, and that was wrong
+ * twice over: the panel is an admin pattern — a fault report pinned to the foot
+ * of a working screen — and the sentence in it was written for the admin, so it
+ * told a customer to «ابدأ مرحلة البيع», which is the one thing he cannot do.
+ * See `SALE_CLOSED_CUSTOMER`.
+ *
+ * The toast lands at the top of the screen, where he is already looking when the
+ * page opens, and then leaves — and a message that leaves cannot be the only
+ * copy of the reason. So the confirm button is dimmed but still live, and asking
+ * it says the same sentence again: `sayWhyBlocked` is the one source, called
+ * both on arrival and on every tap. See `ConfirmBar` for why it is
+ * `aria-disabled` rather than `disabled`.
  *
  * The note is folded behind «اضافة ملاحظة», the same dashed control as A-56
  * (Khaled, 2026-08-23) — see `OrderNote`.
@@ -78,10 +89,34 @@ export function OrderForm({ data }: { data: OrderFormData }) {
   // outlast the screen (same reasoning as the admin's add-order sheet).
   const limitToast = useRef<number | null>(null);
 
+  // The standing state this screen opened in, so it can be said once and not
+  // said again. Held the same way `limitToast` is: React mounts effects twice in
+  // development, and `LiveRefresh` can re-render this screen while the sale is
+  // still shut — neither should stack a second copy of the same sentence.
+  const stateToast = useRef<number | null>(null);
+
+  const soldOut = data.available <= 0;
+  const blocked = soldOut || !data.saleOpen;
+
   // One flick takes the whole screen (Khaled, 2026-08-25) — see the hook. Off
   // once the order is in: the success screen is one screenful and has nothing
   // to snap between.
   useSnapToEdges(!placedOrderId);
+
+  // Why nothing can be ordered — one sentence with one source, said when the
+  // screen opens and again on every tap of the button it is about. Sold out
+  // first: an empty flock closes the sale on its own (FR-11), so both are true
+  // together and only the one that explains why is worth saying.
+  const sayWhyBlocked = useCallback(() => {
+    if (stateToast.current !== null) toast.dismiss(stateToast.current);
+    stateToast.current = toast.warning(
+      soldOut ? SOLD_OUT_CUSTOMER : SALE_CLOSED_CUSTOMER,
+    );
+  }, [soldOut, toast]);
+
+  useEffect(() => {
+    if (blocked && !placedOrderId) sayWhyBlocked();
+  }, [blocked, placedOrderId, sayWhyBlocked]);
 
   // Kept where a tab change cannot reach it. Written on every keystroke rather
   // than on the way out, because there is no "way out" to hook: the tabs unmount
@@ -95,13 +130,11 @@ export function OrderForm({ data }: { data: OrderFormData }) {
     limitToast.current = toast.info(
       data.available > 0
         ? `الموجود في المزرعة دلوقتي ${pluralizeChicken(data.available)} بس`
-        : "الفراخ خلصت من المزرعة دلوقتي",
+        : SOLD_OUT_CUSTOMER,
     );
   }
 
   if (placedOrderId) return <OrderSuccess orderId={placedOrderId} />;
-
-  const soldOut = data.available <= 0;
 
   return (
     <div className="flex flex-1 flex-col gap-1">
@@ -159,19 +192,6 @@ export function OrderForm({ data }: { data: OrderFormData }) {
         سيتم حساب السعر النهائي و اصدار الفاتورة النهائية بعد وزن الفراخ
       </p>
 
-      {/* A standing state, not the result of a tap — so it stays on the screen
-          rather than passing through a toast. Said before the form is filled in,
-          not after it is sent. One reason, the real one: an empty flock closes
-          the sale on its own (FR-11), so both would otherwise appear together and
-          the explaining one would be second. */}
-      <div className="flex flex-col gap-2 px-screen">
-        {soldOut ? (
-          <InlineError message="الفراخ خلصت من المزرعة دلوقتي." />
-        ) : (
-          !data.saleOpen && <InlineError message={SALE_NOT_OPEN} />
-        )}
-      </div>
-
       {/* Room for the height the nav gains when the confirm bar unfolds into
           it, kept whether or not it is on screen — a padding that came and went
           with it would shift the whole form under a reading thumb. `<main>`
@@ -185,7 +205,8 @@ export function OrderForm({ data }: { data: OrderFormData }) {
         cleaning={cleaning}
         cleaningPrice={data.cleaningPrice}
         onConfirm={() => submit({ count, weight, cleaning, date, time, notes })}
-        disabled={!data.saleOpen || soldOut}
+        blocked={blocked}
+        onBlockedTap={sayWhyBlocked}
         isSending={sending}
       />
     </div>

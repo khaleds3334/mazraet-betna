@@ -70,7 +70,8 @@ export function ConfirmBar({
   cleaning,
   cleaningPrice,
   onConfirm,
-  disabled,
+  blocked,
+  onBlockedTap,
   isSending,
 }: {
   count: number;
@@ -80,7 +81,10 @@ export function ConfirmBar({
   cleaning: boolean;
   cleaningPrice: number;
   onConfirm: () => void;
-  disabled: boolean;
+  /** Nothing can be ordered right now — sold out, or the sale is shut. */
+  blocked: boolean;
+  /** Called instead of `onConfirm` while blocked: says why, again. */
+  onBlockedTap: () => void;
   isSending: boolean;
 }) {
   const direction = useScrollDirection();
@@ -132,7 +136,21 @@ export function ConfirmBar({
             />
           </div>
 
-          <Button onClick={onConfirm} disabled={disabled} isLoading={isSending}>
+          {/* `aria-disabled`, never `disabled` — a blocked button here has to
+              stay tappable. The reason it is blocked is said in a toast when the
+              screen opens, and a toast leaves; a truly disabled button would
+              then be a dead control with no way left to ask it why. So it looks
+              unavailable, and answers when pressed (Khaled, 2026-08-28).
+
+              The dimming is written here rather than left to Button's own
+              `disabled:opacity-60`, which cannot fire without the real
+              attribute. */}
+          <Button
+            onClick={blocked ? onBlockedTap : onConfirm}
+            aria-disabled={blocked || undefined}
+            className={cn(blocked && "opacity-60")}
+            isLoading={isSending}
+          >
             تأكيد الطلب
           </Button>
         </div>

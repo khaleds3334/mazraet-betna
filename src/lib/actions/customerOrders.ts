@@ -6,7 +6,7 @@ import { getCurrentCustomer } from "@/lib/queries/customers";
 import { getFarmSettings } from "@/lib/queries/settings";
 import { countAvailableForCustomer } from "@/lib/queries/ordering";
 import { bookableSlots, farmToday } from "@/lib/pickupSlots";
-import { SALE_NOT_OPEN } from "@/lib/constants";
+import { SALE_CLOSED_CUSTOMER, SOLD_OUT_CUSTOMER } from "@/lib/constants";
 import { pluralizeChicken } from "@/lib/format";
 
 /**
@@ -69,7 +69,7 @@ export async function placeOrder(
     .eq("is_active", true)
     .maybeSingle();
   if (!cycle || !cycle.sale_open) {
-    return { ok: false, error: SALE_NOT_OPEN };
+    return { ok: false, error: SALE_CLOSED_CUSTOMER };
   }
 
   // The form's counter already stops at this number. This is the half that holds
@@ -78,7 +78,7 @@ export async function placeOrder(
   // three birds at once is exactly the case the screen cannot see.
   const available = await countAvailableForCustomer(customer.farmId);
   if (available <= 0) {
-    return { ok: false, error: "الفراخ خلصت من المزرعة دلوقتي." };
+    return { ok: false, error: SOLD_OUT_CUSTOMER };
   }
   if (count > available) {
     return {

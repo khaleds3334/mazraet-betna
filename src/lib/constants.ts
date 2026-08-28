@@ -279,8 +279,29 @@ export function defaultOrdersTab(
 export const ORPHAN_MUST_BE_PAID =
   "الطلب ده مش مربوط بعميل، فلازم يتدفع بالكامل قبل ما يتسلّم.";
 
+/**
+ * A closed sale, said to the admin — it names the thing only he can do about it.
+ * Never show this one to a customer: {@link SALE_CLOSED_CUSTOMER} is his half.
+ */
 export const SALE_NOT_OPEN =
   "البيع مش مفتوح دلوقتي، ابدأ مرحلة البيع الأول عشان تسجّل طلبات.";
+
+/**
+ * The same fact from the customer's side. He cannot open the sale, so telling
+ * him to is an instruction he can only fail at — it points at what happens next
+ * instead, which is true: `notify_sale_open` writes every customer a notice the
+ * moment the admin opens it (migration 029).
+ */
+export const SALE_CLOSED_CUSTOMER =
+  "البيع مقفول دلوقتي، هنبعتلك اشعار أول ما يفتح.";
+
+/**
+ * An empty flock, to the customer. Said by the order screen when it opens, again
+ * if he taps the confirm button, and by the server if the last birds went while
+ * his form was open — three places that were each holding their own copy, two of
+ * them punctuated differently.
+ */
+export const SOLD_OUT_CUSTOMER = "الفراخ خلصت من المزرعة دلوقتي.";
 
 export const NO_FEED_IN_STORE = "مفيش علف متوفر في المخزن، سجّل شراء علف الأول.";
 
